@@ -33,6 +33,49 @@ const MOCK_PRODUCTS: Product[] = [
   },
 ];
 
+import { Button } from "@/components/ui/button";
+import { ProductCard } from "@/components/ui/product-card";
+import { Product } from "@/types/product";
+import { Cpu, Zap, Shield, Globe } from "lucide-react";
+
+const FEATURED_PRODUCTS: Product[] = [
+  {
+    id: "1",
+    name: "گوشی هوشمند مدل X20 Pro",
+    price: 35000000,
+    category: "کالای دیجیتال",
+    image: "https://images.unsplash.com/photo-1598327105666-5b89a8a6796d?q=80&w=500&auto=format&fit=crop",
+  },
+  {
+    id: "2",
+    name: "لپ‌تاپ گیمینگ سری Ultra",
+    price: 85000000,
+    category: "کالای دیجیتال",
+    image: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=80&w=500&auto=format&fit=crop",
+  },
+  {
+    id: "3",
+    name: "هدفون نویز کنسلینگ AI",
+    price: 12000000,
+    category: "صوتی و تصویری",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=500&auto=format&fit=crop",
+  },
+  {
+    id: "4",
+    name: "ساعت هوشمند ماتریکس",
+    price: 9500000,
+    category: "گجت‌ها",
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=500&auto=format&fit=crop",
+  },
+];
+
+const FEATURES = [
+  { icon: Cpu, title: "پردازش هوشمند", desc: "انتخاب بهترین محصولات با الگوریتم‌های پیشرفته" },
+  { icon: Zap, title: "ارسال سریع", desc: "تحویل سفارشات در کمترین زمان ممکن" },
+  { icon: Shield, title: "ضمانت اصالت", desc: "تضمین ۱۰۰٪ کالاها و خدمات پس از فروش" },
+  { icon: Globe, title: "پشتیبانی جهانی", desc: "خدمات مشتریان در تمام ساعات شبانه‌روز" },
+];
+
 export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-24">
@@ -54,14 +97,29 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Features Grid */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {FEATURES.map((feature, i) => (
+          <div key={i} className="group relative p-8 rounded-3xl border border-white/5 bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-2xl overflow-hidden">
+            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-all" />
+            <feature.icon className="h-12 w-12 text-primary mb-6" />
+            <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
+          </div>
+        ))}
+      </section>
+
       {/* Featured Products */}
       <section>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">محصولات برتر</h2>
-          <Button variant="link">مشاهده همه</Button>
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <h2 className="text-3xl font-black">محصولات برتر</h2>
+            <p className="text-muted-foreground mt-2">انتخابی از بهترین‌های دنیای تکنولوژی</p>
+          </div>
+          <Button variant="link" size="lg" className="text-primary font-bold">مشاهده همه محصولات ←</Button>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {MOCK_PRODUCTS.map((product) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          {FEATURED_PRODUCTS.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
