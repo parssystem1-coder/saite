@@ -12,12 +12,16 @@ import {
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { ArticleTeasers } from '@/components/home/article-teasers'
+import { BrandStrip } from '@/components/home/brand-strip'
+import { CompatibilityFinder } from '@/components/home/compatibility-finder'
 import { HomeProductGrid } from '@/components/home/home-product-grid'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card3D } from '@/components/ui/card-3d'
-import { getBestSellers, getFeaturedProducts } from '@/lib/api'
+import { getBestSellers, getCompatibleItems, getFeaturedProducts, getSupportedDeviceModels } from '@/lib/api'
 import { CATEGORIES, SITE } from '@/lib/constants'
+import type { Product } from '@/types/product'
 
 export const metadata: Metadata = {
   description:
@@ -38,25 +42,38 @@ const SERVICES = [
     icon: Wrench,
     title: 'تعمیر ماشین‌های اداری',
     desc: 'عیب‌یابی و تعمیر تخصصی پرینتر، اسکنر و دستگاه کپی در محل یا کارگاه.',
+    href: '/services/repair',
   },
   {
     icon: Droplets,
     title: 'تأمین مواد مصرفی و قطعات',
     desc: 'تأمین تونر، کارتریج، درام و قطعات یدکی اورجینال برای تمام برندهای معتبر.',
+    href: '/services/parts',
   },
   {
     icon: BadgeCheck,
     title: 'قرارداد سرویس دوره‌ای',
     desc: 'قرارداد نگهداری سالانه برای سازمان‌ها با اولویت پشتیبانی و قیمت ترجیحی.',
+    href: '/services/contract',
   },
 ]
 
 export default async function Home() {
-  const [featured, bestSellers] = await Promise.all([getFeaturedProducts(), getBestSellers()])
+  const [featured, bestSellers, devices] = await Promise.all([
+    getFeaturedProducts(),
+    getBestSellers(),
+    getSupportedDeviceModels(),
+  ])
+
+  // نگاشت سازگاری از پیش ساخته می‌شود تا ویجت بدون رفت‌وبرگشت سرور کار کند
+  const compatibilityMap: Record<string, Product[]> = {}
+  for (const d of devices) {
+    compatibilityMap[d.model] = await getCompatibleItems(d.model)
+  }
 
   return (
-    <div className="container mx-auto space-y-24 px-4 py-10">
-      {/* ── بنر اصلی ─────────────────────────────────────── */}
+    <div className="container mx-auto space-y-20 px-4 py-10">
+      {/* ① بنر اصلی ─────────────────────────────────────── */}
       <section className="relative overflow-hidden rounded-3xl border border-border bg-linear-to-bl from-primary/12 via-surface-1 to-surface-0 px-6 py-16 shadow-depth-3 md:px-14 md:py-20">
         <div
           aria-hidden="true"
@@ -87,7 +104,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── دسته‌بندی‌ها ──────────────────────────────────── */}
+      {/* ② ابزار یافتن قطعهٔ سازگار — عمداً بالاتر از محصولات */}
+      <CompatibilityFinder devices={devices} compatibilityMap={compatibilityMap} />
+
+      {/* ③ دسته‌بندی‌ها ──────────────────────────────────── */}
       <section>
         <header className="mb-8 text-center">
           <h2 className="text-2xl font-black text-foreground md:text-3xl">دسته‌بندی محصولات</h2>
@@ -115,13 +135,10 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ── نوار اعتماد ──────────────────────────────────── */}
+      {/* ④ نوار اعتماد ───────────────────────────────────── */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {TRUST_ITEMS.map((item) => (
-          <div
-            key={item.title}
-            className="surface-3d flex items-start gap-3 rounded-2xl p-5"
-          >
+          <div key={item.title} className="surface-3d flex items-start gap-3 rounded-2xl p-5">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/12">
               <item.icon className="size-5 text-primary" />
             </div>
@@ -133,7 +150,7 @@ export default async function Home() {
         ))}
       </section>
 
-      {/* ── پرفروش‌ترین‌ها ───────────────────────────────── */}
+      {/* ⑤ پرفروش‌ترین‌ها ────────────────────────────────── */}
       <section>
         <header className="mb-8 flex items-end justify-between gap-4">
           <div>
@@ -143,7 +160,7 @@ export default async function Home() {
             </p>
           </div>
           <Button variant="link" asChild>
-            <Link href="/products">
+            <Link href="/products?sort=best_selling">
               همهٔ محصولات
               <ArrowLeft />
             </Link>
@@ -152,7 +169,10 @@ export default async function Home() {
         <HomeProductGrid products={bestSellers.slice(0, 4)} />
       </section>
 
-      {/* ── خدمات ────────────────────────────────────────── */}
+      {/* ⑥ برندها ────────────────────────────────────────── */}
+      <BrandStrip />
+
+      {/* ⑦ خدمات ─────────────────────────────────────────── */}
       <section>
         <header className="mb-8 text-center">
           <h2 className="text-2xl font-black text-foreground md:text-3xl">خدمات ما</h2>
@@ -163,19 +183,22 @@ export default async function Home() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {SERVICES.map((s) => (
             <Card3D key={s.title} maxTilt={4}>
-              <div className="p-7">
+              <Link href={s.href} className="block p-7">
                 <div className="layer-lift-sm mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/12">
                   <s.icon className="size-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">{s.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
-              </div>
+                <span className="mt-4 inline-block text-xs font-bold text-primary">
+                  اطلاعات بیشتر ←
+                </span>
+              </Link>
             </Card3D>
           ))}
         </div>
       </section>
 
-      {/* ── محصولات ویژه ─────────────────────────────────── */}
+      {/* ⑧ محصولات ویژه ─────────────────────────────────── */}
       <section>
         <header className="mb-8 flex items-end justify-between gap-4">
           <div>
@@ -186,7 +209,10 @@ export default async function Home() {
         <HomeProductGrid products={featured.slice(0, 4)} />
       </section>
 
-      {/* ── فراخوان پایانی ───────────────────────────────── */}
+      {/* ⑨ مقالات ────────────────────────────────────────── */}
+      <ArticleTeasers />
+
+      {/* ⑩ فراخوان پایانی ───────────────────────────────── */}
       <section className="relative overflow-hidden rounded-3xl border border-primary/25 bg-linear-to-l from-primary/18 to-surface-1 p-10 text-center shadow-depth-3 md:p-14">
         <div
           aria-hidden="true"
