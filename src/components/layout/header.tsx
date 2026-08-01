@@ -5,7 +5,14 @@ import { Input } from '@/components/ui/input'
 
 export function Header() {
   return (
-    <header className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl rounded-2xl border border-white/10 bg-black/50 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+    <header className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl rounded-2xl border border-white/10 bg-black/50 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] overflow-hidden">
+      {/* Laser Line Effect */}
+      <motion.div 
+        animate={{ x: ['-100%', '200%'] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute top-0 left-0 h-[1px] w-40 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"
+      />
+      
       <div className="container mx-auto flex h-16 items-center px-6">
         <div className="flex items-center gap-6 md:gap-10">
           <Link href="/" className="flex items-center space-x-2">

@@ -50,8 +50,11 @@ export function ProductCard({ product }: ProductCardProps) {
         rotateY,
         transformStyle: 'preserve-3d',
       }}
-      className="relative h-96 w-full rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 p-2 shadow-2xl transition-all duration-200"
+      className="relative h-96 w-full rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 p-2 shadow-2xl transition-all duration-200 group overflow-hidden"
     >
+      {/* Sheen Effect on Hover */}
+      <div className="absolute inset-0 z-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+      
       <div
         style={{
           transform: 'translateZ(50px)',
