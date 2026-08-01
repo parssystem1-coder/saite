@@ -1,0 +1,64 @@
+name: درخواست قابلیت جدید
+description: یک ایده یا قابلیت جدید پیشنهاد دهید
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ممنون از پیشنهاد شما! 💡
+        لطفاً توضیح دهید چه قابلیتی نیاز دارید و چرا.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: مشکل یا نیازی که این قابلیت رفع می‌کند
+      description: آیا این قابلیت مشکلی را حل می‌کند؟ توضیح دهید.
+      placeholder: همیشه ناراحتم وقتی که...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: راه‌حل پیشنهادی
+      description: چه چیزی می‌خواهید بسازیم؟
+      placeholder: دوست دارم که بتوانم...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: راه‌حل‌های جایگزین
+      description: آیا راه‌حل‌های دیگری هم بررسی کرده‌اید؟
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: اولویت
+      options:
+        - پایین — nice to have
+        - متوسط — کمک‌کننده
+        - بالا — خیلی لازم است
+        - بحرانی — بدون این نمی‌شود کار کرد
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: طرح یا موکاپ
+      description: اگر تصویری از چیزی که می‌خواهید دارید، اضافه کنید
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: اطلاعات بیشتر
+      description: هر چیز دیگری که فکر می‌کنید مفید است
+    validations:
+      required: false
