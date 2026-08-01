@@ -1,98 +1,142 @@
 'use client'
 
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Loader2, Lock, Mail, Phone, User } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
 import { AuthCard } from '@/components/auth/auth-card'
-import { User, Mail, Lock, Phone } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { fieldAria, FormField } from '@/components/ui/form-field'
+import { Input } from '@/components/ui/input'
+import { registerSchema, type RegisterInput } from '@/lib/schemas'
+import { useAuthStore } from '@/store/auth-store'
 
 export function RegisterClient() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: ''
+  const login = useAuthStore((s) => s.login)
+  const router = useRouter()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', phone: '', password: '', confirmPassword: '' },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Register attempt:', formData)
+  const onSubmit = async (data: RegisterInput) => {
+    // ⚠️ ثبت‌نام شبیه‌سازی‌شده — در فاز بک‌اند به دیتابیس متصل می‌شود
+    await new Promise((r) => setTimeout(r, 500))
+    login({ id: '1', name: data.name, email: data.email, role: 'user' })
+    router.push('/dashboard')
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <AuthCard 
-        title="عضویت در سایت" 
-        description="به جمع هزاران کاربر هوشمند ما بپیوندید و از مزایای ویژه بهره‌مند شوید."
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <AuthCard
+        title="ایجاد حساب کاربری"
+        description="با ثبت‌نام، سفارش‌ها و علاقه‌مندی‌های خود را دنبال کنید."
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">نام کامل</label>
-            <div className="relative group">
-              <User className="absolute right-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                placeholder="نام و نام خانوادگی" 
-                className="pr-10 bg-white/5 border-white/10 rounded-xl focus:border-primary/50 transition-all"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                required
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+          <FormField id="name" label="نام و نام خانوادگی" required error={errors.name?.message}>
+            <div className="relative">
+              <User className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('name')}
+                {...fieldAria('name', !!errors.name)}
+                autoComplete="name"
+                placeholder="نام کامل"
+                className="pr-10"
               />
             </div>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">پست الکترونیک</label>
-            <div className="relative group">
-              <Mail className="absolute right-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                type="email" 
-                placeholder="email@example.com" 
-                className="pr-10 bg-white/5 border-white/10 rounded-xl focus:border-primary/50 transition-all"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                required
+          <FormField id="email" label="پست الکترونیک" required error={errors.email?.message}>
+            <div className="relative">
+              <Mail className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('email')}
+                {...fieldAria('email', !!errors.email)}
+                type="email"
+                dir="ltr"
+                autoComplete="email"
+                placeholder="name@example.com"
+                className="pr-10 text-right font-mono"
               />
             </div>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">شماره همراه</label>
-            <div className="relative group">
-              <Phone className="absolute right-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                type="tel" 
-                placeholder="۰۹۱۲۳۴۵۶۷۸۹" 
-                className="pr-10 bg-white/5 border-white/10 rounded-xl focus:border-primary/50 transition-all"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                required
+          <FormField id="phone" label="شمارهٔ موبایل" required error={errors.phone?.message}>
+            <div className="relative">
+              <Phone className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('phone')}
+                {...fieldAria('phone', !!errors.phone)}
+                dir="ltr"
+                inputMode="tel"
+                autoComplete="tel"
+                placeholder="09123456789"
+                className="pr-10 text-right font-mono"
               />
             </div>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">رمز عبور</label>
-            <div className="relative group">
-              <Lock className="absolute right-3 top-3 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                className="pr-10 bg-white/5 border-white/10 rounded-xl focus:border-primary/50 transition-all"
-                value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                required
+          <FormField
+            id="password"
+            label="رمز عبور"
+            required
+            error={errors.password?.message}
+            hint="حداقل ۸ کاراکتر"
+          >
+            <div className="relative">
+              <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('password')}
+                {...fieldAria('password', !!errors.password, true)}
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                className="pr-10"
               />
             </div>
-          </div>
+          </FormField>
 
-          <Button type="submit" className="w-full h-12 text-lg mt-6">
-            ایجاد حساب کاربری
+          <FormField
+            id="confirmPassword"
+            label="تکرار رمز عبور"
+            required
+            error={errors.confirmPassword?.message}
+          >
+            <div className="relative">
+              <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('confirmPassword')}
+                {...fieldAria('confirmPassword', !!errors.confirmPassword)}
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                className="pr-10"
+              />
+            </div>
+          </FormField>
+
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin" />
+                در حال ثبت‌نام…
+              </>
+            ) : (
+              'ایجاد حساب'
+            )}
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-sm text-muted-foreground">
             قبلاً ثبت‌نام کرده‌اید؟{' '}
-            <Link href="/login" className="text-primary font-bold hover:underline italic">وارد شوید</Link>
+            <Link href="/login" className="font-bold text-primary hover:underline">
+              وارد شوید
+            </Link>
           </p>
         </form>
       </AuthCard>

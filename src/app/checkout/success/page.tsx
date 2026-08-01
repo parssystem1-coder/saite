@@ -1,12 +1,29 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useSyncExternalStore } from 'react'
 import { CheckCircle2, Package, ArrowLeft, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
+const subscribeNoop = () => () => {}
+
+let cachedOrderNumber: string | null = null
+function getOrderNumber() {
+  cachedOrderNumber ??= String(Math.floor(100000 + Math.random() * 900000))
+  return cachedOrderNumber
+}
+
 export default function SuccessPage() {
-  const orderNumber = Math.floor(100000 + Math.random() * 900000)
+  // شمارهٔ پیگیری موقت — فقط سمت کلاینت و پایدار بین رندرها.
+  // getSnapshot با کش‌کردن مقدار، هم از ناخالصی رندر جلوگیری می‌کند و هم
+  // از عدم تطابق HTML سرور/کلاینت.
+  // در فاز بک‌اند این مقدار از پاسخ واقعی سفارش خوانده خواهد شد.
+  const orderNumber = useSyncExternalStore(
+    subscribeNoop,
+    getOrderNumber,
+    () => '------'
+  )
 
   return (
     <div className="container mx-auto px-4 py-24 flex items-center justify-center">

@@ -1,100 +1,282 @@
 'use client'
 
+import {
+  Clock,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Phone,
+  Search,
+  ShoppingCart,
+  User,
+  X,
+} from 'lucide-react'
 import Link from 'next/link'
-import { ShoppingCart, Search, User, Menu, LogOut, LayoutDashboard } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import * as React from 'react'
+import { MegaMenu } from '@/components/layout/mega-menu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { motion } from 'framer-motion'
+import { Menu3D, Menu3DItem } from '@/components/ui/menu-3d'
+import { BRANDS, CATEGORIES, SITE } from '@/lib/constants'
+import { formatNumber } from '@/lib/format'
+import { useCartHydrated, useHasHydrated } from '@/hooks/use-has-hydrated'
 import { useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
-import { useEffect, useState } from 'react'
+import { useWishlistStore } from '@/store/wishlist-store'
 
 export function Header() {
-  const { isLoggedIn, logout } = useAuthStore()
-  const itemCount = useCartStore((state) => state.itemCount())
-  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+  const hydrated = useHasHydrated()
+  const cartReady = useCartHydrated()
 
-  // جلوگیری از خطای Hydration در Zustand persist
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
+  const logout = useAuthStore((s) => s.logout)
+  const itemCount = useCartStore((s) => s.itemCount())
+  const wishlistCount = useWishlistStore((s) => s.items.length)
+
+  const [query, setQuery] = React.useState('')
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    const q = query.trim()
+    router.push(q ? `/products?q=${encodeURIComponent(q)}` : '/products')
+    setMobileOpen(false)
+  }
 
   return (
-    <header className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl rounded-2xl border border-white/10 bg-black/50 backdrop-blur-xl transition-all shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] overflow-hidden">
-      {/* Laser Line Effect */}
-      <motion.div 
-        animate={{ x: ['-100%', '200%'] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        className="absolute top-0 left-0 h-[1px] w-40 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"
-      />
-      
-      <div className="container mx-auto flex h-16 items-center px-6">
-        <div className="flex items-center gap-6 md:gap-10">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="inline-block font-bold text-xl text-primary">سایت</span>
+    <header className="sticky top-0 z-50">
+      {/* ── نوار بالایی: اطلاعات تماس ─────────────────────── */}
+      <div className="hidden border-b border-border bg-surface-0/90 backdrop-blur-md md:block">
+        <div className="container mx-auto flex h-9 items-center justify-between px-4 text-xs">
+          <p className="flex items-center gap-1.5 text-muted-foreground">
+            <Clock className="size-3.5" />
+            {SITE.workingHours}
+          </p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/contact"
+              className="text-muted-foreground transition-colors hover:text-primary"
+            >
+              استعلام قیمت
+            </Link>
+            <a
+              href={`tel:${SITE.phoneLtr}`}
+              className="flex items-center gap-1.5 font-bold text-primary transition-colors hover:text-primary-bright"
+            >
+              <Phone className="size-3.5" />
+              {SITE.phone}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ── نوار اصلی ─────────────────────────────────────── */}
+      <div className="border-b border-border bg-surface-0/85 shadow-depth-2 backdrop-blur-xl">
+        <div className="container mx-auto flex h-16 items-center gap-3 px-4">
+          <Link href="/" className="shrink-0 text-xl font-black text-primary text-glow">
+            {SITE.name}
           </Link>
-          <nav className="hidden md:flex gap-6">
-            <Link href="/products" className="text-sm font-medium transition-colors hover:text-primary">
+
+          <nav className="hidden items-center gap-1 lg:flex">
+            <MegaMenu />
+            <Link
+              href="/products"
+              className="rounded-xl px-3 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            >
               محصولات
             </Link>
-            <Link href="/categories" className="text-sm font-medium transition-colors hover:text-primary">
-              دسته‌بندی‌ها
+            <Link
+              href="/services"
+              className="rounded-xl px-3 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              خدمات
+            </Link>
+            <Link
+              href="/contact"
+              className="rounded-xl px-3 py-2 text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              تماس با ما
             </Link>
           </nav>
-        </div>
 
-        <div className="flex flex-1 items-center justify-end space-x-4 space-x-reverse">
-          <div className="hidden md:block relative">
-            <Search className="absolute right-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <form onSubmit={submitSearch} className="relative hidden max-w-sm flex-1 md:block">
+            <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="جستجوی هوشمند..."
-              className="pr-8 w-[200px] lg:w-[300px] bg-white/5 border-white/10"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="جستجوی نام یا مدل دستگاه…"
+              aria-label="جستجوی محصولات"
+              className="h-10 pr-10"
             />
-          </div>
-          
-          <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative" asChild>
-              <Link href="/cart">
-                <ShoppingCart className="h-5 w-5" />
-                {mounted && itemCount > 0 && (
-                  <motion.span 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-[0_0_10px_rgba(109,40,217,0.5)]"
-                  >
-                    {itemCount}
-                  </motion.span>
+          </form>
+
+          <nav className="ms-auto flex items-center gap-1.5">
+            <Button size="icon" variant="ghost" asChild className="relative hidden sm:inline-flex">
+              <Link href="/wishlist" aria-label={`علاقه‌مندی‌ها، ${wishlistCount} کالا`}>
+                <Heart />
+                {hydrated && wishlistCount > 0 && (
+                  <span className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    {formatNumber(wishlistCount)}
+                  </span>
                 )}
               </Link>
             </Button>
 
-            {mounted && isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="hidden sm:flex items-center gap-2" asChild>
-                  <Link href="/dashboard">
-                    <LayoutDashboard className="h-4 w-4" />
+            <Button size="icon" variant="ghost" asChild className="relative">
+              <Link href="/cart" aria-label={`سبد خرید، ${itemCount} کالا`}>
+                <ShoppingCart />
+                {cartReady && itemCount > 0 && (
+                  <span className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-glow-sm">
+                    {formatNumber(itemCount)}
+                  </span>
+                )}
+              </Link>
+            </Button>
+
+            {hydrated && isLoggedIn ? (
+              <Menu3D
+                trigger={
+                  <span className="inline-flex size-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary">
+                    <User className="size-5" />
+                  </span>
+                }
+              >
+                <Link href="/dashboard">
+                  <Menu3DItem>
+                    <LayoutDashboard className="size-4 text-primary" />
                     پنل کاربری
-                  </Link>
-                </Button>
-                <Button variant="ghost" size="icon" onClick={logout} title="خروج">
-                  <LogOut className="h-5 w-5 text-destructive" />
-                </Button>
-              </div>
+                  </Menu3DItem>
+                </Link>
+                <Link href="/wishlist">
+                  <Menu3DItem>
+                    <Heart className="size-4 text-primary" />
+                    علاقه‌مندی‌ها
+                  </Menu3DItem>
+                </Link>
+                <div className="my-1 h-px bg-border" />
+                <Menu3DItem
+                  onClick={logout}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <LogOut className="size-4" />
+                  خروج
+                </Menu3DItem>
+              </Menu3D>
             ) : (
-              <Button size="sm" className="hidden sm:flex" asChild>
+              <Button size="sm" asChild className="hidden sm:inline-flex">
                 <Link href="/login">ورود / ثبت‌نام</Link>
               </Button>
             )}
-            
-            <Button variant="ghost" size="icon" className="sm:hidden" asChild>
-              <Link href={mounted && isLoggedIn ? "/dashboard" : "/login"}>
-                <User className="h-5 w-5" />
-              </Link>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              className="lg:hidden"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label={mobileOpen ? 'بستن منو' : 'باز کردن منو'}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X /> : <Menu />}
             </Button>
           </nav>
         </div>
       </div>
+
+      {/* ── منوی موبایل ───────────────────────────────────── */}
+      {mobileOpen && (
+        <div className="max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-border bg-surface-1 shadow-depth-3 lg:hidden">
+          <div className="container mx-auto space-y-5 px-4 py-5">
+            <form onSubmit={submitSearch} className="relative md:hidden">
+              <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="جستجو…"
+                aria-label="جستجوی محصولات"
+                className="pr-10"
+              />
+            </form>
+
+            <div>
+              <p className="mb-2 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                دسته‌بندی‌ها
+              </p>
+              <nav className="grid grid-cols-2 gap-2">
+                {CATEGORIES.map((c) => (
+                  <Link
+                    key={c.slug}
+                    href={`/products?category=${c.slug}`}
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-xl border border-border bg-surface-0/50 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            <div>
+              <p className="mb-2 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                برندها
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {BRANDS.map((b) => (
+                  <Link
+                    key={b.slug}
+                    href={`/products?brand=${b.slug}`}
+                    onClick={() => setMobileOpen(false)}
+                    dir="ltr"
+                    className="rounded-lg border border-border bg-surface-0/50 px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    {b.displayName}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <nav className="grid gap-2 border-t border-border pt-4">
+              {[
+                ['/wishlist', 'علاقه‌مندی‌ها'],
+                ['/compare', 'مقایسه'],
+                ['/services', 'خدمات'],
+                ['/blog', 'مجلهٔ آموزشی'],
+                ['/about', 'دربارهٔ ما'],
+                ['/contact', 'تماس با ما'],
+              ].map(([href, label]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileOpen(false)}
+                  className="text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+
+            <a
+              href={`tel:${SITE.phoneLtr}`}
+              className="flex items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 py-2.5 text-sm font-bold text-primary"
+            >
+              <Phone className="size-4" />
+              {SITE.phone}
+            </a>
+
+            {hydrated && !isLoggedIn && (
+              <Button className="w-full" asChild>
+                <Link href="/login" onClick={() => setMobileOpen(false)}>
+                  ورود / ثبت‌نام
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   )
 }

@@ -1,106 +1,179 @@
 'use client'
 
-import React, { useRef, useState } from 'react'
+import { Check, GitCompareArrows, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Product } from '@/types/product'
-import { useCartStore } from '@/store/cart-store'
+import { Card3D } from '@/components/ui/card-3d'
+import { PriceDisplay } from '@/components/ui/price-display'
+import { StockBadge } from '@/components/ui/stock-badge'
+import { TechText } from '@/components/ui/tech-text'
+import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { BRANDS, CONDITION_LABELS } from '@/lib/constants'
+import { cn } from '@/lib/utils'
+import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
+import type { ProductCardData } from '@/types/product'
 
 interface ProductCardProps {
-  product: Product
+  product: ProductCardData
+  onAddToCart?: (product: ProductCardData) => void
+  onCompare?: (product: ProductCardData) => void
+  onWishlist?: (product: ProductCardData) => void
+  className?: string
 }
 
-export function ProductCard({ product }: ProductCardProps) {
-  const addItem = useCartStore((state) => state.addItem)
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
+/**
+ * کارت محصول — بازطراحی‌شده برای دامنهٔ تجهیزات اداری.
+ *
+ * تفاوت کلیدی با نسخهٔ قبل: چگالی اطلاعات.
+ * کارت قبلی ۳۸۴ پیکسل ارتفاع داشت و فقط ۳ داده نشان می‌داد. این کارت
+ * کوتاه‌تر است اما ۷ داده دارد: برند، مدل، عنوان، ۳ ویژگی کلیدی،
+ * وضعیت موجودی، قیمت و وضعیت نو/بازسازی‌شده — چون خریدار تجهیزات
+ * اداری قبل از کلیک باید بتواند چند گزینه را کنار هم بسنجد.
+ */
+export function ProductCard({
+  product,
+  onAddToCart,
+  onCompare,
+  onWishlist,
+  className,
+}: ProductCardProps) {
+  const brand = BRANDS.find((b) => b.slug === product.brand)
+  const isBuyable = product.priceType === 'fixed' && product.stockStatus !== 'out_of_stock'
+  const href = `/products/${product.slug}`
 
-  const mouseXSpring = useSpring(x)
-  const mouseYSpring = useSpring(y)
-
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ['10deg', '-10deg'])
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ['-10deg', '10deg'])
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const width = rect.width
-    const height = rect.height
-    const mouseX = e.clientX - rect.left
-    const mouseY = e.clientY - rect.top
-    const xPct = mouseX / width - 0.5
-    const yPct = mouseY / height - 0.5
-    x.set(xPct)
-    y.set(yPct)
-  }
-
-  const handleMouseLeave = () => {
-    x.set(0)
-    y.set(0)
-  }
-
-  const formattedPrice = new Intl.NumberFormat('fa-IR').format(product.price)
+  // وضعیت مقایسه فقط پس از hydration خوانده می‌شود تا HTML سرور و کلاینت یکی بماند
+  const hydrated = useHasHydrated()
+  const compareItems = useCompareStore((s) => s.items)
+  const wishlistItems = useWishlistStore((s) => s.items)
+  const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
+  const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
 
   return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: 'preserve-3d',
-      }}
-      className="relative h-96 w-full rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 p-2 shadow-2xl transition-all duration-200 group overflow-hidden"
-    >
-      {/* Sheen Effect on Hover */}
-      <div className="absolute inset-0 z-0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
-      
-      <div
-        style={{
-          transform: 'translateZ(50px)',
-          transformStyle: 'preserve-3d',
-        }}
-        className="h-full w-full rounded-xl bg-card p-4 shadow-lg flex flex-col"
-      >
-        <Link href={`/products/${product.id}`} className="relative block h-48 w-full overflow-hidden rounded-lg">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            className="object-contain p-4 transition-transform duration-500 hover:scale-110"
-          />
-        </Link>
+    <Card3D className={cn('h-full', className)}>
+      <div className="flex h-full flex-col p-4">
+        {/* ── تصویر ──────────────────────────────────────── */}
+        <div className="relative">
+          <Link
+            href={href}
+            className="layer-lift-sm relative block aspect-4/3 overflow-hidden rounded-xl bg-surface-0/60"
+          >
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+            />
+          </Link>
 
-        <div className="mt-4 flex-1">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-primary/80">{product.category}</div>
-          <Link href={`/products/${product.id}`}>
-            <h3 className="mt-1 line-clamp-1 text-lg font-bold text-foreground">
+          <div className="absolute top-2 left-2 z-10">
+            <StockBadge status={product.stockStatus} size="sm" />
+          </div>
+
+          {product.condition === 'refurbished' && (
+            <span className="absolute top-2 right-2 z-10 rounded-full border border-accent/30 bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+              {CONDITION_LABELS.refurbished}
+            </span>
+          )}
+        </div>
+
+        {/* ── هویت محصول ─────────────────────────────────── */}
+        <div className="layer-lift-sm mt-3 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <TechText className="text-[10px] font-bold tracking-widest text-primary uppercase">
+              {brand?.displayName ?? product.brand}
+            </TechText>
+          </div>
+
+          <Link href={href} className="mt-1 block">
+            <TechText className="block text-sm font-bold text-foreground transition-colors group-hover:text-primary">
+              {product.model}
+            </TechText>
+            <h3 className="text-balance-fa mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
               {product.name}
             </h3>
           </Link>
-          
-          <div className="mt-auto pt-4 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground line-through opacity-50">
-                {(product.price * 1.2).toLocaleString('fa-IR')}
-              </span>
-              <span className="text-xl font-black text-primary">{formattedPrice} تومان</span>
-            </div>
-            <Button 
-              size="icon" 
-              className="rounded-full shadow-lg"
-              onClick={(e) => {
-                e.preventDefault()
-                addItem(product)
-              }}
+
+          {/* ── سه ویژگی کلیدی — همان چیزی که خریدار می‌سنجد ── */}
+          {product.keyFeatures.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-1.5">
+              {product.keyFeatures.slice(0, 3).map((f) => (
+                <li
+                  key={f}
+                  className="rounded-md border border-border bg-surface-0/50 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {f}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* ── قیمت و کنش‌ها ──────────────────────────────── */}
+        <div className="layer-lift-sm mt-4 border-t border-border pt-3">
+          <PriceDisplay
+            priceType={product.priceType}
+            price={product.price}
+            compareAtPrice={product.compareAtPrice}
+            size="md"
+          />
+
+          <div className="mt-3 flex items-center gap-2">
+            {isBuyable ? (
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => onAddToCart?.(product)}
+                aria-label={`افزودن ${product.name} به سبد خرید`}
+              >
+                <ShoppingCart />
+                افزودن به سبد
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                asChild
+                aria-label={`استعلام قیمت ${product.name}`}
+              >
+                <Link href={`${href}#quote`}>استعلام قیمت</Link>
+              </Button>
+            )}
+
+            <Button
+              size="icon-sm"
+              variant={inCompare ? 'default' : 'secondary'}
+              onClick={() => onCompare?.(product)}
+              aria-pressed={inCompare}
+              aria-label={
+                inCompare
+                  ? `حذف ${product.name} از مقایسه`
+                  : `افزودن ${product.name} به مقایسه`
+              }
+              title={inCompare ? 'در حال مقایسه' : 'مقایسه'}
             >
-              <ShoppingCart className="h-5 w-5" />
+              {inCompare ? <Check /> : <GitCompareArrows />}
+            </Button>
+            <Button
+              size="icon-sm"
+              variant="secondary"
+              onClick={() => onWishlist?.(product)}
+              aria-pressed={inWishlist}
+              aria-label={
+                inWishlist
+                  ? `حذف ${product.name} از علاقه‌مندی‌ها`
+                  : `افزودن ${product.name} به علاقه‌مندی‌ها`
+              }
+              title={inWishlist ? 'در علاقه‌مندی‌ها' : 'علاقه‌مندی'}
+            >
+              <Heart className={inWishlist ? 'fill-destructive text-destructive' : undefined} />
             </Button>
           </div>
         </div>
       </div>
-    </motion.div>
+    </Card3D>
   )
 }

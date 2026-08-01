@@ -66,3 +66,6 @@ coverage/
 tmp/
 temp/
 .cache/
+
+# کش دانلود دستی بسته‌ها
+.tarball-cache/

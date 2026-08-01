@@ -1,63 +1,98 @@
-import { Product } from '@/types/product'
+import { PRODUCTS } from '@/lib/mock-data'
+import type { CategorySlug, Product } from '@/types/product'
 
-const PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'گوشی هوشمند مدل X20 Pro',
-    price: 35000000,
-    category: 'کالای دیجیتال',
-    image: 'https://images.unsplash.com/photo-1598327105666-5b89a8a6796d?q=80&w=500&auto=format&fit=crop',
-    description: 'قدرتمندترین گوشی هوشمند با دوربین ۱۰۸ مگاپیکسلی و پردازنده هشت هسته‌ای.',
-  },
-  {
-    id: '2',
-    name: 'لپ‌تاپ گیمینگ سری Ultra',
-    price: 85000000,
-    category: 'کالای دیجیتال',
-    image: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?q=80&w=500&auto=format&fit=crop',
-    description: 'لپ‌تاپ مخصوص بازی با کارت گرافیک RTX 4090 و نمایشگر ۱۶۵ هرتز.',
-  },
-  {
-    id: '3',
-    name: 'هدفون نویز کنسلینگ AI',
-    price: 12000000,
-    category: 'صوتی و تصویری',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=500&auto=format&fit=crop',
-    description: 'تجربه شنیداری بی‌نظیر با سیستم حذف نویز هوشمند و عمر باتری ۴۰ ساعته.',
-  },
-  {
-    id: '4',
-    name: 'ساعت هوشمند ماتریکس',
-    price: 9500000,
-    category: 'گجت‌ها',
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=500&auto=format&fit=crop',
-    description: 'پایش دقیق سلامت و اعلان‌های هوشمند در یک طراحی شیک و آینده‌نگرانه.',
-  },
-  {
-    id: '5',
-    name: 'تبلت گرافیکی Creator',
-    price: 18000000,
-    category: 'کالای دیجیتال',
-    image: 'https://images.unsplash.com/photo-1544244015-0cd4b3ff869d?q=80&w=500&auto=format&fit=crop',
-    description: 'بهترین ابزار برای طراحان و هنرمندان دیجیتال با حساسیت فشار بالا.',
-  },
-  {
-    id: '6',
-    name: 'اسپیکر هوشمند سوند-ویو',
-    price: 5500000,
-    category: 'صوتی و تصویری',
-    image: 'https://images.unsplash.com/photo-1589003020683-75a17163f285?q=80&w=500&auto=format&fit=crop',
-    description: 'صدای ۳۶۰ درجه و دستیار صوتی داخلی برای کنترل هوشمند خانه.',
-  },
-]
+/**
+ * لایهٔ دسترسی به داده — فاز ۱ (Mock).
+ *
+ * امضای این توابع عمداً به‌گونه‌ای طراحی شده که هنگام اتصال بک‌اند
+ * (Prisma/PostgreSQL) فقط بدنه تغییر کند و هیچ کامپوننتی دست نخورد.
+ * تأخیر مصنوعی قبلی (۸۰۰ms) حذف شده چون مستقیماً به LCP آسیب می‌زد.
+ */
 
 export async function getProducts(): Promise<Product[]> {
-  // شبیه‌سازی تاخیر شبکه
-  await new Promise((resolve) => setTimeout(resolve, 800))
   return PRODUCTS
 }
 
+export async function getProductBySlug(slug: string): Promise<Product | undefined> {
+  return PRODUCTS.find((p) => p.slug === slug)
+}
+
 export async function getProductById(id: string): Promise<Product | undefined> {
-  await new Promise((resolve) => setTimeout(resolve, 500))
   return PRODUCTS.find((p) => p.id === id)
+}
+
+export async function getProductsByCategory(category: CategorySlug): Promise<Product[]> {
+  return PRODUCTS.filter((p) => p.category === category)
+}
+
+export async function getFeaturedProducts(): Promise<Product[]> {
+  return PRODUCTS.filter((p) => p.isFeatured)
+}
+
+export async function getBestSellers(): Promise<Product[]> {
+  return PRODUCTS.filter((p) => p.isBestSeller)
+}
+
+/**
+ * موتور «یافتن قطعهٔ سازگار».
+ * با دریافت مدل یک دستگاه، تمام مصرفی‌ها و قطعاتی را برمی‌گرداند
+ * که در فیلد compatibleWith خود به آن مدل اشاره کرده‌اند.
+ */
+export async function getCompatibleItems(deviceModel: string): Promise<Product[]> {
+  const needle = deviceModel.trim().toLowerCase()
+  if (!needle) return []
+
+  return PRODUCTS.filter((p) =>
+    p.compatibleWith?.some((m) => m.toLowerCase() === needle)
+  )
+}
+
+/** فهرست مدل دستگاه‌هایی که برایشان مصرفی یا قطعه داریم */
+export async function getSupportedDeviceModels(): Promise<
+  { brand: string; model: string }[]
+> {
+  const seen = new Map<string, { brand: string; model: string }>()
+
+  for (const item of PRODUCTS) {
+    for (const model of item.compatibleWith ?? []) {
+      if (!seen.has(model)) {
+        const device = PRODUCTS.find((p) => p.model === model)
+        seen.set(model, { brand: device?.brand ?? item.brand, model })
+      }
+    }
+  }
+
+  return [...seen.values()]
+}
+
+/** محصولات مرتبط: هم‌دسته، به‌جز خود محصول */
+export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
+  return PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(
+    0,
+    limit
+  )
+}
+
+/**
+ * جهت معکوس موتور سازگاری: «این دستگاه چه مصرفی‌ای می‌خورد؟»
+ *
+ * getCompatibleItems از مصرفی به دستگاه می‌رسد؛ این تابع برعکس عمل
+ * می‌کند و روی صفحهٔ دستگاه، تونر و قطعات آن را پیشنهاد می‌دهد.
+ * این مسیر، فروش مکمل (cross-sell) اصلی فروشگاه است.
+ */
+export async function getConsumablesForDevice(product: Product): Promise<Product[]> {
+  const ids = product.consumables
+  if (!ids || ids.length === 0) return []
+
+  // ترتیب تعریف‌شده در consumables حفظ می‌شود
+  return ids
+    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p))
+}
+
+/** محصولات مورد نیاز صفحهٔ مقایسه */
+export async function getProductsByIds(ids: string[]): Promise<Product[]> {
+  return ids
+    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p))
 }
