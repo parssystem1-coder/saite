@@ -1,56 +1,54 @@
-import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
-import Providers from "@/components/providers";
+import type { Metadata } from 'next'
+import { Footer } from '@/components/layout/footer'
+import { Header } from '@/components/layout/header'
+import Providers from '@/components/providers'
+import { SITE } from '@/lib/constants'
+import { vazirmatn } from '@/lib/fonts'
+import './globals.css'
 
-const vazir = Vazirmatn({
-  subsets: ["arabic", "latin"],
-  variable: "--font-vazir",
-});
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "سایت | فروشگاه هوشمند نسل آینده",
-    template: "%s | سایت"
+    default: `${SITE.fullName} | پرینتر، اسکنر، کپی و قطعات یدکی`,
+    template: `%s | ${SITE.name}`,
   },
-  description: "تجربه خرید سه بعدی و هوشمند با استفاده از جدیدترین تکنولوژی‌های روز دنیا و هوش مصنوعی.",
-  keywords: ["فروشگاه آنلاین", "خرید هوشمند", "تکنولوژی ۳ بعدی", "هوش مصنوعی", "محصولات دیجیتال"],
-  authors: [{ name: "ParsSystem1 Coder" }],
-  creator: "ParsSystem1 Coder",
-  publisher: "Saite AI Shop",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
+  description:
+    'تأمین، فروش و سرویس ماشین‌های اداری؛ پرینتر، اسکنر، دستگاه کپی، فکس، مواد مصرفی و قطعات یدکی با ضمانت اصالت کالا و مشاورهٔ تخصصی.',
+  keywords: [
+    'پرینتر',
+    'اسکنر',
+    'دستگاه کپی',
+    'فکس',
+    'تونر',
+    'کارتریج',
+    'قطعات یدکی ماشین اداری',
+    'تعمیر پرینتر',
+  ],
+  authors: [{ name: SITE.fullName }],
+  openGraph: {
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: SITE.fullName,
+    title: `${SITE.fullName} | تجهیزات و ماشین‌های اداری`,
+    description: 'فروش و سرویس تخصصی پرینتر، اسکنر، دستگاه کپی و قطعات یدکی.',
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+  twitter: { card: 'summary_large_image' },
+  formatDetection: { email: false, address: false, telephone: false },
+  icons: { icon: '/favicon.ico' },
+}
 
-import { AIParticles } from "@/components/ui/ai-particles";
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="fa"
-      dir="rtl"
-      className={`${vazir.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col font-vazir bg-[#0a0a0c] text-white">
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+      <body className="flex min-h-full flex-col font-sans">
         <Providers>
-          <AIParticles />
           <Header />
-          <main className="flex-1 pt-10">{children}</main>
+          <main className="flex-1">{children}</main>
           <Footer />
         </Providers>
       </body>
     </html>
-  );
+  )
 }

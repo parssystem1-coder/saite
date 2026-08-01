@@ -4,22 +4,22 @@ import { useAuthStore } from '@/store/auth-store'
 import { motion } from 'framer-motion'
 import { User, Package, Heart, Settings, Shield, Bell } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useHasHydrated } from '@/hooks/use-has-hydrated'
 
 export function DashboardClient() {
   const { user, isLoggedIn } = useAuthStore()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
+  const hydrated = useHasHydrated()
 
   useEffect(() => {
-    setMounted(true)
-    if (!isLoggedIn) {
+    if (hydrated && !isLoggedIn) {
       router.push('/login')
     }
-  }, [isLoggedIn, router])
+  }, [hydrated, isLoggedIn, router])
 
-  if (!mounted || !isLoggedIn) return null
+  if (!hydrated || !isLoggedIn) return null
 
   const stats = [
     { label: 'سفارشات جاری', value: '۲', icon: Package },

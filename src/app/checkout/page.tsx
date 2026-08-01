@@ -1,36 +1,40 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useCartHydrated } from '@/hooks/use-has-hydrated'
 import { useCartStore } from '@/store/cart-store'
 import { useAuthStore } from '@/store/auth-store'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AuthCard } from '@/components/auth/auth-card'
 import { MapPin, Phone, User, CreditCard, ShieldCheck, Loader2 } from 'lucide-react'
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCartStore()
   const { isLoggedIn, user } = useAuthStore()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
+  const hydrated = useCartHydrated()
   const [isProcessing, setIsProcessing] = useState(false)
 
   const [address, setAddress] = useState('')
   const [phone, setPhone] = useState('')
 
+  // باگ نسخهٔ قبل: شرط دوم به `mounted` وابسته بود که در همان اجرا
+  // هنوز false بود، پس هدایت به /products یک رندر دیر اتفاق می‌افتاد.
+  // isProcessing هم اضافه شد تا پس از clearCart کاربر پرت نشود.
   useEffect(() => {
-    setMounted(true)
+    if (!hydrated || isProcessing) return
     if (!isLoggedIn) {
       router.push('/login?redirect=/checkout')
+      return
     }
-    if (mounted && items.length === 0) {
+    if (items.length === 0) {
       router.push('/products')
     }
-  }, [isLoggedIn, items, router, mounted])
+  }, [hydrated, isLoggedIn, items.length, router, isProcessing])
 
-  if (!mounted || !isLoggedIn || items.length === 0) return null
+  if (!hydrated || !isLoggedIn || items.length === 0) return null
 
   const formattedTotal = new Intl.NumberFormat('fa-IR').format(totalPrice())
 

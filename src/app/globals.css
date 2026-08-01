@@ -1,96 +1,318 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --font-sans: var(--font-vazir), ui-sans-serif, system-ui;
-  --font-vazir: var(--font-vazir);
-}
+/* ═══════════════════════════════════════════════════════════════
+   SAITE DESIGN SYSTEM — v2 (Dark / Neon Purple / 3D)
+   دامنه: تجهیزات اداری (پرینتر، اسکنر، کپی، فکس، مصرفی، قطعات)
+   ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --background: 240 10% 3.9%;
+  /* ── سطوح (Surfaces) ──────────────────────────────────────────
+     چهار لایه عمق. هرچه عدد بالاتر، سطح «نزدیک‌تر» به کاربر.
+     مبنای حس سه‌بعدی: اختلاف روشنایی بین لایه‌ها، نه فقط سایه. */
+  --surface-0: 240 12% 4%; /* پس‌زمینهٔ اصلی #0a0a0c */
+  --surface-1: 240 10% 7%; /* کارت در حالت عادی */
+  --surface-2: 240 9% 10%; /* کارت در hover / پنل شناور */
+  --surface-3: 240 8% 14%; /* مودال، دراپ‌داون، منوی شناور */
+
+  --background: var(--surface-0);
   --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
+  --card: var(--surface-1);
   --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
+  --popover: var(--surface-3);
   --popover-foreground: 0 0% 98%;
-  --primary: 263.4 70% 50.4%; /* بنفش هوش مصنوعی */
-  --primary-foreground: 210 40% 98%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 263.4 70% 50.4%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 263.4 70% 50.4%;
-  --radius: 0.75rem;
-}
 
-@layer base {
-  body {
-    @apply bg-background text-foreground antialiased;
-    background-image: 
-      radial-gradient(circle at 50% 50%, rgba(109, 40, 217, 0.05) 0%, transparent 50%),
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 30px 30px, 30px 30px;
-  }
-}
+  /* ── برند: بنفش نئون ─────────────────────────────────────────
+     سه پله برای ساخت گرادیان و لبهٔ نوری در المان‌های سه‌بعدی */
+  --primary: 265 85% 58%; /* بنفش نئون اصلی */
+  --primary-bright: 268 95% 68%; /* لبهٔ نوری بالای المان */
+  --primary-deep: 262 75% 42%; /* سایه/ضلع پایین المان */
+  --primary-foreground: 0 0% 100%;
 
-/* افکت سه بعدی برای دکمه‌ها */
-.btn-3d {
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 0 0 rgba(109, 40, 217, 0.4);
-}
+  /* ── مکمل: فیروزه‌ای (برای تضاد در نمودار و بج‌ها) ───────────── */
+  --accent: 190 90% 55%;
+  --accent-foreground: 240 12% 4%;
 
-.btn-3d:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 0 rgba(109, 40, 217, 0.4);
-}
+  --secondary: 240 8% 14%;
+  --secondary-foreground: 0 0% 95%;
+  --muted: 240 7% 12%;
+  --muted-foreground: 240 5% 62%;
 
+  --destructive: 0 72% 55%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 240 8% 16%;
+  --input: 240 8% 13%;
+  --ring: 265 85% 58%;
+
+  /* ── وضعیت موجودی — واژگان بصری اختصاصی این صنعت ───────────── */
+  --stock-in: 150 65% 45%; /* موجود */
+  --stock-low: 38 92% 55%; /* موجودی محدود */
+  --stock-out: 240 5% 45%; /* ناموجود */
+  --stock-quote: 265 85% 58%; /* تماس بگیرید / استعلامی */
+
+  --radius: 0.875rem;
+
+  /* ── توکن‌های سه‌بعدی ─────────────────────────────────────────
+     عمق با «سایهٔ لایه‌ای + لبهٔ نوری داخلی» ساخته می‌شود
+     نه با چرخش زیاد. این کار خوانایی را حفظ می‌کند. */
+  --depth-1:
+    0 1px 2px hsl(0 0% 0% / 0.4), 0 2px 4px hsl(0 0% 0% / 0.3),
+    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  --depth-2:
+    0 2px 4px hsl(0 0% 0% / 0.45), 0 6px 12px hsl(0 0% 0% / 0.35),
+    inset 0 1px 0 hsl(0 0% 100% / 0.07);
+  --depth-3:
+    0 4px 8px hsl(0 0% 0% / 0.5), 0 12px 28px hsl(0 0% 0% / 0.45),
+    inset 0 1px 0 hsl(0 0% 100% / 0.09);
+  --depth-4:
+    0 8px 16px hsl(0 0% 0% / 0.55), 0 24px 48px hsl(0 0% 0% / 0.5),
+    inset 0 1px 0 hsl(0 0% 100% / 0.11);
+
+  /* هالهٔ نئون — فقط برای المان فعال/تاکیدی */
+  --glow-sm: 0 0 12px hsl(var(--primary) / 0.35);
+  --glow-md: 0 0 24px hsl(var(--primary) / 0.4);
+  --glow-lg: 0 0 48px hsl(var(--primary) / 0.45);
+
+  /* پرسپکتیو مشترک برای کل صحنه‌های سه‌بعدی */
+  --perspective: 1200px;
+  --tilt-max: 5deg; /* سقف زاویه — عمداً محافظه‌کارانه */
+}
 
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
+  --color-surface-0: hsl(var(--surface-0));
+  --color-surface-1: hsl(var(--surface-1));
+  --color-surface-2: hsl(var(--surface-2));
+  --color-surface-3: hsl(var(--surface-3));
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
   --color-primary: hsl(var(--primary));
+  --color-primary-bright: hsl(var(--primary-bright));
+  --color-primary-deep: hsl(var(--primary-deep));
   --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+
+  --color-stock-in: hsl(var(--stock-in));
+  --color-stock-low: hsl(var(--stock-low));
+  --color-stock-out: hsl(var(--stock-out));
+  --color-stock-quote: hsl(var(--stock-quote));
+
+  --font-sans: var(--font-vazir), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  --shadow-depth-1: var(--depth-1);
+  --shadow-depth-2: var(--depth-2);
+  --shadow-depth-3: var(--depth-3);
+  --shadow-depth-4: var(--depth-4);
+  --shadow-glow-sm: var(--glow-sm);
+  --shadow-glow-md: var(--glow-md);
+  --shadow-glow-lg: var(--glow-lg);
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    /* شبکهٔ ظریف پس‌زمینه — حس «فضای فنی» بدون شلوغی */
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.1), transparent),
+      linear-gradient(hsl(0 0% 100% / 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.015) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      36px 36px,
+      36px 36px;
+    background-attachment: fixed;
+  }
+
+  /* اعداد و شناسه‌های فنی همیشه چپ‌به‌راست — LBP-2900 نباید فارسی شود */
+  [dir='ltr'],
+  .tech-id {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  /* مسیر فوکوس واضح برای دسترس‌پذیری */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary-bright));
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+  }
+}
+
+@layer components {
+  /* ── صحنهٔ سه‌بعدی: روی والد اعمال می‌شود ───────────────────── */
+  .scene-3d {
+    perspective: var(--perspective);
+    perspective-origin: 50% 50%;
+  }
+
+  /* ── سطح سه‌بعدی پایه ──────────────────────────────────────── */
+  .surface-3d {
+    position: relative;
+    transform-style: preserve-3d;
+    background: linear-gradient(
+      160deg,
+      hsl(var(--surface-2)) 0%,
+      hsl(var(--surface-1)) 55%,
+      hsl(var(--surface-0)) 100%
+    );
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--depth-2);
+    transition:
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.35s ease;
+  }
+
+  /* لبهٔ نوری بالا — منبع نور مجازی از بالا */
+  .surface-3d::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.12), transparent 40%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .surface-3d:hover {
+    box-shadow: var(--depth-3), var(--glow-sm);
+    border-color: hsl(var(--primary) / 0.4);
+  }
+
+  /* ── دکمهٔ سه‌بعدی با ضلع فیزیکی ───────────────────────────── */
+  .btn-3d {
+    position: relative;
+    transform-style: preserve-3d;
+    transition:
+      transform 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .btn-3d:active:not(:disabled) {
+    transform: translateY(3px);
+  }
+
+  /* ── لایهٔ ارتفاع‌گرفته داخل کارت سه‌بعدی ────────────────────── */
+  .layer-lift {
+    transform: translateZ(28px);
+    transform-style: preserve-3d;
+  }
+
+  .layer-lift-sm {
+    transform: translateZ(14px);
+  }
+
+  /* ── درخشش عبوری (sheen) روی سطوح ─────────────────────────── */
+  .sheen {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, hsl(0 0% 100% / 0.07) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+  }
+
+  .sheen:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* ── نوار اسکرول هماهنگ با تم ─────────────────────────────── */
+  .scrollbar-neon::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .scrollbar-neon::-webkit-scrollbar-track {
+    background: hsl(var(--surface-1));
+    border-radius: 99px;
+  }
+  .scrollbar-neon::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 99px;
+  }
+  .scrollbar-neon::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.8);
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 18px hsl(var(--primary) / 0.55);
+  }
+
+  .bg-grid-fade {
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
+  }
+
+  /* شکستن کلمات طولانی فارسی در کارت‌های باریک */
+  .text-balance-fa {
+    text-wrap: balance;
+    word-break: break-word;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   احترام به ترجیح کاربر برای کاهش حرکت — الزام دسترس‌پذیری
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .surface-3d,
+  .layer-lift,
+  .layer-lift-sm {
+    transform: none !important;
   }
 }

@@ -3,9 +3,8 @@
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Upload, ArrowRight, Save, Image as ImageIcon } from 'lucide-react'
+import { Upload, ArrowRight, Save } from 'lucide-react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 
 export default function NewProductPage() {
   return (

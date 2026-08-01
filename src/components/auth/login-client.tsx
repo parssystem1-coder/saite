@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AuthCard } from '@/components/auth/auth-card'
-import { Chrome, Github, Mail, Lock } from 'lucide-react'
+import { Globe, GitBranch, Lock, Mail } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { useRouter } from 'next/navigation'
 
@@ -83,10 +83,10 @@ export function LoginClient() {
 
           <div className="grid grid-cols-2 gap-4">
             <Button variant="outline" type="button" className="h-12 border-white/5 bg-white/5 hover:bg-white/10">
-              <Chrome className="ml-2 h-4 w-4" /> Google
+              <Globe className="ml-2 h-4 w-4" /> Google
             </Button>
             <Button variant="outline" type="button" className="h-12 border-white/5 bg-white/5 hover:bg-white/10">
-              <Github className="ml-2 h-4 w-4" /> GitHub
+              <GitBranch className="ml-2 h-4 w-4" /> GitHub
             </Button>
           </div>
 

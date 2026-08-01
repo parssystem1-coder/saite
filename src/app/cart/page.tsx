@@ -6,17 +6,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useCartHydrated } from '@/hooks/use-has-hydrated'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalPrice } = useCartStore()
-  const [mounted, setMounted] = useState(false)
+  const hydrated = useCartHydrated()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) return null
+  if (!hydrated) return <CartSkeleton />
 
   const formattedTotal = new Intl.NumberFormat('fa-IR').format(totalPrice())
 
@@ -77,7 +74,7 @@ export default function CartPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg md:text-xl line-clamp-1">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">{item.category}</p>
+                      <p dir="ltr" className="text-sm font-mono text-muted-foreground">{item.model}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -158,6 +155,25 @@ export default function CartPage() {
               </Link>
             </div>
           </motion.div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
+/** اسکلتون سبد — جایگزین «return null» که باعث پرش صفحه می‌شد */
+function CartSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <div className="flex flex-col gap-12 lg:flex-row">
+        <div className="flex-1 space-y-6">
+          <Skeleton className="h-9 w-48" />
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full rounded-3xl" />
+          ))}
+        </div>
+        <aside className="w-full lg:w-96">
+          <Skeleton className="h-72 w-full rounded-3xl" />
         </aside>
       </div>
     </div>

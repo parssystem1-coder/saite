@@ -11,6 +11,7 @@ import {
   Activity
 } from 'lucide-react'
 import { FadeIn } from '@/components/ui/fade-in'
+import { cn } from '@/lib/utils'
 
 export function AdminClient() {
   const stats = [
@@ -120,8 +121,4 @@ export function AdminClient() {
       </div>
     </div>
   )
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(' ')
 }
