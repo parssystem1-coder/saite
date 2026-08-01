@@ -35,18 +35,22 @@ const MOCK_PRODUCTS: Product[] = [
 
 export default function Home() {
   return (
-    <div className="container mx-auto px-4 py-8 space-y-16">
+    <div className="container mx-auto px-4 py-8 space-y-24">
       {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center text-center space-y-6 py-20 bg-muted/30 rounded-3xl">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-primary">
-          به فروشگاه مدرن ما خوش آمدید
+      <section className="relative flex flex-col items-center justify-center text-center space-y-8 py-32 overflow-hidden">
+        <div className="absolute -top-24 -z-10 h-[500px] w-[500px] rounded-full bg-primary/20 blur-[120px]" />
+        
+        <h1 className="text-5xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40 leading-tight">
+          خرید آینده <br /> با هوش مصنوعی
         </h1>
-        <p className="text-xl text-muted-foreground max-w-[600px]">
-          تجربه خرید سریع، ایمن و لذت‌بخش با جدیدترین محصولات روز دنیا.
+        
+        <p className="text-xl text-muted-foreground max-w-[600px] leading-relaxed">
+          وارد دنیای جدیدی از خرید آنلاین شوید. جایی که تکنولوژی سه بعدی و هوش مصنوعی در خدمت شماست.
         </p>
-        <div className="flex gap-4">
-          <Button size="lg">مشاهده محصولات</Button>
-          <Button size="lg" variant="outline">تخفیف‌های ویژه</Button>
+        
+        <div className="flex flex-col sm:flex-row gap-6 pt-4">
+          <Button size="lg" className="px-12 text-lg">همین حالا شروع کنید</Button>
+          <Button size="lg" variant="outline" className="px-12 text-lg backdrop-blur-md">تکنولوژی ما</Button>
         </div>
       </section>
 
