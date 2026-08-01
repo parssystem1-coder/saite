@@ -29,6 +29,7 @@ import { formatNumber, formatWarranty } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 import { getRatingSummary, type Product } from '@/types/product'
 
 interface Props {
@@ -44,6 +45,8 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
   const addItem = useCartStore((s) => s.addItem)
   const toggleCompare = useCompareStore((s) => s.toggle)
   const compareItems = useCompareStore((s) => s.items)
+  const toggleWishlist = useWishlistStore((s) => s.toggle)
+  const wishlistItems = useWishlistStore((s) => s.items)
   const hydrated = useHasHydrated()
 
   const [activeImage, setActiveImage] = React.useState(0)
@@ -56,6 +59,7 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
   const warranty = formatWarranty(product.warrantyMonths)
   const rating = getRatingSummary(product)
   const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
+  const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
 
   const tabs: { key: TabKey; label: string; badge?: number }[] = [
     { key: 'specs', label: 'مشخصات فنی' },
@@ -216,7 +220,11 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
                 </Button>
               ) : (
                 <Button size="lg" variant="outline" className="flex-1" asChild>
-                  <Link href="/contact">درخواست استعلام قیمت</Link>
+                  <Link
+                    href={`/contact?subject=quote&model=${encodeURIComponent(product.model)}`}
+                  >
+                    درخواست استعلام قیمت
+                  </Link>
                 </Button>
               )}
 
@@ -230,8 +238,14 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
               >
                 {inCompare ? <Check /> : <GitCompareArrows />}
               </Button>
-              <Button size="icon" variant="secondary" aria-label="افزودن به علاقه‌مندی‌ها">
-                <Heart />
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={() => toggleWishlist(product)}
+                aria-pressed={inWishlist}
+                aria-label={inWishlist ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'}
+              >
+                <Heart className={inWishlist ? 'fill-destructive text-destructive' : undefined} />
               </Button>
             </div>
 

@@ -1,0 +1,103 @@
+import { z } from 'zod'
+
+/**
+ * Schemaهای اعتبارسنجی — منبع واحد حقیقت.
+ *
+ * همین تعریف‌ها هم در فرم سمت کلاینت (از طریق React Hook Form) و هم
+ * بعداً در Server Action سمت سرور استفاده می‌شوند. یک تعریف، اعتبارسنجی
+ * در هر دو سو، به‌همراه استنتاج خودکار تایپ.
+ *
+ * ⚠️ قاعدهٔ امنیتی: اعتبارسنجی کلاینت فقط برای تجربهٔ کاربری است.
+ * هنگام اتصال بک‌اند، همین schemaها باید روی سرور دوباره اجرا شوند.
+ */
+
+/** موبایل ایران: با ۰۹ شروع می‌شود و ۱۱ رقم است */
+const iranMobile = z
+  .string()
+  .trim()
+  .regex(/^09\d{9}$/, 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد')
+
+const persianName = z
+  .string()
+  .trim()
+  .min(3, 'نام باید حداقل ۳ کاراکتر باشد')
+  .max(60, 'نام بیش از حد طولانی است')
+
+const email = z
+  .string()
+  .trim()
+  .min(1, 'پست الکترونیک الزامی است')
+  .email('قالب پست الکترونیک معتبر نیست')
+
+const password = z
+  .string()
+  .min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد')
+  .max(72, 'رمز عبور بیش از حد طولانی است')
+
+// ── احراز هویت ──────────────────────────────────────────
+export const loginSchema = z.object({
+  email,
+  password: z.string().min(1, 'رمز عبور الزامی است'),
+})
+export type LoginInput = z.infer<typeof loginSchema>
+
+export const registerSchema = z
+  .object({
+    name: persianName,
+    email,
+    phone: iranMobile,
+    password,
+    confirmPassword: z.string().min(1, 'تکرار رمز عبور الزامی است'),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'رمز عبور و تکرار آن یکسان نیستند',
+    path: ['confirmPassword'],
+  })
+export type RegisterInput = z.infer<typeof registerSchema>
+
+// ── تماس / استعلام قیمت / درخواست تعمیر ─────────────────
+export const CONTACT_SUBJECTS = ['consult', 'quote', 'repair', 'other'] as const
+export type ContactSubject = (typeof CONTACT_SUBJECTS)[number]
+
+export const contactSchema = z.object({
+  subject: z.enum(CONTACT_SUBJECTS),
+  name: persianName,
+  phone: iranMobile,
+  email: z.union([z.literal(''), email]).optional(),
+  deviceModel: z.string().trim().max(60, 'مدل دستگاه بیش از حد طولانی است').optional(),
+  message: z
+    .string()
+    .trim()
+    .min(10, 'توضیحات باید حداقل ۱۰ کاراکتر باشد')
+    .max(1000, 'توضیحات نباید بیش از ۱۰۰۰ کاراکتر باشد'),
+})
+export type ContactInput = z.infer<typeof contactSchema>
+
+// ── تسویه‌حساب ──────────────────────────────────────────
+export const checkoutSchema = z.object({
+  receiverName: persianName,
+  phone: iranMobile,
+  province: z.string().trim().min(2, 'استان را وارد کنید'),
+  city: z.string().trim().min(2, 'شهر را وارد کنید'),
+  address: z.string().trim().min(10, 'آدرس باید کامل و دقیق باشد'),
+  postalCode: z
+    .string()
+    .trim()
+    .regex(/^\d{10}$/, 'کد پستی باید دقیقاً ۱۰ رقم باشد'),
+  note: z.string().trim().max(500).optional(),
+})
+export type CheckoutInput = z.infer<typeof checkoutSchema>
+
+// ── فرم ادمین ───────────────────────────────────────────
+export const productFormSchema = z.object({
+  name: z.string().trim().min(5, 'نام محصول باید حداقل ۵ کاراکتر باشد'),
+  brand: z.string().min(1, 'برند را انتخاب کنید'),
+  model: z.string().trim().min(2, 'مدل الزامی است'),
+  category: z.string().min(1, 'دسته‌بندی را انتخاب کنید'),
+  price: z.coerce
+    .number({ message: 'قیمت باید عدد باشد' })
+    .int('قیمت باید عدد صحیح باشد')
+    .positive('قیمت باید بزرگ‌تر از صفر باشد'),
+  description: z.string().trim().max(2000).optional(),
+})
+export type ProductFormInput = z.infer<typeof productFormSchema>

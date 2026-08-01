@@ -14,6 +14,7 @@ const COMPANY_LINKS = [
   { href: '/services', label: 'خدمات' },
   { href: '/blog', label: 'مجلهٔ آموزشی' },
   { href: '/terms', label: 'قوانین و مقررات' },
+  { href: '/privacy', label: 'حریم خصوصی' },
 ]
 
 /** Server Component — بدون 'use client' تا JS اضافه به کلاینت ارسال نشود */

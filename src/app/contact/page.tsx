@@ -1,6 +1,8 @@
 import { Clock, Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { ContactForm } from '@/components/contact/contact-form'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { SITE } from '@/lib/constants'
 
@@ -78,8 +80,11 @@ export default function ContactPage() {
           </div>
         </div>
 
-        {/* فرم */}
-        <ContactForm />
+        {/* فرم — ContactForm از useSearchParams استفاده می‌کند و
+            برای پیش‌رندر استاتیک نیازمند مرز Suspense است */}
+        <Suspense fallback={<Skeleton className="h-[42rem] w-full rounded-2xl" />}>
+          <ContactForm />
+        </Suspense>
       </div>
     </div>
   )

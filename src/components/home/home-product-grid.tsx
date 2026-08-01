@@ -3,6 +3,7 @@
 import { ProductCard } from '@/components/ui/product-card'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 import type { Product } from '@/types/product'
 
 /**
@@ -15,6 +16,7 @@ import type { Product } from '@/types/product'
 export function HomeProductGrid({ products }: { products: Product[] }) {
   const addItem = useCartStore((s) => s.addItem)
   const toggleCompare = useCompareStore((s) => s.toggle)
+  const toggleWishlist = useWishlistStore((s) => s.toggle)
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -24,6 +26,7 @@ export function HomeProductGrid({ products }: { products: Product[] }) {
           product={product}
           onAddToCart={() => addItem(product)}
           onCompare={() => toggleCompare(product)}
+          onWishlist={() => toggleWishlist(product)}
         />
       ))}
     </div>

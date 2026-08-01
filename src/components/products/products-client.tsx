@@ -25,12 +25,14 @@ import { applyFilters, countActiveFilters } from '@/lib/product-filters'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 
 const PER_PAGE = 9
 
 export function ProductsClient() {
   const addItem = useCartStore((s) => s.addItem)
   const toggleCompare = useCompareStore((s) => s.toggle)
+  const toggleWishlist = useWishlistStore((s) => s.toggle)
   const { filters, setParam, resetFilters, page, setPage } = useProductFilters()
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false)
 
@@ -266,6 +268,7 @@ export function ProductsClient() {
                     product={p}
                     onAddToCart={() => addItem(p)}
                     onCompare={() => toggleCompare(p)}
+                    onWishlist={() => toggleWishlist(p)}
                   />
                 ))}
               </div>

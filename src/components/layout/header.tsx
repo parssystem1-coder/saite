@@ -1,6 +1,17 @@
 'use client'
 
-import { Clock, LayoutDashboard, LogOut, Menu, Phone, Search, ShoppingCart, User, X } from 'lucide-react'
+import {
+  Clock,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Phone,
+  Search,
+  ShoppingCart,
+  User,
+  X,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -13,6 +24,7 @@ import { formatNumber } from '@/lib/format'
 import { useCartHydrated, useHasHydrated } from '@/hooks/use-has-hydrated'
 import { useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 
 export function Header() {
   const router = useRouter()
@@ -22,6 +34,7 @@ export function Header() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const logout = useAuthStore((s) => s.logout)
   const itemCount = useCartStore((s) => s.itemCount())
+  const wishlistCount = useWishlistStore((s) => s.items.length)
 
   const [query, setQuery] = React.useState('')
   const [mobileOpen, setMobileOpen] = React.useState(false)
@@ -102,6 +115,17 @@ export function Header() {
           </form>
 
           <nav className="ms-auto flex items-center gap-1.5">
+            <Button size="icon" variant="ghost" asChild className="relative hidden sm:inline-flex">
+              <Link href="/wishlist" aria-label={`علاقه‌مندی‌ها، ${wishlistCount} کالا`}>
+                <Heart />
+                {hydrated && wishlistCount > 0 && (
+                  <span className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                    {formatNumber(wishlistCount)}
+                  </span>
+                )}
+              </Link>
+            </Button>
+
             <Button size="icon" variant="ghost" asChild className="relative">
               <Link href="/cart" aria-label={`سبد خرید، ${itemCount} کالا`}>
                 <ShoppingCart />
@@ -125,6 +149,12 @@ export function Header() {
                   <Menu3DItem>
                     <LayoutDashboard className="size-4 text-primary" />
                     پنل کاربری
+                  </Menu3DItem>
+                </Link>
+                <Link href="/wishlist">
+                  <Menu3DItem>
+                    <Heart className="size-4 text-primary" />
+                    علاقه‌مندی‌ها
                   </Menu3DItem>
                 </Link>
                 <div className="my-1 h-px bg-border" />
@@ -211,7 +241,10 @@ export function Header() {
 
             <nav className="grid gap-2 border-t border-border pt-4">
               {[
+                ['/wishlist', 'علاقه‌مندی‌ها'],
+                ['/compare', 'مقایسه'],
                 ['/services', 'خدمات'],
+                ['/blog', 'مجلهٔ آموزشی'],
                 ['/about', 'دربارهٔ ما'],
                 ['/contact', 'تماس با ما'],
               ].map(([href, label]) => (

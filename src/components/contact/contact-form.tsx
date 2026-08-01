@@ -1,56 +1,67 @@
 'use client'
 
-import { CheckCircle2, Send } from 'lucide-react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { CheckCircle2, Loader2, Send } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import * as React from 'react'
+import { useForm, useWatch } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
+import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
+import { CONTACT_SUBJECTS, contactSchema, type ContactInput, type ContactSubject } from '@/lib/schemas'
 import { cn } from '@/lib/utils'
 
-type Subject = 'consult' | 'quote' | 'repair' | 'other'
-
-const SUBJECTS: { value: Subject; label: string }[] = [
-  { value: 'consult', label: 'مشاورهٔ خرید' },
-  { value: 'quote', label: 'استعلام قیمت' },
-  { value: 'repair', label: 'درخواست تعمیر' },
-  { value: 'other', label: 'سایر موارد' },
-]
-
-interface Errors {
-  name?: string
-  phone?: string
-  message?: string
+const SUBJECT_LABELS: Record<ContactSubject, string> = {
+  consult: 'مشاورهٔ خرید',
+  quote: 'استعلام قیمت',
+  repair: 'درخواست تعمیر',
+  other: 'سایر موارد',
 }
 
 /**
- * فرم تماس/استعلام قیمت.
+ * فرم تماس / استعلام قیمت / درخواست تعمیر.
  *
- * اعتبارسنجی فعلاً دستی و سبک است. در فاز بعد با Zod + React Hook Form
- * جایگزین می‌شود تا همان schema در Server Action هم بازاستفاده شود.
- * ارسال واقعی نیاز به بک‌اند دارد؛ اینجا فقط وضعیت موفقیت شبیه‌سازی می‌شود.
+ * اعتبارسنجی با Zod انجام می‌شود و همان schema بعداً در Server Action
+ * بازاستفاده خواهد شد.
+ *
+ * موضوع و مدل دستگاه از query string خوانده می‌شوند تا دکمهٔ
+ * «استعلام قیمت» در صفحهٔ محصول، فرم را از پیش پر کند.
  */
 export function ContactForm() {
-  const [subject, setSubject] = React.useState<Subject>('consult')
-  const [name, setName] = React.useState('')
-  const [phone, setPhone] = React.useState('')
-  const [deviceModel, setDeviceModel] = React.useState('')
-  const [message, setMessage] = React.useState('')
-  const [errors, setErrors] = React.useState<Errors>({})
+  const params = useSearchParams()
   const [sent, setSent] = React.useState(false)
 
-  const validate = (): Errors => {
-    const e: Errors = {}
-    if (name.trim().length < 3) e.name = 'نام باید حداقل ۳ کاراکتر باشد'
-    if (!/^09\d{9}$/.test(phone.trim()))
-      e.phone = 'شمارهٔ موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد'
-    if (message.trim().length < 10) e.message = 'توضیحات باید حداقل ۱۰ کاراکتر باشد'
-    return e
-  }
+  const subjectParam = params.get('subject')
+  const defaultSubject: ContactSubject = CONTACT_SUBJECTS.includes(subjectParam as ContactSubject)
+    ? (subjectParam as ContactSubject)
+    : 'consult'
 
-  const handleSubmit = (ev: React.FormEvent) => {
-    ev.preventDefault()
-    const e = validate()
-    setErrors(e)
-    if (Object.keys(e).length > 0) return
+  const {
+    control,
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ContactInput>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      subject: defaultSubject,
+      name: '',
+      phone: '',
+      email: '',
+      deviceModel: params.get('model') ?? '',
+      message: '',
+    },
+  })
+
+  // useWatch به‌جای watch: قابل memoize شدن است و با React Compiler سازگار
+  const subject = useWatch({ control, name: 'subject' })
+
+  const onSubmit = async (data: ContactInput) => {
+    // شبیه‌سازی ارسال — در فاز بک‌اند به Server Action وصل می‌شود
+    await new Promise((r) => setTimeout(r, 600))
+    console.info('contact request', data)
     setSent(true)
   }
 
@@ -68,11 +79,8 @@ export function ContactForm() {
           variant="outline"
           className="mt-6"
           onClick={() => {
+            reset()
             setSent(false)
-            setName('')
-            setPhone('')
-            setDeviceModel('')
-            setMessage('')
           }}
         >
           ارسال درخواست دیگر
@@ -82,117 +90,112 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="surface-3d rounded-2xl p-6 md:p-8">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+      className="surface-3d rounded-2xl p-6 md:p-8"
+    >
       <h2 className="text-lg font-black text-foreground">فرم درخواست</h2>
       <p className="mt-1.5 text-sm text-muted-foreground">
         فرم را پر کنید تا در سریع‌ترین زمان با شما تماس بگیریم.
       </p>
 
-      {/* موضوع */}
       <fieldset className="mt-6">
         <legend className="mb-2.5 text-xs font-bold text-muted-foreground">موضوع درخواست</legend>
         <div className="flex flex-wrap gap-2">
-          {SUBJECTS.map((s) => (
+          {CONTACT_SUBJECTS.map((s) => (
             <button
-              key={s.value}
+              key={s}
               type="button"
-              onClick={() => setSubject(s.value)}
-              aria-pressed={subject === s.value}
+              onClick={() => setValue('subject', s, { shouldValidate: true })}
+              aria-pressed={subject === s}
               className={cn(
                 'rounded-xl border px-3.5 py-2 text-xs font-bold transition-all',
-                subject === s.value
+                subject === s
                   ? 'border-primary/50 bg-primary/15 text-primary'
                   : 'border-border bg-surface-0/50 text-muted-foreground hover:border-primary/30 hover:text-foreground'
               )}
             >
-              {s.label}
+              {SUBJECT_LABELS[s]}
             </button>
           ))}
         </div>
       </fieldset>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="نام و نام خانوادگی" error={errors.name}>
+        <FormField id="name" label="نام و نام خانوادگی" required error={errors.name?.message}>
           <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            {...register('name')}
+            {...fieldAria('name', !!errors.name)}
             placeholder="نام کامل"
-            aria-invalid={!!errors.name}
           />
-        </Field>
+        </FormField>
 
-        <Field id="phone" label="شمارهٔ تماس" error={errors.phone}>
+        <FormField id="phone" label="شمارهٔ تماس" required error={errors.phone?.message}>
           <Input
-            id="phone"
+            {...register('phone')}
+            {...fieldAria('phone', !!errors.phone)}
             dir="ltr"
             inputMode="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
             placeholder="09123456789"
             className="text-right font-mono"
-            aria-invalid={!!errors.phone}
           />
-        </Field>
+        </FormField>
       </div>
 
-      <div className="mt-5">
-        <Field id="device" label="مدل دستگاه (اختیاری)">
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+        <FormField id="email" label="پست الکترونیک (اختیاری)" error={errors.email?.message}>
           <Input
-            id="device"
+            {...register('email')}
+            {...fieldAria('email', !!errors.email)}
             dir="ltr"
-            value={deviceModel}
-            onChange={(e) => setDeviceModel(e.target.value)}
+            type="email"
+            placeholder="name@example.com"
+            className="text-right font-mono"
+          />
+        </FormField>
+
+        <FormField
+          id="deviceModel"
+          label="مدل دستگاه (اختیاری)"
+          error={errors.deviceModel?.message}
+          hint="مثلاً Canon LBP-2900"
+        >
+          <Input
+            {...register('deviceModel')}
+            {...fieldAria('deviceModel', !!errors.deviceModel, true)}
+            dir="ltr"
             placeholder="Canon LBP-2900"
             className="text-right font-mono"
           />
-        </Field>
+        </FormField>
       </div>
 
       <div className="mt-5">
-        <Field id="message" label="توضیحات" error={errors.message}>
+        <FormField id="message" label="توضیحات" required error={errors.message?.message}>
           <textarea
-            id="message"
+            {...register('message')}
+            {...fieldAria('message', !!errors.message)}
             rows={5}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
             placeholder="نیاز خود را شرح دهید…"
-            aria-invalid={!!errors.message}
             className="w-full rounded-xl border border-border bg-input p-3.5 text-sm shadow-[inset_0_2px_4px_hsl(0_0%_0%/0.35)] outline-none placeholder:text-muted-foreground/70 focus-visible:border-primary/60 focus-visible:ring-2 focus-visible:ring-primary/25"
           />
-        </Field>
+        </FormField>
       </div>
 
-      <Button type="submit" size="lg" className="mt-7 w-full">
-        <Send />
-        ارسال درخواست
+      <Button type="submit" size="lg" className="mt-7 w-full" disabled={isSubmitting}>
+        {isSubmitting ? (
+          <>
+            <Loader2 className="animate-spin" />
+            در حال ارسال…
+          </>
+        ) : (
+          <>
+            <Send />
+            ارسال درخواست
+          </>
+        )}
       </Button>
     </form>
-  )
-}
-
-function Field({
-  id,
-  label,
-  error,
-  children,
-}: {
-  id: string
-  label: string
-  error?: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-2">
-      <label htmlFor={id} className="text-xs font-bold text-muted-foreground">
-        {label}
-      </label>
-      {children}
-      {error && (
-        <p role="alert" className="text-xs text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   )
 }

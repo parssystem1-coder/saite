@@ -1,98 +1,109 @@
 'use client'
 
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { GitBranch, Globe, Loader2, Lock, Mail } from 'lucide-react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useForm } from 'react-hook-form'
 import { AuthCard } from '@/components/auth/auth-card'
-import { Globe, GitBranch, Lock, Mail } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { fieldAria, FormField } from '@/components/ui/form-field'
+import { Input } from '@/components/ui/input'
+import { loginSchema, type LoginInput } from '@/lib/schemas'
 import { useAuthStore } from '@/store/auth-store'
-import { useRouter } from 'next/navigation'
 
 export function LoginClient() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const { login } = useAuthStore()
+  const login = useAuthStore((s) => s.login)
   const router = useRouter()
+  const params = useSearchParams()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // شبیه‌سازی ورود موفق
-    login({
-      id: '1',
-      name: 'کاربر تست',
-      email: email,
-      role: 'user'
-    })
-    router.push('/dashboard')
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
+
+  const onSubmit = async (data: LoginInput) => {
+    // ⚠️ ورود شبیه‌سازی‌شده. رمز عبور بررسی نمی‌شود چون بک‌اندی وجود ندارد.
+    // در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود.
+    await new Promise((r) => setTimeout(r, 400))
+    login({ id: '1', name: 'کاربر آزمایشی', email: data.email, role: 'user' })
+    router.push(params.get('redirect') ?? '/dashboard')
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <AuthCard 
-        title="ورود به سیستم" 
-        description="به دنیای خرید هوشمند خوش آمدید. لطفاً اطلاعات خود را وارد کنید."
+    <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      <AuthCard
+        title="ورود به حساب"
+        description="برای پیگیری سفارش‌ها و مشاهدهٔ علاقه‌مندی‌ها وارد شوید."
       >
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">پست الکترونیک</label>
-            <div className="relative group">
-              <Mail className="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                type="email" 
-                placeholder="email@example.com" 
-                className="pr-10 bg-white/5 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+          <FormField id="email" label="پست الکترونیک" required error={errors.email?.message}>
+            <div className="relative">
+              <Mail className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('email')}
+                {...fieldAria('email', !!errors.email)}
+                type="email"
+                dir="ltr"
+                autoComplete="email"
+                placeholder="name@example.com"
+                className="pr-10 text-right font-mono"
               />
             </div>
-          </div>
+          </FormField>
 
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">رمز عبور</label>
-              <Link href="#" className="text-xs text-primary hover:underline font-bold">فراموشی رمز؟</Link>
-            </div>
-            <div className="relative group">
-              <Lock className="absolute right-3 top-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input 
-                type="password" 
-                placeholder="••••••••" 
-                className="pr-10 bg-white/5 border-white/10 h-12 rounded-xl focus:border-primary/50 transition-all"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+          <FormField id="password" label="رمز عبور" required error={errors.password?.message}>
+            <div className="relative">
+              <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                {...register('password')}
+                {...fieldAria('password', !!errors.password)}
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                className="pr-10"
               />
             </div>
-          </div>
+          </FormField>
 
-          <Button type="submit" className="w-full h-12 text-lg">
-            ورود هوشمند
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="animate-spin" />
+                در حال ورود…
+              </>
+            ) : (
+              'ورود'
+            )}
           </Button>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-white/10"></span>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0d0d0f] px-2 text-muted-foreground font-bold">یا ورود با</span>
-            </div>
+          <div className="relative py-2">
+            <span className="absolute inset-x-0 top-1/2 h-px bg-border" />
+            <span className="relative mx-auto block w-fit bg-[#0d0d0f] px-3 text-[11px] font-bold text-muted-foreground">
+              یا ورود با
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" type="button" className="h-12 border-white/5 bg-white/5 hover:bg-white/10">
-              <Globe className="ml-2 h-4 w-4" /> Google
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" variant="secondary" disabled>
+              <Globe />
+              Google
             </Button>
-            <Button variant="outline" type="button" className="h-12 border-white/5 bg-white/5 hover:bg-white/10">
-              <GitBranch className="ml-2 h-4 w-4" /> GitHub
+            <Button type="button" variant="secondary" disabled>
+              <GitBranch />
+              GitHub
             </Button>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground mt-8">
+          <p className="text-center text-sm text-muted-foreground">
             حساب کاربری ندارید؟{' '}
-            <Link href="/register" className="text-primary font-bold hover:underline italic">ثبت‌نام کنید</Link>
+            <Link href="/register" className="font-bold text-primary hover:underline">
+              ثبت‌نام کنید
+            </Link>
           </p>
         </form>
       </AuthCard>

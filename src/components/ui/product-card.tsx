@@ -12,6 +12,7 @@ import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { BRANDS, CONDITION_LABELS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 import type { ProductCardData } from '@/types/product'
 
 interface ProductCardProps {
@@ -45,7 +46,9 @@ export function ProductCard({
   // وضعیت مقایسه فقط پس از hydration خوانده می‌شود تا HTML سرور و کلاینت یکی بماند
   const hydrated = useHasHydrated()
   const compareItems = useCompareStore((s) => s.items)
+  const wishlistItems = useWishlistStore((s) => s.items)
   const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
+  const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
 
   return (
     <Card3D className={cn('h-full', className)}>
@@ -158,10 +161,15 @@ export function ProductCard({
               size="icon-sm"
               variant="secondary"
               onClick={() => onWishlist?.(product)}
-              aria-label={`افزودن ${product.name} به علاقه‌مندی‌ها`}
-              title="علاقه‌مندی"
+              aria-pressed={inWishlist}
+              aria-label={
+                inWishlist
+                  ? `حذف ${product.name} از علاقه‌مندی‌ها`
+                  : `افزودن ${product.name} به علاقه‌مندی‌ها`
+              }
+              title={inWishlist ? 'در علاقه‌مندی‌ها' : 'علاقه‌مندی'}
             >
-              <Heart />
+              <Heart className={inWishlist ? 'fill-destructive text-destructive' : undefined} />
             </Button>
           </div>
         </div>
