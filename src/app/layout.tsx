@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { CompareBar } from '@/components/compare/compare-bar'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import Providers from '@/components/providers'
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <CompareBar />
         </Providers>
       </body>
     </html>

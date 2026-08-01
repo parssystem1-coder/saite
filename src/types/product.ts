@@ -110,10 +110,43 @@ export interface Product {
   /** برای دستگاه: شناسهٔ مصرفی‌های سازگار */
   consumables?: string[]
 
+  // ── نظرات و پرسش‌های پرتکرار ──────────────────────────
+  reviews?: Review[]
+  faqs?: Faq[]
+
   // ── متادیتا ───────────────────────────────────────────
   isFeatured?: boolean
   isBestSeller?: boolean
   createdAt: string
+}
+
+export interface Review {
+  id: string
+  author: string
+  /** امتیاز ۱ تا ۵ */
+  rating: number
+  title?: string
+  body: string
+  createdAt: string
+  /** خرید تأییدشده — نشانگر اعتماد */
+  verifiedPurchase?: boolean
+}
+
+export interface Faq {
+  question: string
+  answer: string
+}
+
+/** میانگین امتیاز و تعداد نظرات — برای نمایش در کارت و اسکیما */
+export function getRatingSummary(product: Product): { average: number; count: number } | null {
+  const reviews = product.reviews
+  if (!reviews || reviews.length === 0) return null
+
+  const total = reviews.reduce((sum, r) => sum + r.rating, 0)
+  return {
+    average: Math.round((total / reviews.length) * 10) / 10,
+    count: reviews.length,
+  }
 }
 
 /** خروجی سبک‌شده برای کارت محصول — از ارسال specs سنگین جلوگیری می‌کند */

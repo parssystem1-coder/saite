@@ -72,3 +72,27 @@ export async function getRelatedProducts(product: Product, limit = 4): Promise<P
     limit
   )
 }
+
+/**
+ * جهت معکوس موتور سازگاری: «این دستگاه چه مصرفی‌ای می‌خورد؟»
+ *
+ * getCompatibleItems از مصرفی به دستگاه می‌رسد؛ این تابع برعکس عمل
+ * می‌کند و روی صفحهٔ دستگاه، تونر و قطعات آن را پیشنهاد می‌دهد.
+ * این مسیر، فروش مکمل (cross-sell) اصلی فروشگاه است.
+ */
+export async function getConsumablesForDevice(product: Product): Promise<Product[]> {
+  const ids = product.consumables
+  if (!ids || ids.length === 0) return []
+
+  // ترتیب تعریف‌شده در consumables حفظ می‌شود
+  return ids
+    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p))
+}
+
+/** محصولات مورد نیاز صفحهٔ مقایسه */
+export async function getProductsByIds(ids: string[]): Promise<Product[]> {
+  return ids
+    .map((id) => PRODUCTS.find((p) => p.id === id))
+    .filter((p): p is Product => Boolean(p))
+}

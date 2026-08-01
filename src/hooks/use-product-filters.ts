@@ -65,5 +65,25 @@ export function useProductFilters() {
     router.push(pathname, { scroll: false })
   }, [pathname, router])
 
-  return { filters, setParam, resetFilters }
+  /** شمارهٔ صفحه هم در URL نگه داشته می‌شود تا اشتراک‌گذاری و Back کار کند */
+  const page = React.useMemo(() => {
+    const raw = Number(searchParams.get('page'))
+    return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 1
+  }, [searchParams])
+
+  const setPage = React.useCallback(
+    (next: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (next <= 1) params.delete('page')
+      else params.set('page', String(next))
+
+      const qs = params.toString()
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+      // برخلاف تغییر فیلتر، اینجا کاربر انتظار دارد به ابتدای فهرست برود
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+    [pathname, router, searchParams]
+  )
+
+  return { filters, setParam, resetFilters, page, setPage }
 }

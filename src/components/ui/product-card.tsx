@@ -1,6 +1,6 @@
 'use client'
 
-import { GitCompareArrows, Heart, ShoppingCart } from 'lucide-react'
+import { Check, GitCompareArrows, Heart, ShoppingCart } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,8 +8,10 @@ import { Card3D } from '@/components/ui/card-3d'
 import { PriceDisplay } from '@/components/ui/price-display'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
+import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { BRANDS, CONDITION_LABELS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { useCompareStore } from '@/store/compare-store'
 import type { ProductCardData } from '@/types/product'
 
 interface ProductCardProps {
@@ -39,6 +41,11 @@ export function ProductCard({
   const brand = BRANDS.find((b) => b.slug === product.brand)
   const isBuyable = product.priceType === 'fixed' && product.stockStatus !== 'out_of_stock'
   const href = `/products/${product.slug}`
+
+  // وضعیت مقایسه فقط پس از hydration خوانده می‌شود تا HTML سرور و کلاینت یکی بماند
+  const hydrated = useHasHydrated()
+  const compareItems = useCompareStore((s) => s.items)
+  const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
 
   return (
     <Card3D className={cn('h-full', className)}>
@@ -135,12 +142,17 @@ export function ProductCard({
 
             <Button
               size="icon-sm"
-              variant="secondary"
+              variant={inCompare ? 'default' : 'secondary'}
               onClick={() => onCompare?.(product)}
-              aria-label={`افزودن ${product.name} به مقایسه`}
-              title="مقایسه"
+              aria-pressed={inCompare}
+              aria-label={
+                inCompare
+                  ? `حذف ${product.name} از مقایسه`
+                  : `افزودن ${product.name} به مقایسه`
+              }
+              title={inCompare ? 'در حال مقایسه' : 'مقایسه'}
             >
-              <GitCompareArrows />
+              {inCompare ? <Check /> : <GitCompareArrows />}
             </Button>
             <Button
               size="icon-sm"

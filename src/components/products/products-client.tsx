@@ -24,10 +24,14 @@ import { formatNumber } from '@/lib/format'
 import { applyFilters, countActiveFilters } from '@/lib/product-filters'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
+import { useCompareStore } from '@/store/compare-store'
+
+const PER_PAGE = 9
 
 export function ProductsClient() {
   const addItem = useCartStore((s) => s.addItem)
-  const { filters, setParam, resetFilters } = useProductFilters()
+  const toggleCompare = useCompareStore((s) => s.toggle)
+  const { filters, setParam, resetFilters, page, setPage } = useProductFilters()
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false)
 
 
@@ -40,6 +44,10 @@ export function ProductsClient() {
     () => (products ? applyFilters(products, filters) : []),
     [products, filters]
   )
+
+  const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE))
+  const safePage = Math.min(page, totalPages)
+  const pageItems = visible.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
 
   const activeCount = countActiveFilters(filters)
   const activeCategory = CATEGORIES.find((c) => c.slug === filters.category)
@@ -250,11 +258,22 @@ export function ProductsClient() {
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {visible.map((p) => (
-                <ProductCard key={p.id} product={p} onAddToCart={() => addItem(p)} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {pageItems.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onAddToCart={() => addItem(p)}
+                    onCompare={() => toggleCompare(p)}
+                  />
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
+              )}
+            </>
           )}
         </main>
       </div>
@@ -401,5 +420,60 @@ function SearchField({
         />
       </div>
     </form>
+  )
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number
+  totalPages: number
+  onChange: (p: number) => void
+}) {
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1)
+
+  return (
+    <nav aria-label="صفحه‌بندی نتایج" className="mt-10 flex items-center justify-center gap-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onChange(page - 1)}
+        disabled={page <= 1}
+      >
+        قبلی
+      </Button>
+
+      <ul className="flex items-center gap-1.5">
+        {pages.map((p) => (
+          <li key={p}>
+            <button
+              type="button"
+              onClick={() => onChange(p)}
+              aria-current={p === page ? 'page' : undefined}
+              aria-label={`صفحهٔ ${formatNumber(p)}`}
+              className={cn(
+                'size-9 rounded-lg text-sm font-bold transition-all',
+                p === page
+                  ? 'bg-primary text-primary-foreground shadow-glow-sm'
+                  : 'border border-border bg-surface-1 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+              )}
+            >
+              {formatNumber(p)}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => onChange(page + 1)}
+        disabled={page >= totalPages}
+      >
+        بعدی
+      </Button>
+    </nav>
   )
 }
