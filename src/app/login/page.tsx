@@ -12,9 +12,19 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  const { login } = useAuthStore()
+  const router = useRouter()
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Login attempt:', { email, password })
+    // شبیه‌سازی ورود موفق
+    login({
+      id: '1',
+      name: 'کاربر تست',
+      email: email,
+      role: 'user'
+    })
+    router.push('/dashboard')
   }
 
   return (
