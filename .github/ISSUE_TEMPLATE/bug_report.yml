@@ -1,0 +1,87 @@
+name: گزارش باگ
+description: یک مشکل را گزارش دهید تا بتوانیم آن را رفع کنیم
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ممنون که وقت می‌گذارید و باگ را گزارش می‌کنید! 🙏
+        لطفاً تا جای ممکن جزئیات کامل ارائه دهید.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: توضیح مشکل
+      description: مشکل چیست؟ چه اتفاقی افتاد؟
+      placeholder: توضیح واضح و مختصر از مشکل...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: مراحل بازتولید
+      description: مراحل انجام کار برای رسیدن به مشکل
+      placeholder: |
+        ۱. برو به صفحهٔ '...'
+        ۲. روی '...' کلیک کن
+        ۳. اسکرول کن تا '...'
+        ۴. خطا ظاهر می‌شود
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: رفتار مورد انتظار
+      description: چه اتفاقی باید می‌افتاد؟
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: رفتار واقعی
+      description: چه اتفاقی واقعاً افتاد؟
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: مرورگر
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - سایر
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: دستگاه
+      description: نوع دستگاه (Desktop / Mobile / Tablet)
+      placeholder: مثلاً Desktop - Chrome 120
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: اسکرین‌شات یا ویدیو
+      description: اگر ممکن است، اسکرین‌شات یا ویدیو از مشکل اضافه کنید
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: اطلاعات بیشتر
+      description: هر اطلاعات دیگری که ممکن است کمک‌کننده باشد
+    validations:
+      required: false
