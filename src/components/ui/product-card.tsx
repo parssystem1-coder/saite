@@ -7,12 +7,14 @@ import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Product } from '@/types/product'
+import { useCartStore } from '@/store/cart-store'
 
 interface ProductCardProps {
   product: Product
 }
 
 export function ProductCard({ product }: ProductCardProps) {
+  const addItem = useCartStore((state) => state.addItem)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
 
@@ -86,7 +88,14 @@ export function ProductCard({ product }: ProductCardProps) {
               </span>
               <span className="text-xl font-black text-primary">{formattedPrice} تومان</span>
             </div>
-            <Button size="icon" className="rounded-full shadow-lg">
+            <Button 
+              size="icon" 
+              className="rounded-full shadow-lg"
+              onClick={(e) => {
+                e.preventDefault()
+                addItem(product)
+              }}
+            >
               <ShoppingCart className="h-5 w-5" />
             </Button>
           </div>

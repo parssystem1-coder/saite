@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { motion } from 'framer-motion'
 import { useAuthStore } from '@/store/auth-store'
+import { useCartStore } from '@/store/cart-store'
 import { useEffect, useState } from 'react'
 
 export function Header() {
   const { isLoggedIn, logout } = useAuthStore()
+  const itemCount = useCartStore((state) => state.itemCount())
   const [mounted, setMounted] = useState(false)
 
   // جلوگیری از خطای Hydration در Zustand persist
@@ -52,9 +54,18 @@ export function Header() {
           </div>
           
           <nav className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" className="relative" asChild>
               <Link href="/cart">
                 <ShoppingCart className="h-5 w-5" />
+                {mounted && itemCount > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white shadow-[0_0_10px_rgba(109,40,217,0.5)]"
+                  >
+                    {itemCount}
+                  </motion.span>
+                )}
               </Link>
             </Button>
 

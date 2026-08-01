@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { ShoppingCart, ArrowRight, ShieldCheck, Truck, RefreshCcw, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useCartStore } from '@/store/cart-store'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
+  const addItem = useCartStore((state) => state.addItem)
   
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -94,7 +96,11 @@ export default function ProductDetailPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-              <Button size="lg" className="h-16 text-lg gap-3">
+              <Button 
+                size="lg" 
+                className="h-16 text-lg gap-3"
+                onClick={() => product && addItem(product)}
+              >
                 <ShoppingCart className="h-6 w-6" />
                 افزودن به سبد خرید
               </Button>
