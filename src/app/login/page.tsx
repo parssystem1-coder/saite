@@ -8,6 +8,13 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Chrome, Github, Mail, Lock } from 'lucide-react'
 import { motion } from 'framer-motion'
 
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'ورود به حساب کاربری',
+  description: 'برای دسترسی به پنل هوشمند و پیگیری سفارشات خود وارد شوید.',
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

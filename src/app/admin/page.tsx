@@ -13,6 +13,13 @@ import {
 } from 'lucide-react'
 import { FadeIn } from '@/components/ui/fade-in'
 
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'پنل مدیریت سیستمی',
+  description: 'مدیریت کلان فروشگاه، آمار فروش و کنترل موجودی انبار.',
+}
+
 export default function AdminDashboardPage() {
   const stats = [
     { label: 'فروش کل ماه', value: '۴۵۸,۰۰۰,۰۰۰ تومان', icon: DollarSign, trend: '+۱۲.۵٪', up: true },

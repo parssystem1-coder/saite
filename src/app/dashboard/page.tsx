@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'پنل کاربری هوشمند',
+  description: 'مدیریت سفارشات، لیست علاقه‌مندی‌ها و تنظیمات حساب کاربری.',
+}
+
 export default function DashboardPage() {
   const { user, isLoggedIn } = useAuthStore()
   const router = useRouter()

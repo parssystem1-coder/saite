@@ -11,8 +11,23 @@ const vazir = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: "سایت | فروشگاه آنلاین هوشمند",
-  description: "تجربه خرید سه بعدی با قدرت هوش مصنوعی",
+  title: {
+    default: "سایت | فروشگاه هوشمند نسل آینده",
+    template: "%s | سایت"
+  },
+  description: "تجربه خرید سه بعدی و هوشمند با استفاده از جدیدترین تکنولوژی‌های روز دنیا و هوش مصنوعی.",
+  keywords: ["فروشگاه آنلاین", "خرید هوشمند", "تکنولوژی ۳ بعدی", "هوش مصنوعی", "محصولات دیجیتال"],
+  authors: [{ name: "ParsSystem1 Coder" }],
+  creator: "ParsSystem1 Coder",
+  publisher: "Saite AI Shop",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 import { AIParticles } from "@/components/ui/ai-particles";

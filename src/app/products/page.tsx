@@ -13,6 +13,13 @@ import { cn } from '@/lib/utils'
 
 const CATEGORIES = ['همه', 'کالای دیجیتال', 'صوتی و تصویری', 'گجت‌ها']
 
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'کاتالوگ محصولات',
+  description: 'لیست کامل محصولات هوشمند و دیجیتال با بهترین قیمت و ضمانت اصالت کالا.',
+}
+
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('همه')

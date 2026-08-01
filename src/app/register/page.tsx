@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input'
 import { AuthCard } from '@/components/auth/auth-card'
 import { User, Mail, Lock, Phone } from 'lucide-react'
 
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'ثبت‌نام در سامانه',
+  description: 'به جمع کاربران هوشمند ما بپیوندید و از تخفیف‌های ویژه بهره‌مند شوید.',
+}
+
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
