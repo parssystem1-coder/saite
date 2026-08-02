@@ -19,7 +19,10 @@
 اگر آخرین نسخهٔ مخزن را بگیرید، دیگر این خطا را نمی‌بینید:
 
 ```bash
-git pull origin arena/019fbe01-saite
+git pull origin arena/019fc243-saite
+# ترجیح روی ویندوز با اتصال ناپایدار:
+npm install --no-audit --no-fund
+# یا در صورت اتصال پایدار:
 pnpm install
 ```
 
@@ -86,7 +89,7 @@ Downloading next@16.2.12: 6.70 MB/34.52 MB
 آخرین نسخه را بگیرید:
 
 ```bash
-git pull origin arena/019fbe01-saite
+git pull origin arena/019fc243-saite
 pnpm install
 ```
 
@@ -247,7 +250,7 @@ Windows PowerShell 5.1 فایل‌های `.ps1` را به‌صورت **ANSI** م
 آخرین نسخه را بگیرید:
 
 ```powershell
-git pull origin arena/019fbe01-saite
+git pull origin arena/019fc243-saite
 .\scripts\install-windows.ps1
 ```
 
@@ -270,7 +273,7 @@ rm -rf node_modules
 rm -rf .next
 
 # ۳. گرفتن آخرین نسخهٔ سالم
-git pull origin arena/019fbe01-saite
+git pull origin arena/019fc243-saite
 
 # ۴. نصب دوباره
 pnpm install
@@ -288,7 +291,7 @@ pnpm dev
 cd D:\saite
 Remove-Item -Recurse -Force node_modules
 Remove-Item -Recurse -Force .next
-git pull origin arena/019fbe01-saite
+git pull origin arena/019fc243-saite
 pnpm install
 pnpm dev
 ```
@@ -320,6 +323,10 @@ node -v
 بعد از نصب موفق، این را اجرا کنید:
 
 ```bash
+# اگر با npm نصب کرده‌اید:
+npm run verify
+
+# اگر با pnpm نصب کرده‌اید:
 pnpm verify
 ```
 
