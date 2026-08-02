@@ -9,23 +9,41 @@ import { useWishlistStore } from '@/store/wishlist-store'
 const noopSubscribe = () => () => {}
 
 /**
+ * Zustand persist: اگر hydration قبلاً تمام شده، onFinishHydration دیگر fire نمی‌کند.
+ * پس subscribe باید در صورت hasHydrated فوری callback بزند.
+ */
+function subscribePersistHydration(
+  api: {
+    persist: {
+      hasHydrated: () => boolean
+      onFinishHydration: (cb: () => void) => () => void
+    }
+  },
+  onStoreChange: () => void
+): () => void {
+  if (api.persist.hasHydrated()) {
+    queueMicrotask(onStoreChange)
+    return () => {}
+  }
+  return api.persist.onFinishHydration(onStoreChange)
+}
+
+/**
  * تشخیص پایان hydration بدون setState داخل useEffect.
- *
- * getServerSnapshot همیشه false برمی‌گرداند تا HTML سرور و اولین رندر
- * کلاینت یکسان بمانند و خطای hydration رخ ندهد.
+ * getServerSnapshot همیشه false — HTML سرور و اولین رندر کلاینت یکسان می‌مانند.
  */
 export function useHasHydrated(): boolean {
   return useSyncExternalStore(
     noopSubscribe,
-    () => true, // کلاینت
-    () => false // سرور
+    () => true,
+    () => false
   )
 }
 
-/** نسخهٔ اختصاصی سبد خرید — منتظر بازیابی کامل داده از LocalStorage می‌ماند */
+/** منتظر بازیابی سبد از LocalStorage */
 export function useCartHydrated(): boolean {
   return useSyncExternalStore(
-    (cb) => useCartStore.persist.onFinishHydration(cb),
+    (cb) => subscribePersistHydration(useCartStore, cb),
     () => useCartStore.persist.hasHydrated(),
     () => false
   )
@@ -34,7 +52,7 @@ export function useCartHydrated(): boolean {
 /** منتظر بازیابی لیست مقایسه از LocalStorage */
 export function useCompareHydrated(): boolean {
   return useSyncExternalStore(
-    (cb) => useCompareStore.persist.onFinishHydration(cb),
+    (cb) => subscribePersistHydration(useCompareStore, cb),
     () => useCompareStore.persist.hasHydrated(),
     () => false
   )
@@ -43,7 +61,7 @@ export function useCompareHydrated(): boolean {
 /** منتظر بازیابی علاقه‌مندی‌ها از LocalStorage */
 export function useWishlistHydrated(): boolean {
   return useSyncExternalStore(
-    (cb) => useWishlistStore.persist.onFinishHydration(cb),
+    (cb) => subscribePersistHydration(useWishlistStore, cb),
     () => useWishlistStore.persist.hasHydrated(),
     () => false
   )

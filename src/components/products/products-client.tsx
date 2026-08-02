@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { Filter, PackageSearch } from 'lucide-react'
+import { Filter, PackageSearch, RotateCcw } from 'lucide-react'
 import * as React from 'react'
 import { ProductActiveChips } from '@/components/products/product-active-chips'
 import { ProductFiltersDrawer } from '@/components/products/product-filters-drawer'
@@ -24,28 +24,57 @@ const PER_PAGE = 9
 
 /**
  * orchestration کاتالوگ.
- *
- * فیلتر و صفحه‌بندی از لایهٔ api می‌آید (getProductList) —
- * UI دیگر applyFilters محلی صدا نمی‌زند.
+ * فیلتر و صفحه‌بندی از لایهٔ api (getProductList).
  */
 export function ProductsClient() {
   const { filters, setParam, resetFilters, page, setPage } = useProductFilters()
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false)
   const [view, setView] = React.useState<CatalogViewMode>('grid')
 
+  // کلید پایدار و سریال‌پذیر — از object خام که reference عوض می‌کند پرهیز می‌کنیم
+  const queryKey = React.useMemo(
+    () =>
+      [
+        'product-list',
+        filters.q ?? '',
+        filters.category ?? 'all',
+        filters.brand ?? 'all',
+        filters.technology ?? 'all',
+        filters.usage ?? 'all',
+        filters.color ?? 'all',
+        filters.inStock ? '1' : '0',
+        filters.minPrice ?? '',
+        filters.maxPrice ?? '',
+        filters.sort ?? 'newest',
+        page,
+        PER_PAGE,
+      ] as const,
+    [filters, page]
+  )
+
   const listQuery = React.useMemo(
     () => ({
-      ...filters,
+      q: filters.q,
+      category: filters.category,
+      brand: filters.brand,
+      technology: filters.technology,
+      usage: filters.usage,
+      color: filters.color,
+      inStock: filters.inStock,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sort: filters.sort,
       page,
       perPage: PER_PAGE,
     }),
     [filters, page]
   )
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['products', listQuery],
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
+    queryKey,
     queryFn: () => getProductList(listQuery),
-    placeholderData: (prev) => prev,
+    staleTime: 30_000,
+    retry: 1,
   })
 
   const items = data?.items ?? []
@@ -55,6 +84,7 @@ export function ProductsClient() {
 
   const activeCount = countActiveFilters(filters)
   const activeCategory = CATEGORIES.find((c) => c.slug === filters.category)
+  const showSkeleton = isPending && !data
 
   const closeMobileFilters = React.useCallback(() => setMobileFiltersOpen(false), [])
 
@@ -90,7 +120,7 @@ export function ProductsClient() {
         <main className="min-w-0 flex-1">
           <ProductToolbar
             resultCount={total}
-            isLoading={isLoading && !data}
+            isLoading={showSkeleton || (isFetching && !data)}
             activeFilterCount={activeCount}
             sort={(filters.sort ?? 'newest') as SortOption}
             onSortChange={(s) => setParam('sort', s)}
@@ -103,29 +133,49 @@ export function ProductsClient() {
             <ProductActiveChips filters={filters} onRemove={setParam} />
           )}
 
-          <ProductGrid
-            products={items}
-            columns={3}
-            view={view}
-            isLoading={isLoading && !data}
-            skeletonCount={6}
-            empty={
-              <div className="surface-3d rounded-2xl">
-                <EmptyState
-                  icon={PackageSearch}
-                  title="محصولی یافت نشد"
-                  description="با این فیلترها نتیجه‌ای پیدا نکردیم. عبارت جستجو یا برند را تغییر دهید."
-                  action={
-                    <Button variant="outline" onClick={resetFilters}>
-                      حذف همهٔ فیلترها
-                    </Button>
-                  }
-                />
-              </div>
-            }
-          />
+          {isError ? (
+            <div className="surface-3d rounded-2xl">
+              <EmptyState
+                icon={PackageSearch}
+                title="بارگذاری کاتالوگ ناموفق بود"
+                description={
+                  error instanceof Error
+                    ? error.message
+                    : 'لطفاً دوباره تلاش کنید. اگر مشکل ادامه داشت، صفحه را رفرش کنید.'
+                }
+                action={
+                  <Button variant="outline" onClick={() => void refetch()}>
+                    <RotateCcw />
+                    تلاش دوباره
+                  </Button>
+                }
+              />
+            </div>
+          ) : (
+            <ProductGrid
+              products={items}
+              columns={3}
+              view={view}
+              isLoading={showSkeleton}
+              skeletonCount={6}
+              empty={
+                <div className="surface-3d rounded-2xl">
+                  <EmptyState
+                    icon={PackageSearch}
+                    title="محصولی یافت نشد"
+                    description="با این فیلترها نتیجه‌ای پیدا نکردیم. عبارت جستجو یا برند را تغییر دهید."
+                    action={
+                      <Button variant="outline" onClick={resetFilters}>
+                        حذف همهٔ فیلترها
+                      </Button>
+                    }
+                  />
+                </div>
+              }
+            />
+          )}
 
-          {!isLoading && total > 0 && (
+          {!showSkeleton && !isError && total > 0 && (
             <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
           )}
         </main>

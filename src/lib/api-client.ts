@@ -14,8 +14,11 @@ const DEFAULT_BASE =
   typeof process !== 'undefined' ? (process.env.NEXT_PUBLIC_API_BASE_URL ?? '') : ''
 
 export function isMockMode(): boolean {
-  // پیش‌فرض: mock. فقط با NEXT_PUBLIC_USE_MOCK=false سراغ HTTP می‌رویم.
-  return process.env.NEXT_PUBLIC_USE_MOCK !== 'false'
+  // پیش‌فرض: mock.
+  // فقط مقدار صریح false / 0 / no حالت HTTP را روشن می‌کند.
+  // (مقادیر true، خالی، undefined → mock)
+  const flag = (process.env.NEXT_PUBLIC_USE_MOCK ?? 'true').trim().toLowerCase()
+  return flag !== 'false' && flag !== '0' && flag !== 'no'
 }
 
 export async function httpJson<T>(path: string, init?: RequestInit): Promise<T> {
