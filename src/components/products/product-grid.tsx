@@ -2,6 +2,7 @@
 
 import { ProductCard } from '@/components/ui/product-card'
 import { ProductCardSkeleton } from '@/components/ui/skeleton'
+import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
@@ -18,21 +19,17 @@ export interface ProductGridProps {
   columns?: 3 | 4
   isLoading?: boolean
   skeletonCount?: number
-  /** اگر products خالی است و loading نیست، این را نشان بده */
   empty?: React.ReactNode
   className?: string
-  /**
-   * اگر false باشد، دکمه‌های wishlist روی کارت مخفی نمی‌شوند —
-   * فقط callback وصل نمی‌شود. پیش‌فرض: همهٔ کنش‌ها فعال.
-   */
   showWishlist?: boolean
+  showCompare?: boolean
 }
 
 /**
  * گرید مشترک محصولات + اتصال store.
  *
- * مرز دامنه اینجاست: ui/ProductCard فقط props می‌گیرد؛
- * افزودن به سبد/مقایسه/علاقه‌مندی در این لایه انجام می‌شود.
+ * مرز دامنه اینجاست: ui/ProductCard فقط props می‌گیرد (pure)؛
+ * وضعیت و callbackهای سبد/مقایسه/علاقه‌مندی اینجا تزریق می‌شود.
  */
 export function ProductGrid({
   products,
@@ -42,10 +39,14 @@ export function ProductGrid({
   empty,
   className,
   showWishlist = true,
+  showCompare = true,
 }: ProductGridProps) {
+  const hydrated = useHasHydrated()
   const addItem = useCartStore((s) => s.addItem)
   const toggleCompare = useCompareStore((s) => s.toggle)
+  const compareItems = useCompareStore((s) => s.items)
   const toggleWishlist = useWishlistStore((s) => s.toggle)
+  const wishlistItems = useWishlistStore((s) => s.items)
 
   if (isLoading) {
     return (
@@ -63,15 +64,22 @@ export function ProductGrid({
 
   return (
     <div className={cn('grid gap-6', COLS[columns], className)}>
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onAddToCart={() => addItem(product)}
-          onCompare={() => toggleCompare(product)}
-          onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
-        />
-      ))}
+      {products.map((product) => {
+        const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
+        const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+
+        return (
+          <ProductCard
+            key={product.id}
+            product={product}
+            inCompare={inCompare}
+            inWishlist={inWishlist}
+            onAddToCart={() => addItem(product)}
+            onCompare={showCompare ? () => toggleCompare(product) : undefined}
+            onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
+          />
+        )
+      })}
     </div>
   )
 }
