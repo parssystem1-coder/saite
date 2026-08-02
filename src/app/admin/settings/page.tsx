@@ -1,19 +1,12 @@
-import { Settings } from 'lucide-react'
-import type { Metadata } from 'next'
-import { AdminPlaceholder } from '@/components/admin/admin-placeholder'
+import {
+  AdminModulePage,
+  createAdminModuleMetadata,
+} from '@/components/admin/admin-module-page'
 
-export const metadata: Metadata = {
-  title: 'تنظیمات سیستم',
-  robots: { index: false, follow: false },
-}
+const HREF = '/admin/settings'
+
+export const metadata = createAdminModuleMetadata(HREF)
 
 export default function Page() {
-  return (
-    <AdminPlaceholder
-      title="تنظیمات سیستم"
-      description="پیکربندی فروشگاه، ارسال و درگاه پرداخت"
-      icon={Settings}
-      planned={['اطلاعات تماس و ساعات کاری', 'نرخ و روش‌های ارسال', 'اتصال درگاه پرداخت']}
-    />
-  )
+  return <AdminModulePage href={HREF} />
 }

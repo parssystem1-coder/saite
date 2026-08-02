@@ -1,45 +1,40 @@
-'use client'
-
+import { FileQuestion, Home, Search } from 'lucide-react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Home, Search } from 'lucide-react'
+import { EmptyState } from '@/components/ui/empty-state'
 
+/**
+ * صفحهٔ ۴۰۴ — هم‌زبان با سیستم طراحی، بدون لحن سایبر/AI.
+ */
 export default function NotFound() {
   return (
-    <div className="container mx-auto px-4 py-32 flex flex-col items-center justify-center text-center space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative"
-      >
-        <h1 className="text-[150px] font-black leading-none text-primary opacity-20">404</h1>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <h2 className="text-4xl font-black italic">مسیر گم شده است</h2>
-        </div>
-      </motion.div>
-
-      <p className="text-xl text-muted-foreground max-w-md">
-        هوش مصنوعی ما نتوانست صفحه‌ای که به دنبال آن بودید را در این کهکشان پیدا کند.
-      </p>
-
-      <div className="flex flex-col sm:flex-row gap-4 pt-8">
-        <Button size="lg" className="gap-2" asChild>
-          <Link href="/">
-            <Home className="h-5 w-5" />
-            بازگشت به خانه
-          </Link>
-        </Button>
-        <Button size="lg" variant="outline" className="gap-2" asChild>
-          <Link href="/products">
-            <Search className="h-5 w-5" />
-            جستجوی محصولات
-          </Link>
-        </Button>
+    <div className="container mx-auto px-4 py-16 md:py-24">
+      <div className="surface-3d mx-auto max-w-xl rounded-2xl">
+        <EmptyState
+          icon={FileQuestion}
+          title="صفحه پیدا نشد"
+          description="آدرسی که وارد کرده‌اید وجود ندارد یا جابه‌جا شده است. می‌توانید به صفحهٔ اصلی برگردید یا در فروشگاه جستجو کنید."
+          action={
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button size="lg" asChild>
+                <Link href="/">
+                  <Home />
+                  بازگشت به خانه
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/products">
+                  <Search />
+                  مشاهدهٔ محصولات
+                </Link>
+              </Button>
+            </div>
+          }
+        />
       </div>
-      
-      {/* Decorative Glow */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 h-96 w-96 rounded-full bg-primary/10 blur-[150px]" />
+      <p className="mt-6 text-center font-mono text-xs text-muted-foreground/50" dir="ltr">
+        404
+      </p>
     </div>
   )
 }

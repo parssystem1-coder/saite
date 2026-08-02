@@ -1,85 +1,108 @@
 'use client'
 
-import { AdminSidebar } from '@/components/admin/admin-sidebar'
+import { ArrowRight, Save, Upload } from 'lucide-react'
+import Link from 'next/link'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Upload, ArrowRight, Save } from 'lucide-react'
-import Link from 'next/link'
+import { CATEGORIES } from '@/lib/constants'
 
 export default function NewProductPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex flex-col lg:flex-row gap-8">
-        <AdminSidebar />
-        
-        <main className="flex-1 space-y-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/admin/products"><ArrowRight className="h-5 w-5" /></Link>
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="افزودن محصول جدید"
+        description="ثبت کالا در کاتالوگ (ذخیره پس از اتصال بک‌اند فعال می‌شود)"
+        actions={
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/admin/products">
+              <ArrowRight className="size-4" />
+              بازگشت
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="space-y-6 xl:col-span-2">
+          <div className="surface-3d space-y-5 rounded-2xl p-6 md:p-8">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-xs font-bold text-muted-foreground">
+                نام محصول
+              </label>
+              <Input
+                id="name"
+                placeholder="مثلاً: پرینتر لیزری کانن LBP-2900"
+                className="h-12"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="space-y-2">
+                <label htmlFor="category" className="text-xs font-bold text-muted-foreground">
+                  دسته‌بندی
+                </label>
+                <select
+                  id="category"
+                  className="h-12 w-full rounded-xl border border-border bg-input px-3 text-sm outline-none focus-visible:border-primary/60"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.slug} value={c.slug}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="price" className="text-xs font-bold text-muted-foreground">
+                  قیمت (تومان)
+                </label>
+                <Input
+                  id="price"
+                  type="number"
+                  placeholder="۰"
+                  className="h-12 text-left font-mono"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="desc" className="text-xs font-bold text-muted-foreground">
+                توضیحات
+              </label>
+              <textarea
+                id="desc"
+                rows={6}
+                placeholder="ویژگی‌ها و مشخصات فنی…"
+                className="w-full rounded-xl border border-border bg-input p-4 text-sm outline-none focus-visible:border-primary/60"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="surface-3d rounded-2xl p-6 text-center md:p-8">
+            <p className="mb-4 text-xs font-bold text-muted-foreground">تصویر محصول</p>
+            <div className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-surface-0/50 transition-colors hover:border-primary/40">
+              <div className="mb-3 rounded-full bg-primary/12 p-3">
+                <Upload className="size-7 text-primary" />
+              </div>
+              <p className="text-xs font-bold text-muted-foreground">انتخاب یا رها کردن فایل</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">PNG، JPG تا ۵ مگابایت</p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Button className="h-12 w-full gap-2 text-base" type="button">
+              <Save className="size-5" />
+              ذخیره (نمایشی)
             </Button>
-            <h1 className="text-3xl font-black italic">افزودن محصول جدید</h1>
+            <Button variant="outline" className="h-12 w-full" asChild>
+              <Link href="/admin/products">انصراف</Link>
+            </Button>
           </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            {/* Main Info */}
-            <div className="xl:col-span-2 space-y-6">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-xl space-y-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">نام محصول</label>
-                  <Input placeholder="مثلاً: گوشی هوشمند مدل Pro 2026" className="bg-black/20 border-white/10 h-12" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">دسته‌بندی</label>
-                    <select className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary h-12">
-                      <option>کالای دیجیتال</option>
-                      <option>صوتی و تصویری</option>
-                      <option>گجت‌ها</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">قیمت (تومان)</label>
-                    <Input type="number" placeholder="۰" className="bg-black/20 border-white/10 h-12 text-left" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">توضیحات تکمیلی</label>
-                  <textarea 
-                    rows={6}
-                    placeholder="ویژگی‌ها و مشخصات فنی محصول را اینجا بنویسید..."
-                    className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Media Upload */}
-            <div className="space-y-6">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-xl text-center">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-4">تصویر محصول</label>
-                <div className="aspect-square rounded-2xl border-2 border-dashed border-white/10 bg-black/20 flex flex-col items-center justify-center group hover:border-primary/50 transition-all cursor-pointer">
-                  <div className="p-4 rounded-full bg-primary/10 mb-4 group-hover:scale-110 transition-transform">
-                    <Upload className="h-8 w-8 text-primary" />
-                  </div>
-                  <p className="text-xs font-bold text-muted-foreground">فایل را اینجا بکشید</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">PNG, JPG تا ۵ مگابایت</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Button className="w-full h-14 text-lg gap-3">
-                  <Save className="h-5 w-5" />
-                  ذخیره و انتشار محصول
-                </Button>
-                <Button variant="outline" className="w-full h-14 text-lg" asChild>
-                  <Link href="/admin/products">انصراف</Link>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </main>
+        </div>
       </div>
     </div>
   )

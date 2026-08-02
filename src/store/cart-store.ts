@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Product } from '@/types/product'
+import type { ProductCardData } from '@/types/product'
 
 export interface CartItem {
   id: string
@@ -16,7 +16,8 @@ export interface CartItem {
 
 interface CartState {
   items: CartItem[]
-  addItem: (product: Product, quantity?: number) => void
+  /** Product کامل یا ProductCardData — هر دو کافی‌اند */
+  addItem: (product: ProductCardData, quantity?: number) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -25,7 +26,7 @@ interface CartState {
 }
 
 /** فقط کالای دارای قیمت ثابت قابل افزودن به سبد است */
-function toCartItem(product: Product, quantity: number): CartItem | null {
+function toCartItem(product: ProductCardData, quantity: number): CartItem | null {
   if (product.priceType !== 'fixed' || product.price === undefined) return null
 
   return {

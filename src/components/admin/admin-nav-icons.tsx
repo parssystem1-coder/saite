@@ -1,0 +1,62 @@
+import type { LucideIcon } from 'lucide-react'
+import {
+  BarChart3,
+  Boxes,
+  FileStack,
+  FileText,
+  FolderTree,
+  HelpCircle,
+  LayoutDashboard,
+  LineChart,
+  Megaphone,
+  MessageSquare,
+  MessagesSquare,
+  Package,
+  Percent,
+  Receipt,
+  Settings,
+  ShoppingCart,
+  Store,
+  TicketPercent,
+  Users,
+  Wallet,
+  ScrollText,
+  BadgePercent,
+  Inbox,
+} from 'lucide-react'
+import type { AdminNavIcon } from '@/lib/admin/nav'
+
+export const ADMIN_ICON_MAP: Record<AdminNavIcon, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  store: Store,
+  orders: ShoppingCart,
+  customers: Users,
+  products: Package,
+  finance: Wallet,
+  invoices: Receipt,
+  transactions: ScrollText,
+  wallet: Wallet,
+  subscriptions: BadgePercent,
+  invoiceSettings: FileStack,
+  reports: BarChart3,
+  reportSales: LineChart,
+  reportProducts: Boxes,
+  reportCustomers: Users,
+  reportInventory: Package,
+  marketing: Megaphone,
+  coupons: TicketPercent,
+  smsCampaigns: Percent,
+  communications: MessagesSquare,
+  sms: MessageSquare,
+  inquiries: Inbox,
+  content: FileText,
+  articles: FileText,
+  articleCategories: FolderTree,
+  pages: FileStack,
+  help: HelpCircle,
+  settings: Settings,
+}
+
+export function getAdminIcon(name: AdminNavIcon): LucideIcon {
+  return ADMIN_ICON_MAP[name] ?? LayoutDashboard
+}

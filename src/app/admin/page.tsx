@@ -1,11 +1,12 @@
-import { Metadata } from 'next'
-import { AdminClient } from '@/components/admin/admin-client'
+import type { Metadata } from 'next'
+import { AdminDashboard } from '@/components/admin/admin-dashboard'
 
 export const metadata: Metadata = {
-  title: 'پنل مدیریت سیستمی',
-  description: 'مدیریت کلان فروشگاه، آمار فروش و کنترل موجودی انبار.',
+  title: 'داشبورد مدیریت',
+  description: 'نمای کلی فروشگاه، آمار و آخرین فعالیت‌ها',
+  robots: { index: false, follow: false },
 }
 
 export default function AdminDashboardPage() {
-  return <AdminClient />
+  return <AdminDashboard />
 }

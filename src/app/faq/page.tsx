@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { FaqAccordion } from '@/components/faq/faq-accordion'
 import { PageShell } from '@/components/layout/page-shell'
+import { JsonLd } from '@/components/seo/json-ld'
+import { buildBreadcrumbLd } from '@/lib/seo/breadcrumb-ld'
+import { buildFaqPageLd } from '@/lib/seo/faq-ld'
 
 export const metadata: Metadata = {
   title: 'سوالات متداول',
@@ -85,41 +88,18 @@ export const FAQ_GROUPS = [
   },
 ]
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-
 export default function FaqPage() {
-  // FAQPage schema — امکان نمایش پرسش‌ها مستقیماً در نتایج گوگل
-  const faqLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ_GROUPS.flatMap((g) =>
-      g.items.map((i) => ({
-        '@type': 'Question',
-        name: i.question,
-        acceptedAnswer: { '@type': 'Answer', text: i.answer },
-      }))
-    ),
-  }
-
-  const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'خانه', item: BASE },
-      { '@type': 'ListItem', position: 2, name: 'سوالات متداول', item: `${BASE}/faq` },
-    ],
-  }
+  const faqItems = FAQ_GROUPS.flatMap((g) => g.items)
+  const faqLd = buildFaqPageLd(faqItems)
+  const breadcrumbLd = buildBreadcrumbLd([
+    { name: 'خانه', path: '/' },
+    { name: 'سوالات متداول', path: '/faq' },
+  ])
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
+      <JsonLd data={faqLd} />
+      <JsonLd data={breadcrumbLd} />
       <PageShell
         title="سوالات متداول"
         description="پاسخ پرسش‌هایی که مشتریان ما بیشتر از همه می‌پرسند. اگر پاسخ خود را نیافتید، با ما تماس بگیرید."

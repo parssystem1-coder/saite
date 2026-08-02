@@ -2,34 +2,67 @@
 
 import { useSyncExternalStore } from 'react'
 import { useCartStore } from '@/store/cart-store'
+import { useCompareStore } from '@/store/compare-store'
+import { useWishlistStore } from '@/store/wishlist-store'
 
 /** اشتراک بدون عملیات — تنها یک بار پس از mount مقدار سرور/کلاینت را جدا می‌کند */
 const noopSubscribe = () => () => {}
 
 /**
+ * Zustand persist: اگر hydration قبلاً تمام شده، onFinishHydration دیگر fire نمی‌کند.
+ * پس subscribe باید در صورت hasHydrated فوری callback بزند.
+ */
+function subscribePersistHydration(
+  api: {
+    persist: {
+      hasHydrated: () => boolean
+      onFinishHydration: (cb: () => void) => () => void
+    }
+  },
+  onStoreChange: () => void
+): () => void {
+  if (api.persist.hasHydrated()) {
+    queueMicrotask(onStoreChange)
+    return () => {}
+  }
+  return api.persist.onFinishHydration(onStoreChange)
+}
+
+/**
  * تشخیص پایان hydration بدون setState داخل useEffect.
- *
- * الگوی قبلی پروژه (`useState(false)` + `useEffect(() => setMounted(true))`)
- * در پنج فایل تکرار شده بود و قاعدهٔ react-hooks/set-state-in-effect در
- * React 19 آن را خطا اعلام می‌کند، چون باعث رندر آبشاری می‌شود.
- *
- * useSyncExternalStore این کار را بدون رندر اضافی انجام می‌دهد:
- * getServerSnapshot همیشه false برمی‌گرداند، پس HTML سرور و اولین رندر
- * کلاینت یکسان می‌مانند و خطای hydration رخ نمی‌دهد.
+ * getServerSnapshot همیشه false — HTML سرور و اولین رندر کلاینت یکسان می‌مانند.
  */
 export function useHasHydrated(): boolean {
   return useSyncExternalStore(
     noopSubscribe,
-    () => true, // کلاینت
-    () => false // سرور
+    () => true,
+    () => false
   )
 }
 
-/** نسخهٔ اختصاصی سبد خرید — منتظر بازیابی کامل داده از LocalStorage می‌ماند */
+/** منتظر بازیابی سبد از LocalStorage */
 export function useCartHydrated(): boolean {
   return useSyncExternalStore(
-    (cb) => useCartStore.persist.onFinishHydration(cb),
+    (cb) => subscribePersistHydration(useCartStore, cb),
     () => useCartStore.persist.hasHydrated(),
+    () => false
+  )
+}
+
+/** منتظر بازیابی لیست مقایسه از LocalStorage */
+export function useCompareHydrated(): boolean {
+  return useSyncExternalStore(
+    (cb) => subscribePersistHydration(useCompareStore, cb),
+    () => useCompareStore.persist.hasHydrated(),
+    () => false
+  )
+}
+
+/** منتظر بازیابی علاقه‌مندی‌ها از LocalStorage */
+export function useWishlistHydrated(): boolean {
+  return useSyncExternalStore(
+    (cb) => subscribePersistHydration(useWishlistStore, cb),
+    () => useWishlistStore.persist.hasHydrated(),
     () => false
   )
 }

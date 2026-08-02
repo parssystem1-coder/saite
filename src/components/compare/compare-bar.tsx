@@ -5,7 +5,7 @@ import { GitCompareArrows, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useCompareHydrated } from '@/hooks/use-has-hydrated'
 import { formatNumber } from '@/lib/format'
 import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
 
@@ -18,7 +18,7 @@ import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
  * مسیر تصمیم‌گیری را کوتاه می‌کند.
  */
 export function CompareBar() {
-  const hydrated = useHasHydrated()
+  const hydrated = useCompareHydrated()
   const items = useCompareStore((s) => s.items)
   const remove = useCompareStore((s) => s.remove)
   const clear = useCompareStore((s) => s.clear)
@@ -52,7 +52,13 @@ export function CompareBar() {
                   className="flex items-center gap-2 rounded-xl border border-border bg-surface-0/60 py-1 ps-1 pe-2"
                 >
                   <span className="relative size-8 shrink-0 overflow-hidden rounded-lg bg-surface-0">
-                    <Image src={item.image} alt="" fill className="object-contain p-0.5" />
+                    <Image
+                      src={item.image}
+                      alt=""
+                      fill
+                      sizes="32px"
+                      className="object-contain p-0.5"
+                    />
                   </span>
                   <span dir="ltr" className="max-w-28 truncate font-mono text-[11px] text-foreground">
                     {item.model}

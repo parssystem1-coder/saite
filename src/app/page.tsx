@@ -15,10 +15,11 @@ import Link from 'next/link'
 import { ArticleTeasers } from '@/components/home/article-teasers'
 import { BrandStrip } from '@/components/home/brand-strip'
 import { CompatibilityFinder } from '@/components/home/compatibility-finder'
-import { HomeProductGrid } from '@/components/home/home-product-grid'
+import { ProductGrid } from '@/components/products/product-grid'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card3D } from '@/components/ui/card-3d'
+import { SectionHeader } from '@/components/ui/section-header'
 import { getBestSellers, getCompatibleItems, getFeaturedProducts, getSupportedDeviceModels } from '@/lib/api'
 import { CATEGORIES, SITE } from '@/lib/constants'
 import type { Product } from '@/types/product'
@@ -109,17 +110,16 @@ export default async function Home() {
 
       {/* ③ دسته‌بندی‌ها ──────────────────────────────────── */}
       <section>
-        <header className="mb-8 text-center">
-          <h2 className="text-2xl font-black text-foreground md:text-3xl">دسته‌بندی محصولات</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            آنچه نیاز دارید را از میان شش گروه اصلی انتخاب کنید
-          </p>
-        </header>
+        <SectionHeader
+          title="دسته‌بندی محصولات"
+          description="آنچه نیاز دارید را از میان شش گروه اصلی انتخاب کنید"
+          align="center"
+        />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat.icon as keyof typeof CATEGORY_ICONS]
             return (
-              <Card3D key={cat.slug} maxTilt={7}>
+              <Card3D key={cat.slug} maxTilt={4}>
                 <Link
                   href={`/products?category=${cat.slug}`}
                   className="flex flex-col items-center p-5 text-center"
@@ -152,21 +152,19 @@ export default async function Home() {
 
       {/* ⑤ پرفروش‌ترین‌ها ────────────────────────────────── */}
       <section>
-        <header className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-foreground md:text-3xl">پرفروش‌ترین‌ها</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              پرتقاضاترین کالاهای فروشگاه در ماه گذشته
-            </p>
-          </div>
-          <Button variant="link" asChild>
-            <Link href="/products?sort=best_selling">
-              همهٔ محصولات
-              <ArrowLeft />
-            </Link>
-          </Button>
-        </header>
-        <HomeProductGrid products={bestSellers.slice(0, 4)} />
+        <SectionHeader
+          title="پرفروش‌ترین‌ها"
+          description="پرتقاضاترین کالاهای فروشگاه در ماه گذشته"
+          action={
+            <Button variant="link" asChild>
+              <Link href="/products?sort=best_selling">
+                همهٔ محصولات
+                <ArrowLeft />
+              </Link>
+            </Button>
+          }
+        />
+        <ProductGrid products={bestSellers.slice(0, 4)} columns={4} />
       </section>
 
       {/* ⑥ برندها ────────────────────────────────────────── */}
@@ -174,12 +172,11 @@ export default async function Home() {
 
       {/* ⑦ خدمات ─────────────────────────────────────────── */}
       <section>
-        <header className="mb-8 text-center">
-          <h2 className="text-2xl font-black text-foreground md:text-3xl">خدمات ما</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            فروش تنها بخشی از کار ماست — در نگهداری هم کنار شما هستیم
-          </p>
-        </header>
+        <SectionHeader
+          title="خدمات ما"
+          description="فروش تنها بخشی از کار ماست — در نگهداری هم کنار شما هستیم"
+          align="center"
+        />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {SERVICES.map((s) => (
             <Card3D key={s.title} maxTilt={4}>
@@ -200,13 +197,11 @@ export default async function Home() {
 
       {/* ⑧ محصولات ویژه ─────────────────────────────────── */}
       <section>
-        <header className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-black text-foreground md:text-3xl">پیشنهاد ویژه</h2>
-            <p className="mt-2 text-sm text-muted-foreground">منتخب کارشناسان فنی ما</p>
-          </div>
-        </header>
-        <HomeProductGrid products={featured.slice(0, 4)} />
+        <SectionHeader
+          title="پیشنهاد ویژه"
+          description="منتخب کارشناسان فنی ما"
+        />
+        <ProductGrid products={featured.slice(0, 4)} columns={4} />
       </section>
 
       {/* ⑨ مقالات ────────────────────────────────────────── */}

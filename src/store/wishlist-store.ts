@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Product } from '@/types/product'
+import type { ProductCardData } from '@/types/product'
 
 export interface WishlistItem {
   id: string
@@ -14,7 +14,7 @@ export interface WishlistItem {
 
 interface WishlistState {
   items: WishlistItem[]
-  toggle: (product: Product) => void
+  toggle: (product: ProductCardData) => void
   remove: (id: string) => void
   clear: () => void
   has: (id: string) => boolean

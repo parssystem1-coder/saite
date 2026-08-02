@@ -1,12 +1,13 @@
 'use client'
 
-import { useAuthStore } from '@/store/auth-store'
 import { motion } from 'framer-motion'
 import { User, Package, Heart, Settings, Shield, Bell } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { Button } from '@/components/ui/button'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useAuthStore } from '@/store/auth-store'
 
 export function DashboardClient() {
   const { user, isLoggedIn } = useAuthStore()
@@ -97,16 +98,23 @@ export function DashboardClient() {
             className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-10 relative overflow-hidden"
           >
             <div className="relative z-10">
-              <h3 className="text-2xl font-black mb-4 tracking-tight">خوش آمدید، {user?.name.split(' ')[0]}! 🚀</h3>
-              <p className="text-muted-foreground max-w-xl leading-relaxed">
-                در این بخش می‌توانید وضعیت سفارشات خود را بررسی کنید و پیشنهادات هوشمند اختصاصی خود را مشاهده نمایید. هوش مصنوعی ما در حال بررسی سلیقه شما برای ارائه بهترین تخفیف‌هاست.
+              <h3 className="mb-4 text-2xl font-black tracking-tight">
+                خوش آمدید، {user?.name.split(' ')[0]}
+              </h3>
+              <p className="max-w-xl leading-relaxed text-muted-foreground">
+                از این بخش می‌توانید وضعیت سفارش‌ها و علاقه‌مندی‌های خود را پیگیری کنید.
+                پیشنهادهای ویژهٔ مرتبط با تجهیزات اداری به‌زودی اینجا نمایش داده می‌شود.
               </p>
               <div className="mt-8">
-                <Button size="lg" className="px-8 shadow-xl shadow-primary/20">مشاهده آخرین محصولات</Button>
+                <Button size="lg" className="px-8 shadow-xl shadow-primary/20" asChild>
+                  <Link href="/products">مشاهدهٔ محصولات</Link>
+                </Button>
               </div>
             </div>
-            {/* AI Decorative Element */}
-            <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]" />
+            <div
+              aria-hidden="true"
+              className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]"
+            />
           </motion.section>
         </main>
       </div>

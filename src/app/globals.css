@@ -233,14 +233,17 @@
     transform: translateY(3px);
   }
 
-  /* ── لایهٔ ارتفاع‌گرفته داخل کارت سه‌بعدی ────────────────────── */
+  /* ── لایهٔ ارتفاع‌گرفته داخل کارت سه‌بعدی ──────────────────────
+     فقط حس عمق بصری؛ transform سه‌بعدی روی دکمه‌ها hit-test را خراب می‌کند
+     پس از translateZ استفاده نمی‌کنیم. */
   .layer-lift {
-    transform: translateZ(28px);
-    transform-style: preserve-3d;
+    position: relative;
+    z-index: 1;
   }
 
   .layer-lift-sm {
-    transform: translateZ(14px);
+    position: relative;
+    z-index: 1;
   }
 
   /* ── درخشش عبوری (sheen) روی سطوح ─────────────────────────── */

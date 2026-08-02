@@ -1,5 +1,6 @@
 'use client'
 
+import { useQuery } from '@tanstack/react-query'
 import {
   Copy,
   Droplets,
@@ -14,6 +15,8 @@ import {
   User,
   Wrench,
 } from 'lucide-react'
+import * as React from 'react'
+import { ProductGrid } from '@/components/products/product-grid'
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
@@ -23,12 +26,11 @@ import { Input } from '@/components/ui/input'
 import { Menu3D, Menu3DItem } from '@/components/ui/menu-3d'
 import { PriceDisplay } from '@/components/ui/price-display'
 import { ProductCard } from '@/components/ui/product-card'
-import { ProductCardSkeleton } from '@/components/ui/skeleton'
 import { SpecTable } from '@/components/ui/spec-table'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
+import { getProducts } from '@/lib/api'
 import { BRANDS, CATEGORIES, STOCK_STATUS_MAP } from '@/lib/constants'
-import { PRODUCTS } from '@/lib/mock-data'
 import type { StockStatus } from '@/types/product'
 
 const CATEGORY_ICONS = {
@@ -39,6 +41,13 @@ const CATEGORY_ICONS = {
   Droplets,
   Wrench,
 } as const
+
+const SAMPLE_SLUGS = [
+  'canon-i-sensys-lbp-2900',
+  'konica-minolta-bizhub-266',
+  'epson-ecotank-l3250',
+  'konica-minolta-bizhub-227-refurb',
+] as const
 
 function Section({
   title,
@@ -60,13 +69,22 @@ function Section({
   )
 }
 
+/**
+ * نمایشگاه سیستم طراحی.
+ * داده از api می‌آید — نه import مستقیم mock-data.
+ */
 export function DesignSystemClient() {
-  const sampleProducts = [
-    PRODUCTS.find((p) => p.slug === 'canon-i-sensys-lbp-2900')!,
-    PRODUCTS.find((p) => p.slug === 'konica-minolta-bizhub-266')!,
-    PRODUCTS.find((p) => p.slug === 'epson-ecotank-l3250')!,
-    PRODUCTS.find((p) => p.slug === 'konica-minolta-bizhub-227-refurb')!,
-  ]
+  const { data: products, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => getProducts(),
+  })
+
+  const sampleProducts = React.useMemo(() => {
+    if (!products) return []
+    return SAMPLE_SLUGS.map((slug) => products.find((p) => p.slug === slug)).filter(
+      (p): p is NonNullable<typeof p> => Boolean(p)
+    )
+  }, [products])
 
   const surfaces = [
     { name: 'surface-0', cls: 'bg-surface-0', note: 'پس‌زمینهٔ اصلی' },
@@ -87,17 +105,16 @@ export function DesignSystemClient() {
   return (
     <div className="container mx-auto max-w-6xl space-y-16 px-4 py-12">
       <header className="space-y-3">
-        <Badge variant="accent">فاز ۱</Badge>
+        <Badge variant="accent">مرجع داخلی</Badge>
         <h1 className="text-4xl font-black text-foreground">
           سیستم <span className="text-primary text-glow">طراحی</span>
         </h1>
         <p className="max-w-2xl leading-relaxed text-muted-foreground">
           مرجع بصری پروژه: توکن‌های رنگ، عمق سه‌بعدی، تایپوگرافی فارسی و کامپوننت‌های پایهٔ
-          دامنهٔ ماشین‌های اداری.
+          دامنهٔ ماشین‌های اداری. این صفحه ایندکس نمی‌شود.
         </p>
       </header>
 
-      {/* ── رنگ ─────────────────────────────────────────── */}
       <Section title="۱. سطوح و عمق" subtitle="چهار لایه روشنایی که مبنای حس سه‌بعدی است">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {surfaces.map((s) => (
@@ -135,11 +152,7 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── تایپوگرافی ──────────────────────────────────── */}
-      <Section
-        title="۴. تایپوگرافی فارسی"
-        subtitle="قاعدهٔ کلیدی: قیمت فارسی، شناسهٔ فنی لاتین"
-      >
+      <Section title="۴. تایپوگرافی فارسی" subtitle="قاعدهٔ کلیدی: قیمت فارسی، شناسهٔ فنی لاتین">
         <div className="surface-3d space-y-4 rounded-2xl p-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-stock-in/25 bg-stock-in/5 p-4">
@@ -175,7 +188,6 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── دکمه ────────────────────────────────────────── */}
       <Section title="۵. دکمهٔ سه‌بعدی" subtitle="ضلع پایین با فشردن جمع می‌شود — مثل کلید فیزیکی">
         <div className="surface-3d space-y-5 rounded-2xl p-6">
           <div className="flex flex-wrap items-center gap-3">
@@ -196,15 +208,12 @@ export function DesignSystemClient() {
             <Button disabled>غیرفعال</Button>
           </div>
           <div className="border-t border-border pt-5">
-            <p className="mb-2 text-xs text-muted-foreground">
-              تست تمام‌عرض (باگ نسخهٔ قبل که با حذف wrapper رفع شد):
-            </p>
+            <p className="mb-2 text-xs text-muted-foreground">تست تمام‌عرض:</p>
             <Button className="w-full">دکمهٔ تمام‌عرض</Button>
           </div>
         </div>
       </Section>
 
-      {/* ── منوی سه‌بعدی ────────────────────────────────── */}
       <Section
         title="۶. منوی سه‌بعدی"
         subtitle="باز شدن با چرخش روی محور X از لبهٔ بالا — روی «باز کردن منو» کلیک کنید"
@@ -236,14 +245,12 @@ export function DesignSystemClient() {
               خروج
             </Menu3DItem>
           </Menu3D>
-
           <p className="text-xs text-muted-foreground">
             بستن با کلید Escape یا کلیک بیرون از پنل نیز کار می‌کند.
           </p>
         </div>
       </Section>
 
-      {/* ── وضعیت موجودی ────────────────────────────────── */}
       <Section
         title="۷. وضعیت موجودی"
         subtitle="چهار حالت دامنه — «تماس بگیرید» مخصوص کالاهای استعلامی B2B"
@@ -255,7 +262,6 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── قیمت ────────────────────────────────────────── */}
       <Section title="۸. نمایش قیمت" subtitle="پشتیبانی از قیمت ثابت، تخفیف‌دار و استعلامی">
         <div className="grid gap-4 md:grid-cols-3">
           <div className="surface-3d rounded-2xl p-6">
@@ -273,7 +279,6 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── فرم ─────────────────────────────────────────── */}
       <Section title="۹. ورودی فرم" subtitle="ظاهر فرورفته — نقطهٔ مقابل دکمهٔ برجسته">
         <div className="surface-3d grid gap-4 rounded-2xl p-6 md:grid-cols-2">
           <div className="space-y-2">
@@ -291,13 +296,12 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── دسته‌بندی ───────────────────────────────────── */}
       <Section title="۱۰. دسته‌بندی‌های دامنه" subtitle="شش دستهٔ اصلی فروشگاه">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat.icon as keyof typeof CATEGORY_ICONS]
             return (
-              <Card3D key={cat.slug} maxTilt={7}>
+              <Card3D key={cat.slug} maxTilt={4}>
                 <div className="flex flex-col items-center p-4 text-center">
                   <div className="layer-lift-sm mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/12">
                     <Icon className="size-6 text-primary" />
@@ -310,7 +314,6 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── برند ────────────────────────────────────────── */}
       <Section title="۱۱. برندها" subtitle="نام لاتین همیشه با dir=ltr">
         <div className="surface-3d flex flex-wrap gap-3 rounded-2xl p-6">
           {BRANDS.map((b) => (
@@ -327,35 +330,50 @@ export function DesignSystemClient() {
         </div>
       </Section>
 
-      {/* ── کارت محصول ──────────────────────────────────── */}
       <Section
-        title="۱۲. کارت محصول سه‌بعدی"
-        subtitle="نشانگر را روی کارت‌ها حرکت دهید — تیلت ۵ درجه، عمق از سایه و لبهٔ نوری"
+        title="۱۲. کارت محصول (pure + ProductGrid)"
+        subtitle="کارت pure فقط props می‌گیرد؛ ProductGrid وضعیت store را تزریق می‌کند"
       >
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {sampleProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        <ProductGrid
+          products={sampleProducts}
+          columns={4}
+          isLoading={isLoading}
+          skeletonCount={4}
+        />
       </Section>
 
-      {/* ── اسکلتون ─────────────────────────────────────── */}
-      <Section title="۱۳. حالت بارگذاری" subtitle="اسکلتون هم‌ابعاد کارت — جلوگیری از پرش چیدمان">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
+      <Section
+        title="۱۲ب. کارت pure بدون store"
+        subtitle="نمایش inCompare/inWishlist کنترل‌شده از props — مناسب Storybook"
+      >
+        {sampleProducts[0] && (
+          <div className="grid max-w-xs grid-cols-1 gap-6">
+            <ProductCard
+              product={sampleProducts[0]}
+              inCompare
+              inWishlist
+              onAddToCart={() => undefined}
+              onCompare={() => undefined}
+              onWishlist={() => undefined}
+            />
+          </div>
+        )}
       </Section>
 
-      {/* ── جدول مشخصات ─────────────────────────────────── */}
+      <Section title="۱۳. حالت بارگذاری" subtitle="اسکلتون هم‌ابعاد کارت">
+        <ProductGrid products={[]} columns={4} isLoading skeletonCount={4} />
+      </Section>
+
       <Section title="۱۴. جدول مشخصات فنی" subtitle="گروه‌بندی خودکار + جهت‌دهی صحیح مقادیر فنی">
         <div className="surface-3d rounded-2xl p-6">
-          <SpecTable specs={sampleProducts[0].specs} />
+          {sampleProducts[0] ? (
+            <SpecTable specs={sampleProducts[0].specs} />
+          ) : (
+            <p className="text-sm text-muted-foreground">در حال بارگذاری…</p>
+          )}
         </div>
       </Section>
 
-      {/* ── مسیر راهنما و حالت خالی ─────────────────────── */}
       <Section title="۱۵. مسیر راهنما و حالت خالی">
         <div className="space-y-6">
           <div className="surface-3d rounded-2xl p-6">
