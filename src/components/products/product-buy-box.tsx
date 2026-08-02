@@ -143,11 +143,16 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
             </Button>
           )}
 
-          <Button size="lg" variant="secondary" className="flex-1 sm:flex-none" asChild>
+          <Button
+            size="lg"
+            className="flex-1 border-0 bg-[#25D366] text-white shadow-[0_4px_0_0_#1da851,0_6px_16px_rgba(37,211,102,0.35)] hover:bg-[#20bd5a] hover:shadow-[0_4px_0_0_#1da851,0_8px_20px_rgba(37,211,102,0.45)] active:shadow-[0_1px_0_0_#1da851] sm:flex-none"
+            asChild
+          >
             <a
               href={openWhatsAppHref(productQuoteMessage(product.model, product.name))}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="گفتگو در واتساپ برای این محصول"
             >
               <MessageCircle />
               واتساپ
