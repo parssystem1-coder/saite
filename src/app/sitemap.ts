@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getProducts } from '@/lib/api'
 import { ARTICLES } from '@/lib/articles'
-import { CATEGORIES } from '@/lib/constants'
+import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { SERVICE_DETAILS } from '@/lib/services-data'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
@@ -9,6 +9,7 @@ const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 /** صفحات ثابت قابل ایندکس — صفحات شخصی (سبد، علاقه‌مندی) عمداً حذف شده‌اند */
 const STATIC_PAGES: { path: string; priority: number; freq: 'daily' | 'weekly' | 'monthly' }[] = [
   { path: '/products', priority: 0.9, freq: 'daily' },
+  { path: '/brands', priority: 0.8, freq: 'weekly' },
   { path: '/services', priority: 0.8, freq: 'monthly' },
   { path: '/blog', priority: 0.8, freq: 'weekly' },
   { path: '/contact', priority: 0.7, freq: 'monthly' },
@@ -39,6 +40,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
+    })),
+
+    ...BRANDS.map((b) => ({
+      url: `${BASE}/brands/${b.slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.75,
     })),
 
     ...SERVICE_DETAILS.map((s) => ({

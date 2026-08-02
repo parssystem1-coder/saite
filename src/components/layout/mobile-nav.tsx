@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/auth-store'
 const MOBILE_LINKS = [
   ['/wishlist', 'علاقه‌مندی‌ها'],
   ['/compare', 'مقایسه'],
+  ['/brands', 'برندها'],
   ['/services', 'خدمات'],
   ['/blog', 'مجلهٔ آموزشی'],
   ['/about', 'دربارهٔ ما'],
@@ -99,7 +100,7 @@ export function MobileNav({
             {BRANDS.map((b) => (
               <Link
                 key={b.slug}
-                href={`/products?brand=${b.slug}`}
+                href={`/brands/${b.slug}`}
                 onClick={onClose}
                 dir="ltr"
                 className="rounded-lg border border-border bg-surface-0/50 px-2.5 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"

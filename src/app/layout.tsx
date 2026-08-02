@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { CompareBar } from '@/components/compare/compare-bar'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
+import { WhatsAppFab } from '@/components/layout/whatsapp-fab'
 import Providers from '@/components/providers'
 import { SITE } from '@/lib/constants'
 import { vazirmatn } from '@/lib/fonts'
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <main className="flex-1">{children}</main>
           <Footer />
           <CompareBar />
+          <WhatsAppFab />
         </Providers>
       </body>
     </html>

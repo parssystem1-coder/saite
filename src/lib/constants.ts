@@ -122,8 +122,17 @@ export const SITE = {
   fullName: 'فروشگاه ماشین‌های اداری سایت',
   phone: '۰۲۱-۹۱۰۰۲۰۳۰',
   phoneLtr: '+982191002030',
+  /** نمایش فارسی */
   whatsapp: '۰۹۱۲۳۴۵۶۷۸۹',
+  /** برای wa.me — فقط ارقام بین‌المللی بدون + */
+  whatsappE164: '989123456789',
   email: 'info@saite.example.com',
   workingHours: 'شنبه تا چهارشنبه ۹ تا ۱۸ — پنجشنبه ۹ تا ۱۳',
   address: 'تهران، خیابان ولیعصر، بالاتر از میدان ونک، پلاک ۱۲۳',
 } as const
+
+/** لینک واتساپ با متن ازپیش‌پر */
+export function buildWhatsAppUrl(message: string): string {
+  const text = encodeURIComponent(message)
+  return `https://wa.me/${SITE.whatsappE164}?text=${text}`
+}

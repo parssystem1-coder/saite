@@ -5,6 +5,7 @@ import {
   FileText,
   GitCompareArrows,
   Heart,
+  MessageCircle,
   PackageCheck,
   ShieldCheck,
   ShoppingCart,
@@ -22,6 +23,7 @@ import { TechText } from '@/components/ui/tech-text'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { formatWarranty } from '@/lib/format'
+import { openWhatsAppHref, productQuoteMessage } from '@/lib/whatsapp'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
 import { useWishlistStore } from '@/store/wishlist-store'
@@ -140,6 +142,17 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
               </Link>
             </Button>
           )}
+
+          <Button size="lg" variant="secondary" className="flex-1 sm:flex-none" asChild>
+            <a
+              href={openWhatsAppHref(productQuoteMessage(product.model, product.name))}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <MessageCircle />
+              واتساپ
+            </a>
+          </Button>
 
           <Button
             size="icon"

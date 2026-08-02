@@ -1,16 +1,25 @@
 'use client'
 
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatNumber, formatPriceWithUnit } from '@/lib/format'
+import { cartQuoteMessage, openWhatsAppHref } from '@/lib/whatsapp'
+import type { CartItem } from '@/store/cart-store'
 
 interface CartSummaryProps {
+  items: CartItem[]
   itemCount: number
   total: number
 }
 
-export function CartSummary({ itemCount, total }: CartSummaryProps) {
+export function CartSummary({ items, itemCount, total }: CartSummaryProps) {
+  const waHref = openWhatsAppHref(
+    cartQuoteMessage(
+      items.map((i) => `${i.name} × ${i.quantity} (${i.model})`)
+    )
+  )
+
   return (
     <aside className="w-full lg:w-96">
       <div className="surface-3d sticky top-28 rounded-2xl p-6 md:p-8">
@@ -33,6 +42,13 @@ export function CartSummary({ itemCount, total }: CartSummaryProps) {
 
         <Button size="lg" className="mt-8 h-14 w-full text-base" asChild>
           <Link href="/checkout">تکمیل فرایند خرید</Link>
+        </Button>
+
+        <Button size="lg" variant="secondary" className="mt-3 h-12 w-full" asChild>
+          <a href={waHref} target="_blank" rel="noopener noreferrer">
+            <MessageCircle />
+            استعلام سفارش در واتساپ
+          </a>
         </Button>
 
         <Link

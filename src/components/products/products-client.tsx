@@ -6,7 +6,10 @@ import * as React from 'react'
 import { ProductActiveChips } from '@/components/products/product-active-chips'
 import { ProductFiltersDrawer } from '@/components/products/product-filters-drawer'
 import { ProductFiltersPanel } from '@/components/products/product-filters-panel'
-import { ProductGrid } from '@/components/products/product-grid'
+import {
+  ProductGrid,
+  type CatalogViewMode,
+} from '@/components/products/product-grid'
 import { ProductToolbar } from '@/components/products/product-toolbar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -28,6 +31,7 @@ const PER_PAGE = 9
 export function ProductsClient() {
   const { filters, setParam, resetFilters, page, setPage } = useProductFilters()
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false)
+  const [view, setView] = React.useState<CatalogViewMode>('grid')
 
   const listQuery = React.useMemo(
     () => ({
@@ -91,6 +95,8 @@ export function ProductsClient() {
             sort={(filters.sort ?? 'newest') as SortOption}
             onSortChange={(s) => setParam('sort', s)}
             onOpenMobileFilters={() => setMobileFiltersOpen(true)}
+            view={view}
+            onViewChange={setView}
           />
 
           {activeCount > 0 && (
@@ -100,6 +106,7 @@ export function ProductsClient() {
           <ProductGrid
             products={items}
             columns={3}
+            view={view}
             isLoading={isLoading && !data}
             skeletonCount={6}
             empty={

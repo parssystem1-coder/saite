@@ -2,6 +2,7 @@
 
 import { ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
+import { CartCrossSell } from '@/components/cart/cart-cross-sell'
 import { CartItemRow } from '@/components/cart/cart-item-row'
 import { CartSkeleton } from '@/components/cart/cart-skeleton'
 import { CartSummary } from '@/components/cart/cart-summary'
@@ -71,8 +72,10 @@ export function CartClient() {
           </ul>
         </div>
 
-        <CartSummary itemCount={itemCount()} total={totalPrice()} />
+        <CartSummary items={items} itemCount={itemCount()} total={totalPrice()} />
       </div>
+
+      <CartCrossSell items={items} />
     </div>
   )
 }

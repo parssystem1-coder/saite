@@ -5,6 +5,8 @@ import { ProductBuyBox } from '@/components/products/product-buy-box'
 import { ProductGallery } from '@/components/products/product-gallery'
 import { ProductGrid } from '@/components/products/product-grid'
 import { ProductTabs, type ProductTabKey } from '@/components/products/product-tabs'
+import { RecentlyViewed } from '@/components/products/recently-viewed'
+import { TrackProductView } from '@/components/products/track-product-view'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CATEGORIES } from '@/lib/constants'
@@ -47,6 +49,7 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
 
   return (
     <div className="container mx-auto px-4 py-10">
+      <TrackProductView product={product} />
       <Breadcrumb
         className="mb-8"
         items={[
@@ -90,6 +93,8 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
           <ProductGrid products={related} columns={4} />
         </section>
       )}
+
+      <RecentlyViewed excludeId={product.id} />
     </div>
   )
 }

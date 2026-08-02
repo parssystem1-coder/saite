@@ -11,6 +11,7 @@ const CUSTOMER_LINKS = [
 
 const COMPANY_LINKS = [
   { href: '/about', label: 'دربارهٔ ما' },
+  { href: '/brands', label: 'برندها' },
   { href: '/services', label: 'خدمات' },
   { href: '/blog', label: 'مجلهٔ آموزشی' },
   { href: '/terms', label: 'قوانین و مقررات' },
@@ -122,7 +123,7 @@ export function Footer() {
             {BRANDS.map((b) => (
               <Link
                 key={b.slug}
-                href={`/products?brand=${b.slug}`}
+                href={`/brands/${b.slug}`}
                 dir="ltr"
                 className="rounded-lg border border-border bg-surface-1 px-3 py-1.5 font-mono text-xs text-muted-foreground transition-all hover:border-primary/40 hover:text-primary"
               >

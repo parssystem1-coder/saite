@@ -1,9 +1,11 @@
 'use client'
 
-import { SlidersHorizontal } from 'lucide-react'
+import { LayoutGrid, List, SlidersHorizontal } from 'lucide-react'
+import type { CatalogViewMode } from '@/components/products/product-grid'
 import { Button } from '@/components/ui/button'
 import { SORT_OPTIONS, type SortOption } from '@/lib/constants'
 import { formatNumber } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 interface ProductToolbarProps {
   resultCount: number
@@ -12,9 +14,11 @@ interface ProductToolbarProps {
   sort: SortOption
   onSortChange: (sort: SortOption) => void
   onOpenMobileFilters: () => void
+  view?: CatalogViewMode
+  onViewChange?: (view: CatalogViewMode) => void
 }
 
-/** نوار بالای گرید: دکمهٔ فیلتر موبایل، تعداد نتایج، مرتب‌سازی */
+/** نوار بالای گرید: فیلتر موبایل، تعداد، نمای شبکه/لیست، مرتب‌سازی */
 export function ProductToolbar({
   resultCount,
   isLoading,
@@ -22,6 +26,8 @@ export function ProductToolbar({
   sort,
   onSortChange,
   onOpenMobileFilters,
+  view = 'grid',
+  onViewChange,
 }: ProductToolbarProps) {
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -46,7 +52,44 @@ export function ProductToolbar({
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {onViewChange && (
+          <div
+            className="flex rounded-xl border border-border bg-surface-0/60 p-0.5"
+            role="group"
+            aria-label="نوع نمایش"
+          >
+            <button
+              type="button"
+              onClick={() => onViewChange('grid')}
+              aria-pressed={view === 'grid'}
+              aria-label="نمای شبکه"
+              className={cn(
+                'flex size-9 items-center justify-center rounded-lg transition-colors',
+                view === 'grid'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <LayoutGrid className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onViewChange('list')}
+              aria-pressed={view === 'list'}
+              aria-label="نمای لیست"
+              className={cn(
+                'flex size-9 items-center justify-center rounded-lg transition-colors',
+                view === 'list'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <List className="size-4" />
+            </button>
+          </div>
+        )}
+
         <label htmlFor="sort" className="text-xs font-bold text-muted-foreground">
           مرتب‌سازی
         </label>

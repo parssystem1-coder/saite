@@ -2,6 +2,7 @@
 
 import { ProductCard } from '@/components/ui/product-card'
 import { ProductCardSkeleton } from '@/components/ui/skeleton'
+import { ProductListRow } from '@/components/products/product-list-row'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
@@ -14,9 +15,12 @@ const COLS = {
   4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
 } as const
 
+export type CatalogViewMode = 'grid' | 'list'
+
 export interface ProductGridProps {
   products: ProductCardData[]
   columns?: 3 | 4
+  view?: CatalogViewMode
   isLoading?: boolean
   skeletonCount?: number
   empty?: React.ReactNode
@@ -26,14 +30,12 @@ export interface ProductGridProps {
 }
 
 /**
- * گرید مشترک محصولات + اتصال store.
- *
- * مرز دامنه اینجاست: ui/ProductCard فقط props می‌گیرد (pure)؛
- * وضعیت و callbackهای سبد/مقایسه/علاقه‌مندی اینجا تزریق می‌شود.
+ * گرید/لیست مشترک محصولات + اتصال store.
  */
 export function ProductGrid({
   products,
   columns = 4,
+  view = 'grid',
   isLoading = false,
   skeletonCount = 6,
   empty,
@@ -49,6 +51,15 @@ export function ProductGrid({
   const wishlistItems = useWishlistStore((s) => s.items)
 
   if (isLoading) {
+    if (view === 'list') {
+      return (
+        <div className={cn('space-y-3', className)}>
+          {Array.from({ length: skeletonCount }).map((_, i) => (
+            <div key={i} className="surface-3d h-28 animate-pulse rounded-2xl bg-surface-2" />
+          ))}
+        </div>
+      )
+    }
     return (
       <div className={cn('grid gap-6', COLS[columns], className)}>
         {Array.from({ length: skeletonCount }).map((_, i) => (
@@ -60,6 +71,29 @@ export function ProductGrid({
 
   if (products.length === 0) {
     return empty ? <>{empty}</> : null
+  }
+
+  if (view === 'list') {
+    return (
+      <ul className={cn('space-y-3', className)}>
+        {products.map((product) => {
+          const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
+          const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+          return (
+            <li key={product.id}>
+              <ProductListRow
+                product={product}
+                inCompare={inCompare}
+                inWishlist={inWishlist}
+                onAddToCart={() => addItem(product)}
+                onCompare={showCompare ? () => toggleCompare(product) : undefined}
+                onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
+              />
+            </li>
+          )
+        })}
+      </ul>
+    )
   }
 
   return (
