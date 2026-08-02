@@ -126,6 +126,8 @@ export const SITE = {
   whatsapp: '۰۹۱۲۳۴۵۶۷۸۹',
   /** برای wa.me — فقط ارقام بین‌المللی بدون + */
   whatsappE164: '989123456789',
+  /** یوزرنیم اینستاگرام بدون @ — در پنل تنظیمات قابل تغییر */
+  instagram: 'saite.office',
   email: 'info@saite.example.com',
   workingHours: 'شنبه تا چهارشنبه ۹ تا ۱۸ — پنجشنبه ۹ تا ۱۳',
   address: 'تهران، خیابان ولیعصر، بالاتر از میدان ونک، پلاک ۱۲۳',
@@ -135,4 +137,12 @@ export const SITE = {
 export function buildWhatsAppUrl(message: string): string {
   const text = encodeURIComponent(message)
   return `https://wa.me/${SITE.whatsappE164}?text=${text}`
+}
+
+/** URL پروفایل اینستاگرام از یوزرنیم یا لینک کامل */
+export function buildInstagramUrl(usernameOrUrl: string = SITE.instagram): string {
+  const v = usernameOrUrl.trim()
+  if (!v) return 'https://instagram.com/'
+  if (v.startsWith('http://') || v.startsWith('https://')) return v
+  return `https://instagram.com/${v.replace(/^@/, '')}`
 }
