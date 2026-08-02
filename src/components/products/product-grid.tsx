@@ -3,7 +3,7 @@
 import { ProductCard } from '@/components/ui/product-card'
 import { ProductCardSkeleton } from '@/components/ui/skeleton'
 import { ProductListRow } from '@/components/products/product-list-row'
-import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useHasHydrated, useCompareHydrated, useWishlistHydrated } from '@/hooks/use-has-hydrated'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
@@ -43,12 +43,19 @@ export function ProductGrid({
   showWishlist = true,
   showCompare = true,
 }: ProductGridProps) {
-  const hydrated = useHasHydrated()
+  const clientReady = useHasHydrated()
+  const compareReady = useCompareHydrated()
+  const wishlistReady = useWishlistHydrated()
   const addItem = useCartStore((s) => s.addItem)
   const toggleCompare = useCompareStore((s) => s.toggle)
   const compareItems = useCompareStore((s) => s.items)
   const toggleWishlist = useWishlistStore((s) => s.toggle)
   const wishlistItems = useWishlistStore((s) => s.items)
+
+  /** بعد از mount کلاینت دکمه‌ها فعال‌اند؛ وضعیت پررنگ بعد از persist */
+  const canAct = clientReady
+  const showCompareState = compareReady
+  const showWishlistState = wishlistReady
 
   if (isLoading) {
     if (view === 'list') {
@@ -77,17 +84,17 @@ export function ProductGrid({
     return (
       <ul className={cn('space-y-3', className)}>
         {products.map((product) => {
-          const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
-          const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+          const inCompare = showCompareState && compareItems.some((i) => i.id === product.id)
+          const inWishlist = showWishlistState && wishlistItems.some((i) => i.id === product.id)
           return (
             <li key={product.id}>
               <ProductListRow
                 product={product}
                 inCompare={inCompare}
                 inWishlist={inWishlist}
-                onAddToCart={() => addItem(product)}
-                onCompare={showCompare ? () => toggleCompare(product) : undefined}
-                onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
+                onAddToCart={canAct ? () => addItem(product) : undefined}
+                onCompare={canAct && showCompare ? () => toggleCompare(product) : undefined}
+                onWishlist={canAct && showWishlist ? () => toggleWishlist(product) : undefined}
               />
             </li>
           )
@@ -99,8 +106,8 @@ export function ProductGrid({
   return (
     <div className={cn('grid gap-6', COLS[columns], className)}>
       {products.map((product) => {
-        const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
-        const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+        const inCompare = showCompareState && compareItems.some((i) => i.id === product.id)
+        const inWishlist = showWishlistState && wishlistItems.some((i) => i.id === product.id)
 
         return (
           <ProductCard
@@ -108,9 +115,9 @@ export function ProductGrid({
             product={product}
             inCompare={inCompare}
             inWishlist={inWishlist}
-            onAddToCart={() => addItem(product)}
-            onCompare={showCompare ? () => toggleCompare(product) : undefined}
-            onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
+            onAddToCart={canAct ? () => addItem(product) : undefined}
+            onCompare={canAct && showCompare ? () => toggleCompare(product) : undefined}
+            onWishlist={canAct && showWishlist ? () => toggleWishlist(product) : undefined}
           />
         )
       })}

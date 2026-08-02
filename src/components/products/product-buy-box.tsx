@@ -20,7 +20,7 @@ import { QuantityStepper } from '@/components/ui/quantity-stepper'
 import { RatingStars } from '@/components/ui/rating-stars'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
-import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useCompareHydrated, useWishlistHydrated } from '@/hooks/use-has-hydrated'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { formatWarranty } from '@/lib/format'
 import {
@@ -48,7 +48,8 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
   const compareItems = useCompareStore((s) => s.items)
   const toggleWishlist = useWishlistStore((s) => s.toggle)
   const wishlistItems = useWishlistStore((s) => s.items)
-  const hydrated = useHasHydrated()
+  const compareReady = useCompareHydrated()
+  const wishlistReady = useWishlistHydrated()
 
   const [quantity, setQuantity] = React.useState(1)
 
@@ -57,8 +58,8 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
   const isBuyable = product.priceType === 'fixed' && product.stockStatus !== 'out_of_stock'
   const warranty = formatWarranty(product.warrantyMonths)
   const rating = getRatingSummary(product)
-  const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
-  const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+  const inCompare = compareReady && compareItems.some((i) => i.id === product.id)
+  const inWishlist = wishlistReady && wishlistItems.some((i) => i.id === product.id)
 
   const whatsappHref = openWhatsAppHref(
     buildProductInquiryMessage(product, { quantity })
@@ -168,9 +169,14 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
           </Button>
 
           <Button
+            type="button"
             size="icon"
             variant={inCompare ? 'default' : 'secondary'}
-            onClick={() => toggleCompare(product)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              toggleCompare(product)
+            }}
             aria-pressed={inCompare}
             aria-label={inCompare ? 'حذف از مقایسه' : 'افزودن به مقایسه'}
             title={inCompare ? 'در حال مقایسه' : 'مقایسه'}
@@ -178,9 +184,14 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
             {inCompare ? <Check /> : <GitCompareArrows />}
           </Button>
           <Button
+            type="button"
             size="icon"
             variant="secondary"
-            onClick={() => toggleWishlist(product)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              toggleWishlist(product)
+            }}
             aria-pressed={inWishlist}
             aria-label={inWishlist ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'}
           >

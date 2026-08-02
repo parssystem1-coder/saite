@@ -68,7 +68,6 @@ export function Card3D({ children, className, maxTilt = 5, glare = true }: Card3
   return (
     <div className={cn('scene-3d', className)}>
       <motion.div
-
         onMouseMove={handleMove}
         onMouseLeave={handleLeave}
         style={
@@ -84,10 +83,14 @@ export function Card3D({ children, className, maxTilt = 5, glare = true }: Card3
           <motion.div
             aria-hidden="true"
             style={{ background: glareBg }}
-            className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="pointer-events-none absolute inset-0 z-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           />
         )}
-        {children}
+        {/*
+          لایهٔ محتوا باید relative+z-index داشته باشد تا دکمه‌ها
+          بالای glare و hit-test درست داشته باشند (باگ مقایسه/علاقه‌مندی).
+        */}
+        <div className="relative z-10 h-full">{children}</div>
       </motion.div>
     </div>
   )

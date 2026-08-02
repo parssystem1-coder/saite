@@ -43,6 +43,8 @@ export const useCompareStore = create<CompareState>()(
       items: [],
 
       toggle: (product) => {
+        if (!product?.id) return
+
         const items = get().items
         const exists = items.some((i) => i.id === product.id)
 
@@ -50,9 +52,10 @@ export const useCompareStore = create<CompareState>()(
           set({ items: items.filter((i) => i.id !== product.id) })
           return
         }
-        if (items.length >= MAX_COMPARE) return // سقف رعایت می‌شود
+        if (items.length >= MAX_COMPARE) return
 
-        set({ items: [...items, toCompareItem(product)] })
+        const next = toCompareItem(product)
+        set({ items: [...items, next] })
       },
 
       remove: (id) => set({ items: get().items.filter((i) => i.id !== id) }),

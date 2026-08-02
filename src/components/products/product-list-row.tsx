@@ -96,8 +96,13 @@ export function ProductListRow({
         <div className="flex items-center gap-2">
           {isBuyable ? (
             <Button
+              type="button"
               size="sm"
-              onClick={() => onAddToCart?.(product)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAddToCart?.(product)
+              }}
               aria-label={`افزودن ${product.name} به سبد`}
             >
               <ShoppingCart />
@@ -110,9 +115,14 @@ export function ProductListRow({
           )}
           {onCompare && (
             <Button
+              type="button"
               size="icon-sm"
               variant={inCompare ? 'default' : 'secondary'}
-              onClick={() => onCompare(product)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onCompare(product)
+              }}
               aria-pressed={inCompare}
               aria-label={inCompare ? 'حذف از مقایسه' : 'افزودن به مقایسه'}
             >
@@ -121,9 +131,14 @@ export function ProductListRow({
           )}
           {onWishlist && (
             <Button
+              type="button"
               size="icon-sm"
               variant="secondary"
-              onClick={() => onWishlist(product)}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onWishlist(product)
+              }}
               aria-pressed={inWishlist}
               aria-label={inWishlist ? 'حذف از علاقه‌مندی' : 'علاقه‌مندی'}
             >

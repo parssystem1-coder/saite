@@ -5,7 +5,7 @@ import { GitCompareArrows, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useCompareHydrated } from '@/hooks/use-has-hydrated'
 import { formatNumber } from '@/lib/format'
 import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
 
@@ -18,7 +18,7 @@ import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
  * مسیر تصمیم‌گیری را کوتاه می‌کند.
  */
 export function CompareBar() {
-  const hydrated = useHasHydrated()
+  const hydrated = useCompareHydrated()
   const items = useCompareStore((s) => s.items)
   const remove = useCompareStore((s) => s.remove)
   const clear = useCompareStore((s) => s.clear)

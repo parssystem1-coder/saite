@@ -101,7 +101,7 @@ export function ProductCard({
           )}
         </div>
 
-        <div className="layer-lift-sm mt-4 border-t border-border pt-3">
+        <div className="relative z-20 mt-4 border-t border-border pt-3">
           <PriceDisplay
             priceType={product.priceType}
             price={product.price}
@@ -109,12 +109,17 @@ export function ProductCard({
             size="md"
           />
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="relative z-20 mt-3 flex items-center gap-2">
             {isBuyable ? (
               <Button
+                type="button"
                 size="sm"
                 className="flex-1"
-                onClick={() => onAddToCart?.(product)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onAddToCart?.(product)
+                }}
                 aria-label={`افزودن ${product.name} به سبد خرید`}
               >
                 <ShoppingCart />
@@ -134,9 +139,14 @@ export function ProductCard({
 
             {onCompare && (
               <Button
+                type="button"
                 size="icon-sm"
                 variant={inCompare ? 'default' : 'secondary'}
-                onClick={() => onCompare(product)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onCompare(product)
+                }}
                 aria-pressed={inCompare}
                 aria-label={
                   inCompare
@@ -151,9 +161,14 @@ export function ProductCard({
 
             {onWishlist && (
               <Button
+                type="button"
                 size="icon-sm"
                 variant="secondary"
-                onClick={() => onWishlist(product)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onWishlist(product)
+                }}
                 aria-pressed={inWishlist}
                 aria-label={
                   inWishlist

@@ -6,7 +6,7 @@ import {
   PhoneGlyph,
   WhatsAppGlyph,
 } from '@/components/layout/contact-fab-icons'
-import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useCompareHydrated } from '@/hooks/use-has-hydrated'
 import {
   getContactFabConfig,
   getEnabledContactFabChannels,
@@ -82,7 +82,7 @@ function resolveHref(channel: ContactFabChannelConfig, pathname: string): string
  */
 export function ContactFab() {
   const pathname = usePathname() ?? '/'
-  const hydrated = useHasHydrated()
+  const compareReady = useCompareHydrated()
   const compareCount = useCompareStore((s) => s.items.length)
   const config = getContactFabConfig()
 
@@ -93,7 +93,7 @@ export function ContactFab() {
   if (channels.length === 0) return null
 
   // وقتی نوار مقایسه باز است، ستون را بالاتر می‌کشیم
-  const compareOpen = hydrated && compareCount > 0
+  const compareOpen = compareReady && compareCount > 0
 
   return (
     <nav
