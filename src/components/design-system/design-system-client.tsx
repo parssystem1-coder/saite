@@ -76,7 +76,7 @@ function Section({
 export function DesignSystemClient() {
   const { data: products, isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
   })
 
   const sampleProducts = React.useMemo(() => {

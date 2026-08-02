@@ -14,7 +14,7 @@ import Link from 'next/link'
 export default function AdminProductsPage() {
   const { data: products, isLoading } = useQuery({
     queryKey: ['admin-products'],
-    queryFn: getProducts,
+    queryFn: () => getProducts(),
   })
 
   return (

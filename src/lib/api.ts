@@ -9,9 +9,8 @@ import type { CategorySlug, Product } from '@/types/product'
  *
  * ── قرارداد ────────────────────────────────────────────────────
  *  • کامپوننت‌ها فقط از `@/lib/api` import می‌کنند.
- *  • import مستقیم `@/lib/mock-data` بیرون از `lib/` ممنوع است.
- *  • با NEXT_PUBLIC_USE_MOCK=false بدنه به HTTP سوییچ می‌شود
- *    (نیاز به NEXT_PUBLIC_API_BASE_URL و Route Handler واقعی).
+ *  • import مستقیم `@/lib/mock-data` بیرون از `src/lib/` ممنوع است.
+ *  • با NEXT_PUBLIC_USE_MOCK=false بدنه به HTTP سوییچ می‌شود.
  *
  * ── مهاجرت به بک‌اند ───────────────────────────────────────────
  *  فقط همین فایل (و api-client) را عوض کنید؛ امضای توابع ثابت می‌ماند.
@@ -22,23 +21,23 @@ const DEFAULT_PER_PAGE = 9
 // ── فهرست و جستجو ─────────────────────────────────────────────
 
 /**
- * فهرست محصولات با فیلتر و صفحه‌بندی.
- *
- * بدون آرگومان: همهٔ محصولات (سازگار با sitemap، ادمین، design-system).
- * با query: فیلتر + slice صفحه‌بندی‌شده.
+ * همهٔ محصولات (یا فیلتر بدون صفحه).
+ * برای sitemap، ادمین، design-system.
+ * کاتالوگ فروشگاه باید getProductList را صدا بزند.
  */
-export async function getProducts(query?: ProductListQuery): Promise<Product[]>
-export async function getProducts(query: ProductListQuery & { page: number }): Promise<ProductListResult>
-export async function getProducts(
-  query?: ProductListQuery
-): Promise<Product[] | ProductListResult> {
+export async function getProducts(query?: ProductListQuery): Promise<Product[]> {
   if (!isMockMode()) {
-    return httpGetProducts(query)
+    const result = await httpJson<ProductListResult>(
+      `/api/products?${toSearchParams({ ...query, page: 1, perPage: 10_000 })}`
+    )
+    return result.items
   }
-  return mockGetProducts(query)
+
+  if (!query || isEmptyFilters(query)) return [...PRODUCTS]
+  return applyFilters(PRODUCTS, query)
 }
 
-/** نسخهٔ صریح صفحه‌بندی‌شده — برای کاتالوگ */
+/** فهرست صفحه‌بندی‌شده — برای کاتالوگ `/products` */
 export async function getProductList(
   query: ProductListQuery = {}
 ): Promise<ProductListResult> {
@@ -187,7 +186,9 @@ export async function getProductsByIds(ids: string[]): Promise<Product[]> {
   if (ids.length === 0) return []
 
   if (!isMockMode()) {
-    return httpJson<Product[]>(`/api/products/by-ids?ids=${ids.map(encodeURIComponent).join(',')}`)
+    return httpJson<Product[]>(
+      `/api/products/by-ids?ids=${ids.map(encodeURIComponent).join(',')}`
+    )
   }
 
   return ids
@@ -197,31 +198,12 @@ export async function getProductsByIds(ids: string[]): Promise<Product[]> {
 
 // ── داخلی ─────────────────────────────────────────────────────
 
-async function mockGetProducts(
-  query?: ProductListQuery
-): Promise<Product[] | ProductListResult> {
-  // بدون query یا بدون page → آرایهٔ کامل (سازگاری عقب‌رو)
-  if (!query || query.page === undefined) {
-    if (!query || isEmptyFilters(query)) return PRODUCTS
-    return applyFilters(PRODUCTS, query)
-  }
-  return getProductList(query)
-}
-
-async function httpGetProducts(
-  query?: ProductListQuery
-): Promise<Product[] | ProductListResult> {
-  if (!query || query.page === undefined) {
-    const result = await httpJson<ProductListResult>(
-      `/api/products?${toSearchParams({ ...query, page: 1, perPage: 10_000 })}`
-    )
-    return result.items
-  }
-  return httpJson<ProductListResult>(`/api/products?${toSearchParams(query)}`)
-}
-
 function isEmptyFilters(q: ProductListQuery): boolean {
-  const { page: _p, perPage: _pp, sort, ...rest } = q
+  const rest = { ...q }
+  delete rest.page
+  delete rest.perPage
+  const sort = rest.sort
+  delete rest.sort
   if (sort && sort !== 'newest') return false
   return Object.values(rest).every(
     (v) => v === undefined || v === '' || v === 'all' || v === false
