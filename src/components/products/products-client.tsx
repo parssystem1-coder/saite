@@ -13,33 +13,41 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
 import { SectionHeader } from '@/components/ui/section-header'
 import { useProductFilters } from '@/hooks/use-product-filters'
-import { getProducts } from '@/lib/api'
+import { getProductList } from '@/lib/api'
 import { CATEGORIES, type SortOption } from '@/lib/constants'
-import { applyFilters, countActiveFilters } from '@/lib/product-filters'
+import { countActiveFilters } from '@/lib/product-filters'
 
 const PER_PAGE = 9
 
 /**
- * orchestration کاتالوگ — فیلتر، صفحه‌بندی و گرید.
- * کامپوننت‌های UI فیلتر/گرید در فایل‌های جدا هستند.
+ * orchestration کاتالوگ.
+ *
+ * فیلتر و صفحه‌بندی از لایهٔ api می‌آید (getProductList) —
+ * UI دیگر applyFilters محلی صدا نمی‌زند.
  */
 export function ProductsClient() {
   const { filters, setParam, resetFilters, page, setPage } = useProductFilters()
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false)
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: getProducts,
-  })
-
-  const visible = React.useMemo(
-    () => (products ? applyFilters(products, filters) : []),
-    [products, filters]
+  const listQuery = React.useMemo(
+    () => ({
+      ...filters,
+      page,
+      perPage: PER_PAGE,
+    }),
+    [filters, page]
   )
 
-  const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE))
-  const safePage = Math.min(page, totalPages)
-  const pageItems = visible.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE)
+  const { data, isLoading } = useQuery({
+    queryKey: ['products', listQuery],
+    queryFn: () => getProductList(listQuery),
+    placeholderData: (prev) => prev,
+  })
+
+  const items = data?.items ?? []
+  const total = data?.total ?? 0
+  const totalPages = data?.totalPages ?? 1
+  const safePage = data?.page ?? page
 
   const activeCount = countActiveFilters(filters)
   const activeCategory = CATEGORIES.find((c) => c.slug === filters.category)
@@ -77,8 +85,8 @@ export function ProductsClient() {
 
         <main className="min-w-0 flex-1">
           <ProductToolbar
-            resultCount={visible.length}
-            isLoading={isLoading}
+            resultCount={total}
+            isLoading={isLoading && !data}
             activeFilterCount={activeCount}
             sort={(filters.sort ?? 'newest') as SortOption}
             onSortChange={(s) => setParam('sort', s)}
@@ -90,9 +98,9 @@ export function ProductsClient() {
           )}
 
           <ProductGrid
-            products={pageItems}
+            products={items}
             columns={3}
-            isLoading={isLoading}
+            isLoading={isLoading && !data}
             skeletonCount={6}
             empty={
               <div className="surface-3d rounded-2xl">
@@ -110,7 +118,7 @@ export function ProductsClient() {
             }
           />
 
-          {!isLoading && visible.length > 0 && (
+          {!isLoading && total > 0 && (
             <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
           )}
         </main>
@@ -121,7 +129,7 @@ export function ProductsClient() {
         onClose={closeMobileFilters}
         filters={filters}
         activeCount={activeCount}
-        resultCount={visible.length}
+        resultCount={total}
         setParam={setParam}
         resetFilters={resetFilters}
       />
