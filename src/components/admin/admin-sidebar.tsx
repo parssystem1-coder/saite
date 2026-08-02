@@ -6,16 +6,37 @@ import { usePathname } from 'next/navigation'
 import * as React from 'react'
 import { AdminNavGroupItem } from '@/components/admin/admin-nav-group'
 import { Button } from '@/components/ui/button'
-import { ADMIN_NAV } from '@/lib/admin/nav'
+import { ADMIN_NAV, isAdminGroupActive } from '@/lib/admin/nav'
 import { cn } from '@/lib/utils'
 
+/** گروه دارای فرزند که مسیر فعلی زیر آن است */
+function activeGroupIdFromPath(pathname: string): string | null {
+  const match = ADMIN_NAV.find(
+    (g) => (g.children?.length ?? 0) > 0 && isAdminGroupActive(g, pathname)
+  )
+  return match?.id ?? null
+}
+
+/**
+ * بدنهٔ منو — state آکاردئون اینجا متمرکز است (فقط یک گروه باز).
+ * با key=pathname از والد، هنگام تعویض مسیر state از نو با گروه فعال init می‌شود.
+ */
 function AdminNavBody({
   pathname,
+  initialOpenId,
   onNavigate,
 }: {
   pathname: string
+  initialOpenId: string | null
   onNavigate?: () => void
 }) {
+  const [openGroupId, setOpenGroupId] = React.useState<string | null>(initialOpenId)
+
+  const handleOpenChange = React.useCallback((groupId: string) => {
+    // همان گروه باز → ببند؛ گروه دیگر → فقط همان باز (قبلی بسته می‌شود)
+    setOpenGroupId((current) => (current === groupId ? null : groupId))
+  }, [])
+
   return (
     <div className="flex h-full flex-col">
       <div className="mb-6 px-1">
@@ -31,6 +52,8 @@ function AdminNavBody({
             key={group.id}
             group={group}
             pathname={pathname}
+            open={openGroupId === group.id}
+            onOpenChange={handleOpenChange}
             onNavigate={onNavigate}
           />
         ))}
@@ -48,11 +71,12 @@ function AdminNavBody({
 }
 
 /**
- * سایدبار ماژولار — منبع داده: ADMIN_NAV
+ * سایدبار ماژولار — آکاردئون exclusive (فقط یک زیرمنو باز)
  */
 export function AdminSidebar() {
   const pathname = usePathname() ?? '/admin'
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const initialOpenId = activeGroupIdFromPath(pathname)
 
   const closeMobile = React.useCallback(() => setMobileOpen(false), [])
 
@@ -75,7 +99,11 @@ export function AdminSidebar() {
 
       <aside className="hidden w-full shrink-0 lg:block lg:w-72">
         <div className="surface-3d sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl p-4">
-          <AdminNavBody pathname={pathname} />
+          <AdminNavBody
+            key={pathname}
+            pathname={pathname}
+            initialOpenId={initialOpenId}
+          />
         </div>
       </aside>
 
@@ -105,7 +133,12 @@ export function AdminSidebar() {
               </Button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <AdminNavBody pathname={pathname} onNavigate={closeMobile} />
+              <AdminNavBody
+                key={`m-${pathname}`}
+                pathname={pathname}
+                initialOpenId={initialOpenId}
+                onNavigate={closeMobile}
+              />
             </div>
           </div>
         </div>

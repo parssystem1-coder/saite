@@ -1,7 +1,6 @@
 'use client'
 
 import { ChevronDown } from 'lucide-react'
-import * as React from 'react'
 import { AdminNavLink } from '@/components/admin/admin-nav-link'
 import { ADMIN_ICON_MAP } from '@/components/admin/admin-nav-icons'
 import { isAdminGroupActive, type AdminNavGroup as NavGroup } from '@/lib/admin/nav'
@@ -10,20 +9,30 @@ import { cn } from '@/lib/utils'
 interface AdminNavGroupProps {
   group: NavGroup
   pathname: string
+  /** آیا این گروه الان باز است (کنترل‌شده از والد — آکاردئون تک‌باز) */
+  open: boolean
+  /** درخواست باز/بسته شدن از کاربر */
+  onOpenChange: (groupId: string) => void
   onNavigate?: () => void
 }
 
-export function AdminNavGroupItem({ group, pathname, onNavigate }: AdminNavGroupProps) {
+/**
+ * یک گروه منوی ادمین.
+ * state باز/بسته از والد می‌آید تا فقط یک آکاردئون همزمان باز بماند.
+ */
+export function AdminNavGroupItem({
+  group,
+  pathname,
+  open,
+  onOpenChange,
+  onNavigate,
+}: AdminNavGroupProps) {
   const children = group.children ?? []
   const hasChildren = children.length > 0
   const groupActive = isAdminGroupActive(group, pathname)
-
-  // key روی والد باعث reset state هنگام تغییر route فعال می‌شود — بدون setState در effect
-  const [userOpen, setUserOpen] = React.useState<boolean | null>(null)
-  const open = userOpen ?? groupActive
-
   const Icon = ADMIN_ICON_MAP[group.icon]
 
+  // گروه بدون فرزند = لینک مستقیم (داشبورد)
   if (!hasChildren && group.href) {
     const leaf = {
       id: group.id,
@@ -39,15 +48,15 @@ export function AdminNavGroupItem({ group, pathname, onNavigate }: AdminNavGroup
   const panelId = `admin-nav-${group.id}`
 
   return (
-    <div className="space-y-0.5" key={`${group.id}-${groupActive ? 'on' : 'off'}`}>
+    <div className="space-y-0.5">
       <button
         type="button"
-        onClick={() => setUserOpen((prev) => !(prev ?? groupActive))}
+        onClick={() => onOpenChange(group.id)}
         aria-expanded={open}
         aria-controls={panelId}
         className={cn(
           'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold transition-all',
-          groupActive
+          groupActive || open
             ? 'bg-primary/15 text-primary'
             : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'
         )}
@@ -63,9 +72,15 @@ export function AdminNavGroupItem({ group, pathname, onNavigate }: AdminNavGroup
         />
       </button>
 
-      {open && (
-        <div id={panelId} role="group" aria-label={group.label} className="space-y-0.5 pb-1">
-          {children.map((child) => (
+      <div
+        id={panelId}
+        role="region"
+        aria-label={group.label}
+        hidden={!open}
+        className={cn('space-y-0.5 pb-1', !open && 'hidden')}
+      >
+        {open &&
+          children.map((child) => (
             <AdminNavLink
               key={child.id}
               item={child}
@@ -74,8 +89,7 @@ export function AdminNavGroupItem({ group, pathname, onNavigate }: AdminNavGroup
               onNavigate={onNavigate}
             />
           ))}
-        </div>
-      )}
+      </div>
     </div>
   )
 }
