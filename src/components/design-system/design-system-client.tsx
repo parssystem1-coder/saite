@@ -21,9 +21,8 @@ import { Card3D } from '@/components/ui/card-3d'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { Menu3D, Menu3DItem } from '@/components/ui/menu-3d'
+import { ProductGrid } from '@/components/products/product-grid'
 import { PriceDisplay } from '@/components/ui/price-display'
-import { ProductCard } from '@/components/ui/product-card'
-import { ProductCardSkeleton } from '@/components/ui/skeleton'
 import { SpecTable } from '@/components/ui/spec-table'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
@@ -297,7 +296,7 @@ export function DesignSystemClient() {
           {CATEGORIES.map((cat) => {
             const Icon = CATEGORY_ICONS[cat.icon as keyof typeof CATEGORY_ICONS]
             return (
-              <Card3D key={cat.slug} maxTilt={7}>
+              <Card3D key={cat.slug} maxTilt={4}>
                 <div className="flex flex-col items-center p-4 text-center">
                   <div className="layer-lift-sm mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/12">
                     <Icon className="size-6 text-primary" />
@@ -332,20 +331,12 @@ export function DesignSystemClient() {
         title="۱۲. کارت محصول سه‌بعدی"
         subtitle="نشانگر را روی کارت‌ها حرکت دهید — تیلت ۵ درجه، عمق از سایه و لبهٔ نوری"
       >
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {sampleProducts.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
+        <ProductGrid products={sampleProducts} columns={4} />
       </Section>
 
       {/* ── اسکلتون ─────────────────────────────────────── */}
       <Section title="۱۳. حالت بارگذاری" subtitle="اسکلتون هم‌ابعاد کارت — جلوگیری از پرش چیدمان">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
+        <ProductGrid products={[]} columns={4} isLoading skeletonCount={4} />
       </Section>
 
       {/* ── جدول مشخصات ─────────────────────────────────── */}

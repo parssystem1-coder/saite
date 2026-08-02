@@ -2,6 +2,7 @@ import { ArrowLeft, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { SectionHeader } from '@/components/ui/section-header'
 import { ARTICLES } from '@/lib/articles'
 import { formatNumber } from '@/lib/format'
 
@@ -9,20 +10,18 @@ import { formatNumber } from '@/lib/format'
 export function ArticleTeasers() {
   return (
     <section>
-      <header className="mb-8 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-foreground md:text-3xl">مجلهٔ آموزشی</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            راهنمای خرید و نکات نگهداری تجهیزات اداری
-          </p>
-        </div>
-        <Button variant="link" asChild>
-          <Link href="/blog">
-            همهٔ مقالات
-            <ArrowLeft />
-          </Link>
-        </Button>
-      </header>
+      <SectionHeader
+        title="مجلهٔ آموزشی"
+        description="راهنمای خرید و نکات نگهداری تجهیزات اداری"
+        action={
+          <Button variant="link" asChild>
+            <Link href="/blog">
+              همهٔ مقالات
+              <ArrowLeft />
+            </Link>
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {ARTICLES.map((a) => (

@@ -12,14 +12,16 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import * as React from 'react'
+import { ProductGrid } from '@/components/products/product-grid'
 import { Accordion } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card3D } from '@/components/ui/card-3d'
 import { PriceDisplay } from '@/components/ui/price-display'
-import { ProductCard } from '@/components/ui/product-card'
+import { QuantityStepper } from '@/components/ui/quantity-stepper'
 import { RatingStars } from '@/components/ui/rating-stars'
+import { SectionHeader } from '@/components/ui/section-header'
 import { SpecTable } from '@/components/ui/spec-table'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
@@ -182,31 +184,11 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {isBuyable && (
-                <div className="flex items-center gap-1 rounded-xl border border-border bg-surface-0/60 p-1">
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                    aria-label="کاهش تعداد"
-                  >
-                    −
-                  </Button>
-                  <span
-                    aria-live="polite"
-                    className="w-9 text-center text-sm font-bold text-foreground"
-                  >
-                    {formatNumber(quantity)}
-                  </span>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={() => setQuantity((q) => q + 1)}
-                    aria-label="افزایش تعداد"
-                  >
-                    +
-                  </Button>
-                </div>
+                <QuantityStepper
+                  value={quantity}
+                  onChange={setQuantity}
+                  aria-label={`تعداد ${product.name}`}
+                />
               )}
 
               {isBuyable ? (
@@ -364,41 +346,20 @@ export function ProductDetailClient({ product, related, consumables }: Props) {
       {/* ── مصرفی سازگار: موتور فروش مکمل ───────────────── */}
       {consumables.length > 0 && (
         <section className="mt-16">
-          <header className="mb-6">
-            <h2 className="text-xl font-black text-foreground">
-              مواد مصرفی و قطعات سازگار با این دستگاه
-            </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              این اقلام مخصوص همین مدل هستند و می‌توانید همراه دستگاه سفارش دهید.
-            </p>
-          </header>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {consumables.map((c) => (
-              <ProductCard
-                key={c.id}
-                product={c}
-                onAddToCart={() => addItem(c)}
-                onCompare={() => toggleCompare(c)}
-              />
-            ))}
-          </div>
+          <SectionHeader
+            title="مواد مصرفی و قطعات سازگار با این دستگاه"
+            description="این اقلام مخصوص همین مدل هستند و می‌توانید همراه دستگاه سفارش دهید."
+            className="mb-6"
+          />
+          <ProductGrid products={consumables} columns={4} />
         </section>
       )}
 
       {/* ── محصولات مرتبط ───────────────────────────────── */}
       {related.length > 0 && (
         <section className="mt-16">
-          <h2 className="mb-6 text-xl font-black text-foreground">محصولات مرتبط</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {related.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onAddToCart={() => addItem(p)}
-                onCompare={() => toggleCompare(p)}
-              />
-            ))}
-          </div>
+          <SectionHeader title="محصولات مرتبط" className="mb-6" />
+          <ProductGrid products={related} columns={4} />
         </section>
       )}
     </div>

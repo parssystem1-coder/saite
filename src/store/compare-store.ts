@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Product } from '@/types/product'
+import type { ProductCardData } from '@/types/product'
 
 /** حداکثر تعداد کالای قابل مقایسه — بیش از این، جدول روی موبایل غیرقابل خواندن می‌شود */
 export const MAX_COMPARE = 4
@@ -18,14 +18,14 @@ export interface CompareItem {
 interface CompareState {
   items: CompareItem[]
   /** اگر کالا موجود باشد حذف و در غیر این صورت اضافه می‌کند */
-  toggle: (product: Product) => void
+  toggle: (product: ProductCardData) => void
   remove: (id: string) => void
   clear: () => void
   has: (id: string) => boolean
   isFull: () => boolean
 }
 
-function toCompareItem(p: Product): CompareItem {
+function toCompareItem(p: ProductCardData): CompareItem {
   return {
     id: p.id,
     slug: p.slug,
