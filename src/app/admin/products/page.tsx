@@ -68,8 +68,14 @@ export default function AdminProductsPage() {
                       <tr key={product.id} className="hover:bg-white/[0.02] transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-lg bg-black/40 border border-white/10 overflow-hidden flex-shrink-0 p-1 relative">
-                              <Image src={product.images[0]} alt="" fill className="object-contain" />
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface-0 p-1">
+                              <Image
+                                src={product.images[0]}
+                                alt={product.name}
+                                fill
+                                sizes="48px"
+                                className="object-contain"
+                              />
                             </div>
                             <div>
                               <p className="font-bold">{product.name}</p>
@@ -89,14 +95,36 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/20 hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-primary/20 hover:text-primary"
+                              aria-label={`ویرایش ${product.name}`}
+                              title="ویرایش"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive"
+                              aria-label={`حذف ${product.name}`}
+                              title="حذف"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-500/20 hover:text-blue-500" asChild>
-                              <Link href={`/products/${product.slug}`} target="_blank">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 hover:bg-primary/20 hover:text-primary"
+                              asChild
+                            >
+                              <Link
+                                href={`/products/${product.slug}`}
+                                target="_blank"
+                                aria-label={`مشاهدهٔ ${product.name} در فروشگاه`}
+                                title="مشاهده در فروشگاه"
+                              >
                                 <ExternalLink className="h-4 w-4" />
                               </Link>
                             </Button>
