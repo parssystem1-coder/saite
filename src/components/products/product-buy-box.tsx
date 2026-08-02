@@ -23,7 +23,10 @@ import { TechText } from '@/components/ui/tech-text'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { formatWarranty } from '@/lib/format'
-import { openWhatsAppHref, productQuoteMessage } from '@/lib/whatsapp'
+import {
+  buildProductInquiryMessage,
+  openWhatsAppHref,
+} from '@/lib/whatsapp'
 import { useCartStore } from '@/store/cart-store'
 import { useCompareStore } from '@/store/compare-store'
 import { useWishlistStore } from '@/store/wishlist-store'
@@ -56,6 +59,10 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
   const rating = getRatingSummary(product)
   const inCompare = hydrated && compareItems.some((i) => i.id === product.id)
   const inWishlist = hydrated && wishlistItems.some((i) => i.id === product.id)
+
+  const whatsappHref = openWhatsAppHref(
+    buildProductInquiryMessage(product, { quantity })
+  )
 
   return (
     <div className="space-y-6">
@@ -149,13 +156,14 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
             asChild
           >
             <a
-              href={openWhatsAppHref(productQuoteMessage(product.model, product.name))}
+              href={whatsappHref}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="گفتگو در واتساپ برای این محصول"
+              aria-label="استعلام این کالا در واتساپ — مشخصات کامل برای فروشنده ارسال می‌شود"
+              title="مشخصات کامل این کالا برای فروشنده ارسال می‌شود"
             >
               <MessageCircle />
-              واتساپ
+              استعلام در واتساپ
             </a>
           </Button>
 
@@ -179,6 +187,10 @@ export function ProductBuyBox({ product, onOpenReviews }: ProductBuyBoxProps) {
             <Heart className={inWishlist ? 'fill-destructive text-destructive' : undefined} />
           </Button>
         </div>
+
+        <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground sm:text-right">
+          با زدن «استعلام در واتساپ»، مشخصات کامل این کالا برای فروشنده ارسال می‌شود.
+        </p>
 
         <ul className="mt-6 grid grid-cols-1 gap-3 border-t border-border pt-5 text-xs text-muted-foreground sm:grid-cols-3">
           <li className="flex items-center gap-2">
