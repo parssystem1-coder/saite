@@ -1,72 +1,115 @@
 'use client'
 
+import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, 
-  Package, 
-  ShoppingCart, 
-  Users, 
-  Settings, 
-  BarChart3,
-  PlusCircle
-} from 'lucide-react'
+import * as React from 'react'
+import { AdminNavGroupItem } from '@/components/admin/admin-nav-group'
+import { Button } from '@/components/ui/button'
+import { ADMIN_NAV } from '@/lib/admin/nav'
 import { cn } from '@/lib/utils'
 
-const adminNavItems = [
-  { label: 'داشبورد مدیریت', icon: LayoutDashboard, href: '/admin' },
-  { label: 'لیست محصولات', icon: Package, href: '/admin/products' },
-  { label: 'افزودن محصول', icon: PlusCircle, href: '/admin/products/new' },
-  { label: 'سفارشات', icon: ShoppingCart, href: '/admin/orders' },
-  { label: 'مشتریان', icon: Users, href: '/admin/users' },
-  { label: 'گزارشات مالی', icon: BarChart3, href: '/admin/reports' },
-  { label: 'تنظیمات سیستم', icon: Settings, href: '/admin/settings' },
-]
+function AdminNavBody({
+  pathname,
+  onNavigate,
+}: {
+  pathname: string
+  onNavigate?: () => void
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <div className="mb-6 px-1">
+        <Link href="/admin" className="block" onClick={onNavigate}>
+          <h2 className="text-lg font-black tracking-tight text-primary">پنل مدیریت</h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">فروشگاه ماشین‌های اداری</p>
+        </Link>
+      </div>
 
+      <nav className="flex-1 space-y-1 overflow-y-auto pe-1" aria-label="منوی مدیریت">
+        {ADMIN_NAV.map((group) => (
+          <AdminNavGroupItem
+            key={group.id}
+            group={group}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </nav>
+
+      <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 p-3">
+        <p className="text-center text-[10px] font-bold text-primary">وضعیت سیستم</p>
+        <div className="mt-1.5 flex items-center justify-center gap-2">
+          <span className="size-2 animate-pulse rounded-full bg-stock-in" />
+          <span className="text-[10px] font-bold text-muted-foreground">نمایشی — آمادهٔ بک‌اند</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * سایدبار ماژولار — منبع داده: ADMIN_NAV
+ */
 export function AdminSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? '/admin'
+  const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  const closeMobile = React.useCallback(() => setMobileOpen(false), [])
 
   return (
-    <aside className="w-full lg:w-72 space-y-4">
-      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-2xl sticky top-28">
-        <div className="mb-8 px-2">
-          <h2 className="text-xl font-black text-primary tracking-tight">پنل مدیریت</h2>
-          <p className="mt-1 text-[10px] tracking-widest text-muted-foreground uppercase">
-            مدیریت فروشگاه
-          </p>
-        </div>
+    <>
+      <div className="mb-4 flex items-center justify-between lg:hidden">
+        <p className="text-sm font-bold text-foreground">منوی مدیریت</p>
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => setMobileOpen(true)}
+          aria-expanded={mobileOpen}
+          aria-controls="admin-mobile-nav"
+        >
+          <Menu className="size-4" />
+          منو
+        </Button>
+      </div>
 
-        <nav className="space-y-2">
-          {adminNavItems.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
-                  isActive 
-                    ? "bg-primary text-white shadow-lg shadow-primary/30 scale-105" 
-                    : "hover:bg-white/5 text-muted-foreground hover:text-white"
-                )}
+      <aside className="hidden w-full shrink-0 lg:block lg:w-72">
+        <div className="surface-3d sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto rounded-2xl p-4">
+          <AdminNavBody pathname={pathname} />
+        </div>
+      </aside>
+
+      {mobileOpen ? (
+        <div id="admin-mobile-nav" className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            aria-label="بستن منو"
+            onClick={closeMobile}
+          />
+          <div
+            className={cn(
+              'absolute inset-y-0 right-0 flex w-[min(20rem,88vw)] flex-col',
+              'border-s border-border bg-surface-1 p-4 shadow-depth-4'
+            )}
+          >
+            <div className="mb-2 flex justify-end">
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                onClick={closeMobile}
+                aria-label="بستن"
               >
-                <item.icon className={cn("h-5 w-5", isActive ? "text-white" : "text-primary/70 group-hover:text-primary")} />
-                <span className="font-bold text-sm">{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-        
-        <div className="mt-12 p-4 rounded-2xl bg-primary/10 border border-primary/20 relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="mb-1 text-center text-[10px] font-bold text-primary">وضعیت سیستم</p>
-            <div className="flex items-center justify-center gap-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-stock-in" />
-              <span className="text-[10px] font-bold">آمادهٔ کار (نمایشی)</span>
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <AdminNavBody pathname={pathname} onNavigate={closeMobile} />
             </div>
           </div>
         </div>
-      </div>
-    </aside>
+      ) : null}
+    </>
   )
 }

@@ -1,19 +1,12 @@
-import { ShoppingCart } from 'lucide-react'
-import type { Metadata } from 'next'
-import { AdminPlaceholder } from '@/components/admin/admin-placeholder'
+import {
+  AdminModulePage,
+  createAdminModuleMetadata,
+} from '@/components/admin/admin-module-page'
 
-export const metadata: Metadata = {
-  title: 'مدیریت سفارش‌ها',
-  robots: { index: false, follow: false },
-}
+const HREF = '/admin/orders'
+
+export const metadata = createAdminModuleMetadata(HREF)
 
 export default function Page() {
-  return (
-    <AdminPlaceholder
-      title="مدیریت سفارش‌ها"
-      description="پیگیری، تغییر وضعیت و صدور فاکتور سفارش‌ها"
-      icon={ShoppingCart}
-      planned={['فهرست سفارش‌ها با فیلتر وضعیت', 'تغییر وضعیت و ثبت کد رهگیری مرسوله', 'صدور فاکتور رسمی']}
-    />
-  )
+  return <AdminModulePage href={HREF} />
 }

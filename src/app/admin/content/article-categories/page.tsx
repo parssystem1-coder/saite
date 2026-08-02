@@ -3,7 +3,7 @@ import {
   createAdminModuleMetadata,
 } from '@/components/admin/admin-module-page'
 
-const HREF = '/admin/settings'
+const HREF = '/admin/content/article-categories'
 
 export const metadata = createAdminModuleMetadata(HREF)
 
