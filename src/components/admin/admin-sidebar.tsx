@@ -30,8 +30,10 @@ export function AdminSidebar() {
     <aside className="w-full lg:w-72 space-y-4">
       <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-2xl sticky top-28">
         <div className="mb-8 px-2">
-          <h2 className="text-xl font-black text-primary tracking-tighter italic">پنل فرماندهی</h2>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">Core System v1.0</p>
+          <h2 className="text-xl font-black text-primary tracking-tight">پنل مدیریت</h2>
+          <p className="mt-1 text-[10px] tracking-widest text-muted-foreground uppercase">
+            مدیریت فروشگاه
+          </p>
         </div>
 
         <nav className="space-y-2">
@@ -57,10 +59,10 @@ export function AdminSidebar() {
         
         <div className="mt-12 p-4 rounded-2xl bg-primary/10 border border-primary/20 relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-[10px] font-bold text-primary mb-1 text-center">وضعیت سرور هوشمند</p>
+            <p className="mb-1 text-center text-[10px] font-bold text-primary">وضعیت سیستم</p>
             <div className="flex items-center justify-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] font-bold">فعال و در حال بهینه‌سازی</span>
+              <span className="h-2 w-2 animate-pulse rounded-full bg-stock-in" />
+              <span className="text-[10px] font-bold">آمادهٔ کار (نمایشی)</span>
             </div>
           </div>
         </div>

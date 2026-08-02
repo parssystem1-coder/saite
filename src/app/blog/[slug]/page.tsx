@@ -3,14 +3,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageShell } from '@/components/layout/page-shell'
+import { JsonLd } from '@/components/seo/json-ld'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ARTICLES, getArticleBySlug } from '@/lib/articles'
 import { formatNumber } from '@/lib/format'
+import { buildArticleLd } from '@/lib/seo/article-ld'
 
 type Props = { params: Promise<{ slug: string }> }
-
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
 /** تولید مسیرهای استاتیک در زمان بیلد */
 export function generateStaticParams() {
@@ -43,22 +43,17 @@ export default async function ArticlePage({ params }: Props) {
 
   const others = ARTICLES.filter((a) => a.slug !== article.slug).slice(0, 2)
 
-  const articleLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: article.title,
+  const articleLd = buildArticleLd({
+    title: article.title,
     description: article.excerpt,
-    datePublished: article.publishedAt,
-    author: { '@type': 'Organization', name: article.author },
-    mainEntityOfPage: `${BASE}/blog/${article.slug}`,
-  }
+    slug: article.slug,
+    publishedAt: article.publishedAt,
+    author: article.author,
+  })
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
-      />
+      <JsonLd data={articleLd} />
       <PageShell
         title={article.title}
         crumbs={[

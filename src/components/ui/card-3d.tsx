@@ -31,8 +31,12 @@ interface Card3DProps {
  * اگر کاربر prefers-reduced-motion فعال کرده باشد، تیلت کاملاً غیرفعال
  * می‌شود و فقط جلوه‌های ایستا باقی می‌ماند.
  */
+/** سقف هویت بصری: تیلت هرگز از ۵ درجه بیشتر نمی‌شود */
+const MAX_TILT_CAP = 5
+
 export function Card3D({ children, className, maxTilt = 5, glare = true }: Card3DProps) {
   const prefersReduced = useReducedMotion()
+  const tilt = Math.min(Math.max(maxTilt, 0), MAX_TILT_CAP)
 
   const mouseX = useMotionValue(0.5)
   const mouseY = useMotionValue(0.5)
@@ -41,8 +45,8 @@ export function Card3D({ children, className, maxTilt = 5, glare = true }: Card3
   const sx = useSpring(mouseX, springCfg)
   const sy = useSpring(mouseY, springCfg)
 
-  const rotateY = useTransform(sx, [0, 1], [`-${maxTilt}deg`, `${maxTilt}deg`])
-  const rotateX = useTransform(sy, [0, 1], [`${maxTilt}deg`, `-${maxTilt}deg`])
+  const rotateY = useTransform(sx, [0, 1], [`-${tilt}deg`, `${tilt}deg`])
+  const rotateX = useTransform(sy, [0, 1], [`${tilt}deg`, `-${tilt}deg`])
 
   const glareX = useTransform(sx, [0, 1], ['0%', '100%'])
   const glareY = useTransform(sy, [0, 1], ['0%', '100%'])

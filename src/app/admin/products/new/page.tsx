@@ -17,7 +17,7 @@ export default function NewProductPage() {
             <Button variant="ghost" size="icon" asChild>
               <Link href="/admin/products"><ArrowRight className="h-5 w-5" /></Link>
             </Button>
-            <h1 className="text-3xl font-black italic">افزودن محصول جدید</h1>
+            <h1 className="text-3xl font-black text-foreground">افزودن محصول جدید</h1>
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -26,7 +26,10 @@ export default function NewProductPage() {
               <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-xl space-y-6">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest mr-1">نام محصول</label>
-                  <Input placeholder="مثلاً: گوشی هوشمند مدل Pro 2026" className="bg-black/20 border-white/10 h-12" />
+                  <Input
+                    placeholder="مثلاً: پرینتر لیزری کانن LBP-2900"
+                    className="h-12 border-white/10 bg-black/20"
+                  />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

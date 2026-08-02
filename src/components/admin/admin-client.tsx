@@ -28,8 +28,10 @@ export function AdminClient() {
         
         <main className="flex-1 space-y-10">
           <header>
-            <h1 className="text-3xl font-black italic">داشبورد آنالیز هوشمند</h1>
-            <p className="text-muted-foreground mt-2">خلاصه وضعیت کسب‌وکار شما در ۲۴ ساعت گذشته</p>
+            <h1 className="text-3xl font-black text-foreground">داشبورد مدیریت</h1>
+            <p className="mt-2 text-muted-foreground">
+              خلاصهٔ وضعیت کسب‌وکار (داده‌های نمایشی — تا اتصال بک‌اند)
+            </p>
           </header>
 
           {/* Stats Grid */}
@@ -85,7 +87,9 @@ export function AdminClient() {
                   </div>
                 </div>
                 <div className="relative z-10 text-center mt-40">
-                  <p className="text-muted-foreground">نمودار تعاملی در حال بارگذاری داده‌های ابری...</p>
+                  <p className="text-muted-foreground">
+                    نمودار فروش پس از اتصال بک‌اند فعال می‌شود.
+                  </p>
                 </div>
               </div>
             </FadeIn>
@@ -95,9 +99,9 @@ export function AdminClient() {
                 <h3 className="text-xl font-bold mb-6">آخرین فعالیت‌های سیستم</h3>
                 <div className="space-y-6">
                   {[
-                    { user: 'علی محمدی', action: 'خرید گوشی X20', time: '۲ دقیقه پیش' },
+                    { user: 'علی محمدی', action: 'خرید پرینتر LBP-2900', time: '۲ دقیقه پیش' },
                     { user: 'سارا رضایی', action: 'ثبت‌نام جدید', time: '۱۵ دقیقه پیش' },
-                    { user: 'سیستم هوشمند', action: 'آپدیت موجودی انبار', time: '۱ ساعت پیش' },
+                    { user: 'سیستم', action: 'به‌روزرسانی موجودی انبار', time: '۱ ساعت پیش' },
                     { user: 'رضا علوی', action: 'لغو سفارش', time: '۳ ساعت پیش' },
                   ].map((act, i) => (
                     <div key={i} className="flex items-center justify-between border-b border-white/5 pb-4 last:border-0 last:pb-0">
