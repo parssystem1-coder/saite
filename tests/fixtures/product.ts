@@ -1,4 +1,4 @@
-import type { ProductCardData } from '@/types/product'
+import type { Product, ProductCardData } from '@/types/product'
 
 /** محصول نمونهٔ خریدنی برای تست UI */
 export const sampleProduct: ProductCardData = {
@@ -28,4 +28,29 @@ export const quoteOnlyProduct: ProductCardData = {
   price: undefined,
   compareAtPrice: undefined,
   stockStatus: 'on_request',
+}
+
+/** محصول کامل پایه — برای تست‌هایی که به specs/reviews/faqs نیاز دارند */
+const baseFullProduct: Product = {
+  ...sampleProduct,
+  sku: 'CAN-LBP2900',
+  shortDescription: 'پرینتر لیزری تک‌رنگ مناسب دفاتر کوچک.',
+  description: 'توضیح کامل محصول برای تب توضیحات.',
+  specs: [
+    { key: 'سرعت چاپ', value: '12 ppm', isTechnical: true },
+    { key: 'اندازهٔ کاغذ', value: 'A4' },
+  ],
+  technology: 'laser',
+  colorSupport: 'mono',
+  usageClass: 'office',
+  warrantyMonths: 18,
+  createdAt: '2026-01-01',
+}
+
+/**
+ * سازندهٔ محصول کامل با امکان بازنویسی هر فیلد.
+ * برای تست شاخه‌های شرطی مثل «کالای استعلامی» یا «بدون نظر».
+ */
+export function makeProduct(overrides: Partial<Product> = {}): Product {
+  return { ...baseFullProduct, ...overrides }
 }

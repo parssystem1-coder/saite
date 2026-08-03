@@ -9,6 +9,7 @@ import { getProducts } from '@/lib/api'
 import { BRANDS } from '@/lib/constants'
 import { formatNumber } from '@/lib/format'
 import { buildBreadcrumbLd } from '@/lib/seo/breadcrumb-ld'
+import { toProductCardData } from '@/types/product'
 import { JsonLd } from '@/components/seo/json-ld'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -75,7 +76,7 @@ export default async function BrandPage({ params }: Props) {
           </header>
         }
       >
-        <BrandProducts products={all} />
+        <BrandProducts products={all.map(toProductCardData)} />
       </PageShell>
     </>
   )

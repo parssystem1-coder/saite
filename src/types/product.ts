@@ -166,3 +166,56 @@ export type ProductCardData = Pick<
   | 'keyFeatures'
   | 'condition'
 >
+
+/**
+ * تبدیل Product کامل به دادهٔ کارت — مرز سرور به کلاینت.
+ *
+ * ⚠️ هر جا Product کامل را مستقیم به ProductGrid بدهید، فیلدهای
+ * specs، reviews، faqs و description هم در payload سریال می‌شوند
+ * در حالی که کارت هیچ‌کدام را نمایش نمی‌دهد.
+ */
+export function toProductCardData(product: Product): ProductCardData {
+  return {
+    id: product.id,
+    slug: product.slug,
+    brand: product.brand,
+    model: product.model,
+    name: product.name,
+    category: product.category,
+    priceType: product.priceType,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice,
+    stockStatus: product.stockStatus,
+    images: product.images,
+    keyFeatures: product.keyFeatures,
+    condition: product.condition,
+  }
+}
+
+/**
+ * سبک‌ترین شکل محصول — فقط برای فهرست‌های متنی مثل نتیجهٔ
+ * «یافتن قطعهٔ سازگار» که تصویر و مشخصات نشان نمی‌دهند.
+ *
+ * چرا این تایپ لازم شد؟ صفحهٔ اصلی نگاشت سازگاری ۱۲ دستگاه را از
+ * سرور به کلاینت می‌فرستد. با Product کامل، فیلدهای specs، reviews،
+ * faqs و description هم سریال می‌شدند — حجمی که کاربر هرگز در آن
+ * ویجت نمی‌بیند.
+ */
+export type CompatibleItemSummary = Pick<
+  Product,
+  'id' | 'slug' | 'brand' | 'model' | 'name' | 'priceType' | 'price' | 'stockStatus'
+>
+
+/** تبدیل Product کامل به خلاصهٔ سازگاری — مرز سرور به کلاینت */
+export function toCompatibleItemSummary(product: Product): CompatibleItemSummary {
+  return {
+    id: product.id,
+    slug: product.slug,
+    brand: product.brand,
+    model: product.model,
+    name: product.name,
+    priceType: product.priceType,
+    price: product.price,
+    stockStatus: product.stockStatus,
+  }
+}

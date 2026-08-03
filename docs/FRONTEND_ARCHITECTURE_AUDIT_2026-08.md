@@ -265,14 +265,53 @@ export const checkoutSchema = z.object({
 بعداً ISR لازم شد، می‌توان `generateStaticParams` برای شش دستهٔ اصلی
 اضافه کرد.
 
-### 🔵 فاز B — عملکرد صفحهٔ اصلی و مرزهای خطا `~۵ ساعت`
+### ✅ فاز B — عملکرد صفحهٔ اصلی و مرزهای خطا `انجام شد`
 
-| کار | فایل | معیار پذیرش |
-|---|---|---|
-| `CompatibleItemSummary` + `Promise.all` | `types/product.ts`، `app/page.tsx`، `home/compatibility-finder.tsx` | flight صفحهٔ اصلی زیر ۳۰KB |
-| `error.tsx` برای ۵ سگمنت | products، products/[id]، cart، checkout، admin | خطای شبیه‌سازی‌شده کل سایت را نبرد |
-| `loading.tsx` برای ۴ سگمنت | admin، checkout، compare، wishlist | بدون پرش چیدمان |
-| Organization + WebSite JSON-LD | `lib/seo/organization-ld.ts`، `app/layout.tsx` | Rich Results Test سبز |
+| کار | فایل | معیار پذیرش | وضعیت |
+|---|---|---|:---:|
+| `CompatibleItemSummary` + `Promise.all` | `types/product.ts`، `app/page.tsx` | payload سبک‌تر، بدون await در حلقه | ✅ |
+| `toProductCardData` روی مرزهای Server→Client | `app/page.tsx`، `brands/[slug]`، `products/[id]` | صفر فیلد سنگین در payload | ✅ |
+| `error.tsx` برای ۵ سگمنت | products، products/[id]، cart، checkout، admin | خطای یک بخش کل سایت را نبرد | ✅ |
+| `loading.tsx` برای ۳ سگمنت | checkout، compare، wishlist | بدون پرش چیدمان | ✅ |
+| Organization + WebSite JSON-LD | `lib/seo/organization-ld.ts`، `app/layout.tsx` | `Store` + `WebSite` + `SearchAction` در HTML | ✅ |
+| تست لایهٔ SEO (شکاف شمارهٔ ۱۴) | `tests/lib/seo-ld.test.ts` | پوشش هر ۴ شاخهٔ `buildProductLd` | ✅ |
+
+#### اندازه‌گیری واقعی — و یک تصحیح صادقانه
+
+| صفحه | flight قبل | flight بعد | HTML قبل | HTML بعد |
+|---|---:|---:|---:|---:|
+| `/` (اصلی) | ۷۲.۶ KB | **۶۲.۶ KB** | ۲۰۰ KB | **۱۸۵ KB** |
+| `/brands/canon` | ۳۶.۴ KB | **۳۳.۰ KB** | ۱۱۲ KB | **۱۰۶.۵ KB** |
+
+**کلیدهای سنگین در payload صفحهٔ اصلی — همه به صفر رسیدند:**
+
+```
+              قبل  →  بعد
+shortDescription  18  →  0
+specs             18  →  0
+faqs               3  →  0
+verifiedPurchase   5  →  0
+isTechnical       33  →  0
+createdAt         24  →  0
+```
+
+> ⚠️ **تصحیح برآورد اولیه:** در گزارش نوشتم «حذف حدود ۶۵٪ از flight».
+> نتیجهٔ واقعی **۱۴٪** بود. علت اشتباه من: فرض کرده بودم بخش عمدهٔ
+> payload دادهٔ محصول است. اندازه‌گیری بعدی نشان داد باقی‌ماندهٔ
+> ۶۲.۶KB عمدتاً رشته‌های `className` تیلویند (۲۴۰ مورد) و
+> `iconNode` آیکون‌های lucide (۳۶ مورد) است که ذاتی RSC است و با
+> narrow کردن دادهٔ محصول کم نمی‌شود.
+>
+> **یافتهٔ جانبی مهم:** ریشهٔ اصلی جایی بود که در ممیزی ندیده بودم —
+> `ProductGrid` در صفحهٔ اصلی، برند و جزئیات محصول، `Product` کامل
+> می‌گرفت در حالی که فقط `ProductCardData` لازم داشت. تایپ سبک از
+> فاز اول وجود داشت اما هیچ‌جا استفاده نمی‌شد.
+>
+> کاهش بیشتر نیازمند کار روی حجم آیکون‌ها و کلاس‌هاست — پیشنهاد
+> می‌کنم به فاز جداگانه‌ای موکول شود، نه اینکه اینجا نیمه‌کاره انجام شود.
+
+**قفل ضدرگرسیون:** `tests/lib/product-projection.test.ts` تضمین می‌کند
+هیچ‌کس فیلد سنگین را دوباره وارد مرز کلاینت نکند (تست تعداد دقیق کلیدها).
 
 ### 🔵 فاز C — درستی داده و فرم‌ها `~۴ ساعت`
 

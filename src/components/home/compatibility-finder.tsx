@@ -10,13 +10,16 @@ import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
 import { BRANDS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import type { Product } from '@/types/product'
+import type { CompatibleItemSummary } from '@/types/product'
 
 interface Props {
   /** مدل دستگاه‌هایی که برایشان مصرفی یا قطعه موجود است */
   devices: { brand: string; model: string }[]
-  /** نگاشت مدل دستگاه به اقلام سازگار */
-  compatibilityMap: Record<string, Product[]>
+  /**
+   * نگاشت مدل دستگاه به اقلام سازگار.
+   * عمداً خلاصه (نه Product کامل) تا payload سرور→کلاینت سبک بماند.
+   */
+  compatibilityMap: Record<string, CompatibleItemSummary[]>
 }
 
 /**

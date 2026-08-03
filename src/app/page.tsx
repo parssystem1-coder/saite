@@ -22,7 +22,11 @@ import { Card3D } from '@/components/ui/card-3d'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getBestSellers, getCompatibleItems, getFeaturedProducts, getSupportedDeviceModels } from '@/lib/api'
 import { CATEGORIES, SITE } from '@/lib/constants'
-import type { Product } from '@/types/product'
+import {
+  toCompatibleItemSummary,
+  toProductCardData,
+  type CompatibleItemSummary,
+} from '@/types/product'
 
 export const metadata: Metadata = {
   description:
@@ -66,11 +70,22 @@ export default async function Home() {
     getSupportedDeviceModels(),
   ])
 
-  // نگاشت سازگاری از پیش ساخته می‌شود تا ویجت بدون رفت‌وبرگشت سرور کار کند
-  const compatibilityMap: Record<string, Product[]> = {}
-  for (const d of devices) {
-    compatibilityMap[d.model] = await getCompatibleItems(d.model)
-  }
+  /*
+    نگاشت سازگاری از پیش ساخته می‌شود تا ویجت بدون رفت‌وبرگشت سرور کار کند.
+
+    دو نکتهٔ عملکردی:
+     ۱) Promise.all به‌جای await در حلقه — ۱۲ درخواست موازی، نه پشت‌سرهم.
+     ۲) toCompatibleItemSummary — فقط ۸ فیلدی که ویجت واقعاً نشان می‌دهد
+        سریال می‌شود، نه Product کامل با specs/reviews/faqs.
+  */
+  const compatibilityEntries = await Promise.all(
+    devices.map(
+      async (d) =>
+        [d.model, (await getCompatibleItems(d.model)).map(toCompatibleItemSummary)] as const
+    )
+  )
+  const compatibilityMap: Record<string, CompatibleItemSummary[]> =
+    Object.fromEntries(compatibilityEntries)
 
   return (
     <div className="container mx-auto space-y-20 px-4 py-10">
@@ -164,7 +179,7 @@ export default async function Home() {
             </Button>
           }
         />
-        <ProductGrid products={bestSellers.slice(0, 4)} columns={4} />
+        <ProductGrid products={bestSellers.slice(0, 4).map(toProductCardData)} columns={4} />
       </section>
 
       {/* ⑥ برندها ────────────────────────────────────────── */}
@@ -201,7 +216,7 @@ export default async function Home() {
           title="پیشنهاد ویژه"
           description="منتخب کارشناسان فنی ما"
         />
-        <ProductGrid products={featured.slice(0, 4)} columns={4} />
+        <ProductGrid products={featured.slice(0, 4).map(toProductCardData)} columns={4} />
       </section>
 
       {/* ⑨ مقالات ────────────────────────────────────────── */}
