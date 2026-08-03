@@ -156,6 +156,3 @@ export function ContactFab() {
     </nav>
   )
 }
-
-/** @deprecated از ContactFab استفاده کنید — برای سازگاری importهای قدیمی */
-export { ContactFab as WhatsAppFab }

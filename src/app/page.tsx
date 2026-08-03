@@ -1,15 +1,4 @@
-import {
-  ArrowLeft,
-  BadgeCheck,
-  Copy,
-  Droplets,
-  Headphones,
-  Printer,
-  ScanLine,
-  Send,
-  Truck,
-  Wrench,
-} from 'lucide-react'
+import { ArrowLeft, BadgeCheck, Headphones, Truck, Wrench } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArticleTeasers } from '@/components/home/article-teasers'
@@ -21,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Card3D } from '@/components/ui/card-3d'
 import { SectionHeader } from '@/components/ui/section-header'
 import { getBestSellers, getCompatibleItems, getFeaturedProducts, getSupportedDeviceModels } from '@/lib/api'
+import { getCategoryIcon } from '@/lib/category-icons'
 import { CATEGORIES, SITE } from '@/lib/constants'
+import { SERVICE_SUMMARIES } from '@/lib/services-data'
 import {
   toCompatibleItemSummary,
   toProductCardData,
@@ -33,8 +24,6 @@ export const metadata: Metadata = {
     'فروش و سرویس تخصصی پرینتر، اسکنر، دستگاه کپی، فکس، مواد مصرفی و قطعات یدکی با ضمانت اصالت کالا.',
 }
 
-const CATEGORY_ICONS = { Printer, ScanLine, Copy, Send, Droplets, Wrench } as const
-
 const TRUST_ITEMS = [
   { icon: BadgeCheck, title: 'ضمانت اصالت کالا', desc: 'تمام کالاها اورجینال و دارای گارانتی' },
   { icon: Truck, title: 'ارسال سریع', desc: 'ارسال به سراسر کشور در کوتاه‌ترین زمان' },
@@ -42,26 +31,6 @@ const TRUST_ITEMS = [
   { icon: Wrench, title: 'خدمات پس از فروش', desc: 'تعمیر و تأمین قطعات توسط تیم فنی' },
 ]
 
-const SERVICES = [
-  {
-    icon: Wrench,
-    title: 'تعمیر ماشین‌های اداری',
-    desc: 'عیب‌یابی و تعمیر تخصصی پرینتر، اسکنر و دستگاه کپی در محل یا کارگاه.',
-    href: '/services/repair',
-  },
-  {
-    icon: Droplets,
-    title: 'تأمین مواد مصرفی و قطعات',
-    desc: 'تأمین تونر، کارتریج، درام و قطعات یدکی اورجینال برای تمام برندهای معتبر.',
-    href: '/services/parts',
-  },
-  {
-    icon: BadgeCheck,
-    title: 'قرارداد سرویس دوره‌ای',
-    desc: 'قرارداد نگهداری سالانه برای سازمان‌ها با اولویت پشتیبانی و قیمت ترجیحی.',
-    href: '/services/contract',
-  },
-]
 
 export default async function Home() {
   const [featured, bestSellers, devices] = await Promise.all([
@@ -132,7 +101,7 @@ export default async function Home() {
         />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map((cat) => {
-            const Icon = CATEGORY_ICONS[cat.icon as keyof typeof CATEGORY_ICONS]
+            const Icon = getCategoryIcon(cat.icon)
             return (
               <Card3D key={cat.slug} maxTilt={4}>
                 <Link
@@ -193,14 +162,16 @@ export default async function Home() {
           align="center"
         />
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {SERVICES.map((s) => (
-            <Card3D key={s.title} maxTilt={4}>
+          {SERVICE_SUMMARIES.map((s) => (
+            <Card3D key={s.slug} maxTilt={4}>
               <Link href={s.href} className="block p-7">
                 <div className="layer-lift-sm mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/12">
                   <s.icon className="size-6 text-primary" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {s.description}
+                </p>
                 <span className="mt-4 inline-block text-xs font-bold text-primary">
                   اطلاعات بیشتر ←
                 </span>

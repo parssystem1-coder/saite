@@ -1,9 +1,10 @@
-import { ArrowLeft, BadgeCheck, Droplets, Wrench } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card3D } from '@/components/ui/card-3d'
+import { SERVICE_DETAILS } from '@/lib/services-data'
 
 export const metadata: Metadata = {
   title: 'خدمات',
@@ -11,42 +12,16 @@ export const metadata: Metadata = {
     'تعمیر ماشین‌های اداری، تأمین قطعات یدکی و مواد مصرفی، و قرارداد سرویس دوره‌ای برای سازمان‌ها.',
 }
 
-const SERVICES = [
-  {
-    icon: Wrench,
-    title: 'تعمیر ماشین‌های اداری',
-    desc: 'عیب‌یابی و تعمیر تخصصی پرینتر، اسکنر، دستگاه کپی و فکس؛ در محل شما یا در کارگاه فنی ما.',
-    items: [
-      'تعمیر برد و منبع تغذیه',
-      'رفع مشکل کاغذکشی و گیر کردن کاغذ',
-      'سرویس یونیت فیوزینگ و درام',
-      'تنظیم کیفیت چاپ و کالیبراسیون',
-    ],
-  },
-  {
-    icon: Droplets,
-    title: 'تأمین قطعات و مواد مصرفی',
-    desc: 'تأمین تونر، کارتریج، درام، غلتک و قطعات یدکی اورجینال برای تمام برندهای معتبر.',
-    items: [
-      'تونر و کارتریج اورجینال',
-      'درام یونیت و دولوپر',
-      'غلتک کاغذکش و تسمهٔ انتقال',
-      'تأمین سفارشی قطعات کمیاب',
-    ],
-  },
-  {
-    icon: BadgeCheck,
-    title: 'قرارداد سرویس دوره‌ای',
-    desc: 'قرارداد نگهداری سالانه برای سازمان‌ها؛ با اولویت پشتیبانی، بازدید دوره‌ای و قیمت ترجیحی.',
-    items: [
-      'بازدید و سرویس دوره‌ای',
-      'اولویت در زمان پاسخ‌گویی',
-      'تخفیف روی قطعات و مصرفی',
-      'گزارش وضعیت تجهیزات',
-    ],
-  },
-]
+/** حداکثر موارد نمایشی روی کارت — بقیه در صفحهٔ خدمت */
+const MAX_OFFERINGS_ON_CARD = 4
 
+/**
+ * فهرست خدمات.
+ *
+ * داده از `SERVICE_DETAILS` می‌آید — پیش از این این صفحه و صفحهٔ
+ * اصلی هرکدام آرایهٔ `SERVICES` جداگانه داشتند و کارت‌ها به صفحهٔ
+ * جزئیات خدمت هم لینک نمی‌شدند.
+ */
 export default function ServicesPage() {
   return (
     <div className="container mx-auto px-4 py-10">
@@ -61,23 +36,29 @@ export default function ServicesPage() {
       </header>
 
       <div className="mb-16 grid gap-6 lg:grid-cols-3">
-        {SERVICES.map((s) => (
-          <Card3D key={s.title} maxTilt={4}>
-            <div className="flex h-full flex-col p-7">
+        {SERVICE_DETAILS.map((service) => (
+          <Card3D key={service.slug} maxTilt={4}>
+            <Link href={`/services/${service.slug}`} className="flex h-full flex-col p-7">
               <div className="layer-lift-sm mb-4 flex size-12 items-center justify-center rounded-2xl bg-primary/12">
-                <s.icon className="size-6 text-primary" />
+                <service.icon className="size-6 text-primary" aria-hidden="true" />
               </div>
-              <h2 className="text-lg font-bold text-foreground">{s.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+              <h2 className="text-lg font-bold text-foreground">{service.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {service.description}
+              </p>
               <ul className="mt-5 flex-1 space-y-2">
-                {s.items.map((i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <span className="mt-1.5 size-1 shrink-0 rounded-full bg-primary" />
-                    {i}
+                {service.offerings.slice(0, MAX_OFFERINGS_ON_CARD).map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1.5 size-1 shrink-0 rounded-full bg-primary"
+                    />
+                    {item}
                   </li>
                 ))}
               </ul>
-            </div>
+              <span className="mt-5 text-xs font-bold text-primary">جزئیات این خدمت ←</span>
+            </Link>
           </Card3D>
         ))}
       </div>

@@ -75,9 +75,9 @@
 | ۸ | ۱۲ نقطه رنگ hardcode خارج از توکن | 🟡 متوسط | `dashboard-client.tsx:40,59,80,83,98` (`bg-white/5`، `border-white/10`، `text-white`) · `auth-card.tsx:15,25` (`bg-[#0d0d0f]`) · `login-client.tsx:86` (`bg-[#0d0d0f]`) · `global-error.tsx:23` (`#0a0a0c`) | تم قابل سوییچ نیست؛ اگر روزی لازم شد پالت عوض شود، این ۱۲ نقطه جا می‌مانند | جایگزینی با `bg-surface-1`، `border-border`، `text-foreground`. (`global-error.tsx` استثناست چون CSS در دسترس نیست — کامنت توضیحی کافی است) |
 | ۹ | `dashboard-client.tsx` کل store را subscribe می‌کند | 🟡 متوسط | `src/components/dashboard/dashboard-client.tsx:13` → `const { user, isLoggedIn } = useAuthStore()` — تنها نقطه در کل پروژه بدون selector | هر تغییر در auth store، کل داشبورد را re-render می‌کند | `useAuthStore((s) => s.user)` و `useAuthStore((s) => s.isLoggedIn)` |
 | ۱۰ | داشبورد کاربر با داده‌های hardcode و منوی مرده | 🟡 متوسط | `dashboard-client.tsx:26-30` → `{ label: 'علاقه‌مندی‌ها', value: '۱۲' }` در حالی که `useWishlistStore` وجود دارد · خطوط ۵۴-۶۶: چهار `<button>` بدون `onClick` | کاربر عدد ۱۲ می‌بیند ولی wishlist او خالی است — بی‌اعتمادی | اتصال به `useWishlistStore().items.length` و `useCartStore().itemCount()`؛ دکمه‌ها به `<Link>` تبدیل شوند |
-| ۱۱ | صفحه‌بندی بدون ellipsis — همهٔ صفحات رندر می‌شوند | 🟡 متوسط | `src/components/ui/pagination.tsx:26` → `Array.from({ length: totalPages })` | با ۹ کالا در هر صفحه و رشد کاتالوگ به ۵۰۰ کالا، ۵۶ دکمه رندر می‌شود | پنجرهٔ لغزان (`۱ … ۴ ۵ ۶ … ۵۶`) |
-| ۱۲ | سه فایل مرده در درخت | 🟡 متوسط | `src/components/home/home-product-grid.tsx` (صفر import) · `src/components/layout/whatsapp-fab.tsx` (فقط re-export deprecated) · `src/components/ui/fade-in.tsx` (صفر import) | نویز؛ خواننده فکر می‌کند دو مسیر برای یک کار هست | حذف هر سه + حذف alias `export { ContactFab as WhatsAppFab }` از `contact-fab.tsx:160` |
-| ۱۳ | `CATEGORY_ICONS` و `SERVICES` دوبار تعریف شده | 🟡 متوسط | `CATEGORY_ICONS`: `src/app/page.tsx:32` و `design-system-client.tsx:36` · `SERVICES`: `src/app/page.tsx:41` و `src/app/services/page.tsx:14` (در حالی که `src/lib/services-data.ts` منبع واحد است) | دو منبع حقیقت؛ افزودن دستهٔ جدید = ویرایش دو فایل | `src/lib/category-icons.ts` مشترک + استفاده از `SERVICE_DETAILS` در هر دو صفحه |
+| ۱۱ | ✅ **رفع شد (فاز D)** — صفحه‌بندی بدون ellipsis | 🟡 متوسط | `src/components/ui/pagination.tsx:26` → `Array.from({ length: totalPages })` | با ۹ کالا در هر صفحه و رشد کاتالوگ به ۵۰۰ کالا، ۵۶ دکمه رندر می‌شود | پنجرهٔ لغزان (`۱ … ۴ ۵ ۶ … ۵۶`) |
+| ۱۲ | ✅ **رفع شد (فاز D)** — سه فایل مرده در درخت | 🟡 متوسط | `src/components/home/home-product-grid.tsx` (صفر import) · `src/components/layout/whatsapp-fab.tsx` (فقط re-export deprecated) · `src/components/ui/fade-in.tsx` (صفر import) | نویز؛ خواننده فکر می‌کند دو مسیر برای یک کار هست | حذف هر سه + حذف alias `export { ContactFab as WhatsAppFab }` از `contact-fab.tsx:160` |
+| ۱۳ | ✅ **رفع شد (فاز D)** — `CATEGORY_ICONS` سه‌بار و `SERVICES` دوبار تعریف شده | 🟡 متوسط | `CATEGORY_ICONS`: `src/app/page.tsx:32` و `design-system-client.tsx:36` · `SERVICES`: `src/app/page.tsx:41` و `src/app/services/page.tsx:14` (در حالی که `src/lib/services-data.ts` منبع واحد است) | دو منبع حقیقت؛ افزودن دستهٔ جدید = ویرایش دو فایل | `src/lib/category-icons.ts` مشترک + استفاده از `SERVICE_DETAILS` در هر دو صفحه |
 | ۱۴ | صفر تست برای لایهٔ SEO | 🟡 متوسط | `tests/lib/` شامل ۹ فایل است اما هیچ‌کدام `seo/*` نیست · `buildProductLd` منطق شرطی دارد (`offers` فقط برای `fixed`، `aggregateRating` فقط با review) | رگرسیون خاموش در schema.org — گوگل خطا می‌دهد، ما نمی‌فهمیم | `tests/lib/seo/product-ld.test.ts` + `breadcrumb-ld` + `faq-ld` |
 | ۱۵ | بدون Organization/WebSite JSON-LD و بدون OG image | 🟡 متوسط | grep `Organization` → فقط داخل `article-ld.ts` به‌عنوان author · `ls src/app/opengraph-image*` → وجود ندارد · `layout.tsx:39` فقط `twitter: { card }` | نتیجهٔ جستجوی برند بدون Knowledge Panel؛ اشتراک در شبکه‌های اجتماعی بدون تصویر | `lib/seo/organization-ld.ts` در layout + `src/app/opengraph-image.tsx` |
 | ۱۶ | `loading.tsx` فقط برای ۳ سگمنت از ۱۲ | 🟡 متوسط | موجود: `products`، `products/[id]`، `cart` · غایب: admin، checkout، compare، wishlist، blog، brands، services، contact، dashboard | پرش ناگهانی چیدمان هنگام ناوبری | `loading.tsx` برای `admin`، `checkout`، `compare`، `wishlist` |
@@ -349,15 +349,36 @@ payload هست — پیش از این رادیو خارج از react-hook-form �
 جعلی همان اشتباه قبلی است. چهار دکمهٔ بدون `onClick` هم به لینک واقعی
 تبدیل شدند.
 
-### 🔵 فاز D — پاک‌سازی و تست `~۴ ساعت`
+### ✅ فاز D — پاک‌سازی و حذف تکرار `انجام شد`
 
-| کار | فایل | معیار پذیرش |
-|---|---|---|
-| حذف ۳ فایل مرده + alias منسوخ | `home-product-grid`، `whatsapp-fab`، `fade-in` | build سبز پس از حذف |
-| `lib/category-icons.ts` مشترک | `app/page.tsx`، `design-system-client.tsx` | یک منبع آیکون |
-| یکسان‌سازی `SERVICES` با `SERVICE_DETAILS` | `app/page.tsx`، `app/services/page.tsx` | یک منبع خدمات |
-| تست‌های `lib/seo/*` | `tests/lib/seo/*.test.ts` | پوشش `buildProductLd` در هر دو حالت قیمت |
-| صفحه‌بندی با پنجرهٔ لغزان | `ui/pagination.tsx` | با ۵۰ صفحه حداکثر ۹ دکمه |
+| کار | فایل | معیار پذیرش | وضعیت |
+|---|---|---|:---:|
+| حذف ۳ فایل مرده + alias منسوخ | `home-product-grid`، `whatsapp-fab`، `fade-in` | build سبز پس از حذف | ✅ |
+| `lib/category-icons.ts` مشترک | ۳ نقطهٔ تکراری → یک منبع | یک منبع آیکون | ✅ |
+| یکسان‌سازی `SERVICES` با `SERVICE_DETAILS` | `services-data.ts`، `app/page.tsx`، `app/services/page.tsx` | یک منبع خدمات | ✅ |
+| تست‌های لایهٔ SEO | `tests/lib/seo-ld.test.ts` | (در فاز B انجام شد) | ✅ |
+| صفحه‌بندی با پنجرهٔ لغزان | `lib/pagination-range.ts`، `ui/pagination.tsx` | با ۵۶ صفحه حداکثر ۷ خانه | ✅ |
+
+**تکرار `CATEGORY_ICONS` سه‌تایی بود، نه دوتایی.** هنگام اجرا نقطهٔ
+سومی هم پیدا شد که در ممیزی از قلم افتاده بود: `layout/mega-menu.tsx`
+همان شیء را با نام `ICONS` تعریف کرده بود. هر سه حالا از
+`getCategoryIcon()` می‌خوانند که برای نام ناشناخته آیکون پیش‌فرض
+برمی‌گرداند (پیش از این `undefined` رندر می‌شد).
+
+**دو یافتهٔ جانبی حین پاک‌سازی:**
+
+۱. کارت‌های صفحهٔ `/services` **به هیچ‌جا لینک نبودند** — کاربر روی
+   «تعمیر ماشین‌های اداری» کلیک می‌کرد و اتفاقی نمی‌افتاد، در حالی که
+   `/services/repair` وجود داشت. حالا هر کارت به صفحهٔ خودش می‌رود.
+
+۲. آرایهٔ محلی `SERVICES` در آن صفحه فیلد `items` داشت که
+   **زیرمجموعهٔ** `offerings` در `SERVICE_DETAILS` بود — یعنی داده‌ای
+   ناقص و موازی با منبع کامل‌تر.
+
+**صفحه‌بندی — تعداد خانه‌ها ثابت است:** منطق در
+`lib/pagination-range.ts` جدا شد تا بدون رندر قابل تست باشد. با ۵۶
+صفحه، در هر موقعیتی دقیقاً **۷ خانه** رندر می‌شود (پیش از این ۵۶ دکمه)
+و چون تعداد ثابت است، عرض نوار هنگام جابه‌جایی نمی‌پرد.
 
 ### 🔵 فاز E — همسان‌سازی مستندات و CI `~۲ ساعت`
 
