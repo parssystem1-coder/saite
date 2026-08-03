@@ -94,7 +94,7 @@ export function LoginClient() {
 
           <div className="relative py-2">
             <span className="absolute inset-x-0 top-1/2 h-px bg-border" />
-            <span className="relative mx-auto block w-fit bg-[#0d0d0f] px-3 text-[11px] font-bold text-muted-foreground">
+            <span className="relative mx-auto block w-fit bg-surface-1 px-3 text-[11px] font-bold text-muted-foreground">
               یا ورود با
             </span>
           </div>

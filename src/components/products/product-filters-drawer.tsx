@@ -58,7 +58,7 @@ export function ProductFiltersDrawer({
         type="button"
         aria-label="بستن فیلترها"
         onClick={onClose}
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-overlay backdrop-blur-sm"
       />
       <div
         role="dialog"

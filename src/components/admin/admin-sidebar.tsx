@@ -111,7 +111,7 @@ export function AdminSidebar() {
         <div id="admin-mobile-nav" className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-overlay backdrop-blur-sm"
             aria-label="بستن منو"
             onClick={closeMobile}
           />

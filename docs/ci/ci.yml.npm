@@ -21,28 +21,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'pnpm'
+          cache: 'npm'
 
+      # npm ci از package-lock.json می‌خواند و نصب تکرارپذیر می‌دهد.
+      # پیش از این CI با pnpm نصب می‌کرد در حالی که تیم با npm کار
+      # می‌کند — دو درخت وابستگی متفاوت، دو نتیجهٔ متفاوت.
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
+        run: npm ci --no-audit --no-fund
 
       - name: Type check
-        run: pnpm type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
 
       - name: Test
-        run: pnpm test
+        run: npm test
 
       - name: Build
-        run: pnpm build
+        run: npm run build

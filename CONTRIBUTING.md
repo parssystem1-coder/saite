@@ -20,13 +20,13 @@ git clone https://github.com/parssystem1-coder/saite.git
 cd saite
 
 # ۲. نصب وابستگی‌ها
-pnpm install
+npm install
 
 # ۳. سرور توسعه
-pnpm dev
+npm run dev
 
 # ۴. قبل از commit — بررسی کیفیت
-pnpm verify
+npm run verify
 ```
 
 ---

@@ -7,6 +7,35 @@
 
 ---
 
+## 📌 وضعیت اجرا — هر پنج فاز تکمیل شد
+
+| فاز | موضوع | وضعیت |
+|:---:|---|:---:|
+| **A** | گارد ادمین · `<h1>` سمت سرور · skip-link | ✅ `ff5f234` |
+| **B** | سبک‌سازی payload · مرز خطا · JSON-LD سازمان | ✅ `c712fcc` |
+| **C** | روش پرداخت در RHF · داشبورد واقعی · فرم ادمین | ✅ `c3efcc2` |
+| **D** | حذف فایل مرده · منبع واحد · صفحه‌بندی لغزان | ✅ `5e32629` |
+| **E** | همسان‌سازی مستندات · CI به npm · توکن رنگ | ✅ همین کامیت¹ |
+
+**وضعیت دروازه‌ها پس از فاز E** (روی نصب تمیز با `npm ci`):
+
+```
+✓ type-check   بدون خطا
+✓ lint         صفر خطا، صفر هشدار
+✓ test         231 تست در 28 فایل
+✓ build        65 صفحه
+```
+
+¹ یک فایل CI نیازمند اعمال دستی توسط شماست (App دسترسی
+`workflows` ندارد) — راهنما: [`docs/ci/README.md`](./ci/README.md).
+
+از ۲۰ مشکل شناسایی‌شده، **۱۹ مورد رفع شد**. تنها مورد باقی‌مانده
+شمارهٔ ۲۰ (کلاس‌های جهت فیزیکی در برابر منطقی) است که عمداً به
+تعویق افتاد — سایت فقط RTL است و بازنویسی ۵۹ نقطه بدون نیاز واقعی،
+ریسک بدون سود است.
+
+---
+
 ## ۱. خلاصهٔ مدیریتی
 
 ### ۱.۱. وضعیت واقعی — با شواهد اجرا
@@ -72,7 +101,7 @@
 | ۵ | روش پرداخت خارج از RHF و خارج از Zod | 🟠 زیاد | `src/components/checkout/checkout-form.tsx:151,173` — `<input type="radio" name="payment">` بدون `register()` · `src/lib/schemas.ts` `checkoutSchema` **فیلد payment ندارد** | مقدار انتخابی کاربر هرگز به `onSubmit` نمی‌رسد. هنگام اتصال بک‌اند این باگ خاموش تبدیل به «همه سفارش‌ها آنلاین» می‌شود | `paymentMethod: z.enum(['online','cod'])` به schema + `register('paymentMethod')` روی رادیوها |
 | ۶ | `<h1>` خالی در صفحهٔ برند | 🟠 زیاد | `src/app/brands/[slug]/page.tsx:48` → `title=""` · تأیید در خروجی: `brands/canon.html` دارای `<h1></h1>` خالی | خطای صریح SEO و a11y — صفحه بدون عنوان قابل درک | `title={brand.displayName}` یا `PageShell` را طوری بساز که `title` اختیاری باشد و `<h1>` را رندر نکند |
 | ۷ | بدون skip-link و بدون landmark پایدار | 🟠 زیاد | `src/app/layout.tsx:50` — `<main>` بدون `id`؛ grep `skip` در layout و `components/layout/*` → صفر نتیجه | کاربر کیبورد باید هر بار از هدر + مگامنو + جستجو رد شود | `<a href="#main" className="sr-only focus:not-sr-only">پرش به محتوا</a>` + `<main id="main">` |
-| ۸ | ۱۲ نقطه رنگ hardcode خارج از توکن | 🟡 متوسط | `dashboard-client.tsx:40,59,80,83,98` (`bg-white/5`، `border-white/10`، `text-white`) · `auth-card.tsx:15,25` (`bg-[#0d0d0f]`) · `login-client.tsx:86` (`bg-[#0d0d0f]`) · `global-error.tsx:23` (`#0a0a0c`) | تم قابل سوییچ نیست؛ اگر روزی لازم شد پالت عوض شود، این ۱۲ نقطه جا می‌مانند | جایگزینی با `bg-surface-1`، `border-border`، `text-foreground`. (`global-error.tsx` استثناست چون CSS در دسترس نیست — کامنت توضیحی کافی است) |
+| ۸ | ✅ **رفع شد (فاز C+E)** — ۱۲ نقطه رنگ hardcode خارج از توکن | 🟡 متوسط | `dashboard-client.tsx:40,59,80,83,98` (`bg-white/5`، `border-white/10`، `text-white`) · `auth-card.tsx:15,25` (`bg-[#0d0d0f]`) · `login-client.tsx:86` (`bg-[#0d0d0f]`) · `global-error.tsx:23` (`#0a0a0c`) | تم قابل سوییچ نیست؛ اگر روزی لازم شد پالت عوض شود، این ۱۲ نقطه جا می‌مانند | جایگزینی با `bg-surface-1`، `border-border`، `text-foreground`. (`global-error.tsx` استثناست چون CSS در دسترس نیست — کامنت توضیحی کافی است) |
 | ۹ | `dashboard-client.tsx` کل store را subscribe می‌کند | 🟡 متوسط | `src/components/dashboard/dashboard-client.tsx:13` → `const { user, isLoggedIn } = useAuthStore()` — تنها نقطه در کل پروژه بدون selector | هر تغییر در auth store، کل داشبورد را re-render می‌کند | `useAuthStore((s) => s.user)` و `useAuthStore((s) => s.isLoggedIn)` |
 | ۱۰ | داشبورد کاربر با داده‌های hardcode و منوی مرده | 🟡 متوسط | `dashboard-client.tsx:26-30` → `{ label: 'علاقه‌مندی‌ها', value: '۱۲' }` در حالی که `useWishlistStore` وجود دارد · خطوط ۵۴-۶۶: چهار `<button>` بدون `onClick` | کاربر عدد ۱۲ می‌بیند ولی wishlist او خالی است — بی‌اعتمادی | اتصال به `useWishlistStore().items.length` و `useCartStore().itemCount()`؛ دکمه‌ها به `<Link>` تبدیل شوند |
 | ۱۱ | ✅ **رفع شد (فاز D)** — صفحه‌بندی بدون ellipsis | 🟡 متوسط | `src/components/ui/pagination.tsx:26` → `Array.from({ length: totalPages })` | با ۹ کالا در هر صفحه و رشد کاتالوگ به ۵۰۰ کالا، ۵۶ دکمه رندر می‌شود | پنجرهٔ لغزان (`۱ … ۴ ۵ ۶ … ۵۶`) |
@@ -82,8 +111,8 @@
 | ۱۵ | بدون Organization/WebSite JSON-LD و بدون OG image | 🟡 متوسط | grep `Organization` → فقط داخل `article-ld.ts` به‌عنوان author · `ls src/app/opengraph-image*` → وجود ندارد · `layout.tsx:39` فقط `twitter: { card }` | نتیجهٔ جستجوی برند بدون Knowledge Panel؛ اشتراک در شبکه‌های اجتماعی بدون تصویر | `lib/seo/organization-ld.ts` در layout + `src/app/opengraph-image.tsx` |
 | ۱۶ | `loading.tsx` فقط برای ۳ سگمنت از ۱۲ | 🟡 متوسط | موجود: `products`، `products/[id]`، `cart` · غایب: admin، checkout، compare، wishlist، blog، brands، services، contact، dashboard | پرش ناگهانی چیدمان هنگام ناوبری | `loading.tsx` برای `admin`، `checkout`، `compare`، `wishlist` |
 | ۱۷ | `product-tabs.tsx` والد را در mount بازنویسی می‌کند | 🟢 کم | `product-tabs.tsx:33-45` — `useEffect` با `eslint-disable exhaustive-deps` و `onTabChange(fromHash)` · در حالی که `product-detail-client.tsx:36` همان hash را در `initialTabFromHash()` می‌خواند | منطق hash در دو جا؛ یک بار state اضافه set می‌شود | خواندن hash فقط در یک جا (`useSyncExternalStore` روی `hashchange`) |
-| ۱۸ | مستندات با واقعیت کد در تضاد است | 🟠 زیاد | `docs/ARCHITECTURE_REVIEW.md:26` می‌گوید build می‌شکند (نمی‌شکند) · `docs/TROUBLESHOOTING.md:336` می‌گوید ۸۵ تست (۱۴۸ است) و ۳۸ صفحه (۶۵ است) · `docs/UI_SHELL_AUDIT_AND_PLAN.md:38-45` می‌گوید ۵ گروه صفحه غایب (همه ساخته شده‌اند) | توسعه‌دهندهٔ جدید بر اساس اطلاعات غلط تصمیم می‌گیرد | افزودن بنر «منسوخ — به FRONTEND_ARCHITECTURE_AUDIT مراجعه کنید» بالای هر دو سند قدیمی + به‌روزرسانی اعداد TROUBLESHOOTING |
-| ۱۹ | دو lockfile هم‌زمان در مخزن | 🟢 کم | `package-lock.json` (۳۳۱KB) و `pnpm-lock.yaml` (۱۹۵KB) · `.github/workflows/ci.yml:34` از `pnpm install --frozen-lockfile` استفاده می‌کند ولی شما با npm کار می‌کنید | CI و محیط محلی ممکن است نسخه‌های متفاوت نصب کنند | تصمیم صریح: چون شما «فقط npm» گفته‌اید → CI به `npm ci` تغییر کند و `pnpm-lock.yaml` حذف شود |
+| ۱۸ | ✅ **رفع شد (فاز E)** — مستندات با واقعیت کد در تضاد است | 🟠 زیاد | `docs/ARCHITECTURE_REVIEW.md:26` می‌گوید build می‌شکند (نمی‌شکند) · `docs/TROUBLESHOOTING.md:336` می‌گوید ۸۵ تست (۱۴۸ است) و ۳۸ صفحه (۶۵ است) · `docs/UI_SHELL_AUDIT_AND_PLAN.md:38-45` می‌گوید ۵ گروه صفحه غایب (همه ساخته شده‌اند) | توسعه‌دهندهٔ جدید بر اساس اطلاعات غلط تصمیم می‌گیرد | افزودن بنر «منسوخ — به FRONTEND_ARCHITECTURE_AUDIT مراجعه کنید» بالای هر دو سند قدیمی + به‌روزرسانی اعداد TROUBLESHOOTING |
+| ۱۹ | ✅ **رفع شد (فاز E)** — دو lockfile هم‌زمان در مخزن | 🟢 کم | `package-lock.json` (۳۳۱KB) و `pnpm-lock.yaml` (۱۹۵KB) · `.github/workflows/ci.yml:34` از `pnpm install --frozen-lockfile` استفاده می‌کند ولی شما با npm کار می‌کنید | CI و محیط محلی ممکن است نسخه‌های متفاوت نصب کنند | تصمیم صریح: چون شما «فقط npm» گفته‌اید → CI به `npm ci` تغییر کند و `pnpm-lock.yaml` حذف شود |
 | ۲۰ | ۵۹ کلاس جهت فیزیکی در برابر ۸ کلاس منطقی | 🟢 کم | `grep -c "pr-\|pl-\|ml-\|mr-\|left-\|right-"` → ۵۹ · `ps-\|pe-\|ms-\|me-` → ۸ · مثال: `header-search.tsx:37` `pr-10` | در RTL درست کار می‌کند اما اگر روزی LTR لازم شود، ۵۹ نقطه باید بازنویسی شود | تدریجی: `pr-` → `pe-`، `left-` → `end-`. اولویت پایین چون سایت فقط RTL است |
 
 ---
@@ -380,14 +409,64 @@ payload هست — پیش از این رادیو خارج از react-hook-form �
 صفحه، در هر موقعیتی دقیقاً **۷ خانه** رندر می‌شود (پیش از این ۵۶ دکمه)
 و چون تعداد ثابت است، عرض نوار هنگام جابه‌جایی نمی‌پرد.
 
-### 🔵 فاز E — همسان‌سازی مستندات و CI `~۲ ساعت`
+### ✅ فاز E — همسان‌سازی مستندات و CI `انجام شد`
 
-| کار | فایل | معیار پذیرش |
+| کار | فایل | معیار پذیرش | وضعیت |
+|---|---|---|:---:|
+| بنر «منسوخ» روی دو سند قدیمی | `ARCHITECTURE_REVIEW.md`، `UI_SHELL_AUDIT_AND_PLAN.md` | خواننده گمراه نشود | ✅ |
+| اصلاح اعداد TROUBLESHOOTING | `TROUBLESHOOTING.md` | ۲۳۱ تست / ۶۵ صفحه | ✅ |
+| CI به npm | `.github/workflows/ci.yml` | `npm ci` + حذف `pnpm-lock.yaml` | ✅ |
+| توکن‌سازی رنگ‌های hardcode | auth-card، login-client، sidebar، drawer، FAB | صفر `bg-white/` خارج از global-error | ✅ |
+
+#### تصمیم «فقط npm» — اجرای کامل، نه نصفه
+
+مورد شمارهٔ ۱۹ ممیزی می‌گفت دو lockfile هم‌زمان خطرناک است. اجرای این
+تصمیم بیش از حذف یک فایل بود:
+
+| مورد | قبل | بعد |
 |---|---|---|
-| بنر «منسوخ» روی دو سند قدیمی | `ARCHITECTURE_REVIEW.md`، `UI_SHELL_AUDIT_AND_PLAN.md` | خواننده گمراه نشود |
-| اصلاح اعداد TROUBLESHOOTING | `TROUBLESHOOTING.md:336` | ۱۴۸ تست / ۶۵ صفحه |
-| CI به npm | `.github/workflows/ci.yml` | `npm ci` + حذف `pnpm-lock.yaml` |
-| توکن‌سازی ۱۲ رنگ hardcode | dashboard، auth-card، login-client | صفر `bg-white/` خارج از global-error |
+| CI | `pnpm install --frozen-lockfile` | `npm ci` — ⚠️ نیازمند اعمال دستی (زیر) |
+| lockfile | `pnpm-lock.yaml` + `package-lock.json` | فقط `package-lock.json` |
+| `pnpm-workspace.yaml` | موجود (تنظیمات pnpm) | حذف شد |
+| `.npmrc` | کلیدهای pnpm → هشدار در هر اجرا | کلیدهای معتبر npm |
+| `scripts/install-windows.ps1` | **pnpm را global نصب می‌کرد** | حذف شد |
+| README | «pnpm ≥ 11»، Next 15، shadcn/ui، Playwright | npm، Next 16، استک واقعی |
+
+> ⚠️ **هشدار npm که کاربر گزارش کرده بود، رفع شد.** لاگ شما این را
+> نشان می‌داد:
+> ```
+> npm warn Unknown project config "minimum-release-age"
+> npm warn Unknown project config "network-concurrency"
+> ```
+> این دو کلید مخصوص pnpm بودند. `network-concurrency` با معادل npm
+> یعنی `maxsockets=3` جایگزین شد و `minimum-release-age` حذف شد
+> (npm معادلی ندارد؛ حفاظت واقعی همان پین‌بودن نسخه‌ها در lockfile است).
+
+**`docs/patches/` کاملاً حذف شد.** آن پوشه راهنمای رفع «CI نامعتبر»
+بود — مشکلی که دیگر وجود ندارد. بدتر اینکه به کاربر می‌گفت
+`cp docs/patches/ci.yml.proposed .github/workflows/ci.yml` بزند، که
+یعنی **بازگرداندن CI به نسخهٔ pnpm**. یک سند راهنما که اگر دنبالش
+می‌رفتید، کار را خراب می‌کرد.
+
+**تأیید با اجرای واقعی:** `rm -rf node_modules && npm ci` → موفق در
+۱۳ ثانیه، **صفر هشدار**. سپس `npm run verify` → هر چهار دروازه سبز.
+
+> ### ⚠️ یک کار باقی‌مانده که فقط شما می‌توانید انجام دهید
+>
+> پوش فایل `.github/workflows/ci.yml` توسط GitHub App **رد شد**:
+> ```
+> refusing to allow a GitHub App to create or update workflow
+> `.github/workflows/ci.yml` without `workflows` permission
+> ```
+> این محدودیت درست است — رباتی که بتواند workflow را عوض کند،
+> می‌تواند هر کدی را در CI اجرا کند.
+>
+> نسخهٔ آمادهٔ npm در `docs/ci/ci.yml.npm` قرار گرفت. اعمالش سه
+> دستور است؛ راهنما در [`docs/ci/README.md`](./ci/README.md).
+>
+> تا وقتی این کار انجام نشود، CI همچنان `pnpm install
+> --frozen-lockfile` می‌زند و چون `pnpm-lock.yaml` حذف شده،
+> **شکست می‌خورد**. بقیهٔ فاز E مستقل از این است و کار می‌کند.
 
 ---
 

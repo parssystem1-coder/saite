@@ -109,7 +109,7 @@ export function ContactFab() {
       <div
         className={cn(
           'pointer-events-auto flex flex-col items-center gap-2.5 rounded-full p-2',
-          'border border-white/10 bg-surface-1/75 shadow-depth-4 backdrop-blur-xl',
+          'border border-border bg-surface-1/75 shadow-depth-4 backdrop-blur-xl',
           'supports-[backdrop-filter]:bg-surface-1/60'
         )}
       >

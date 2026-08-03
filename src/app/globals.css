@@ -52,6 +52,9 @@
   --stock-out: 240 5% 45%; /* ناموجود */
   --stock-quote: 265 85% 58%; /* تماس بگیرید / استعلامی */
 
+  /* پوشش پشت مودال و کشوها — به‌جای bg-black/60 پراکنده در کد */
+  --overlay: 0 0% 0% / 0.65;
+
   --radius: 0.875rem;
 
   /* ── توکن‌های سه‌بعدی ─────────────────────────────────────────
@@ -111,6 +114,7 @@
   --color-stock-low: hsl(var(--stock-low));
   --color-stock-out: hsl(var(--stock-out));
   --color-stock-quote: hsl(var(--stock-quote));
+  --color-overlay: hsl(var(--overlay));
 
   --font-sans: var(--font-vazir), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
