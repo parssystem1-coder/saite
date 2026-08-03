@@ -20,6 +20,7 @@ export default async function BrandsPage() {
 
   return (
     <PageShell
+      width="full"
       title="برندها"
       description="تأمین‌کنندهٔ رسمی و تخصصی برندهای معتبر ماشین‌های اداری."
       crumbs={[
@@ -27,7 +28,7 @@ export default async function BrandsPage() {
         { label: 'برندها' },
       ]}
     >
-      <div className="not-prose grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {BRANDS.map((b) => (
           <Link
             key={b.slug}

@@ -4,9 +4,11 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { GitCompareArrows, X } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useCompareHydrated } from '@/hooks/use-has-hydrated'
 import { formatNumber } from '@/lib/format'
+import { isFloatingChromeHidden } from '@/lib/layout/floating-chrome'
 import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
 
 /**
@@ -18,13 +20,15 @@ import { MAX_COMPARE, useCompareStore } from '@/store/compare-store'
  * مسیر تصمیم‌گیری را کوتاه می‌کند.
  */
 export function CompareBar() {
+  const pathname = usePathname()
   const hydrated = useCompareHydrated()
   const items = useCompareStore((s) => s.items)
   const remove = useCompareStore((s) => s.remove)
   const clear = useCompareStore((s) => s.clear)
   const prefersReduced = useReducedMotion()
 
-  const visible = hydrated && items.length > 0
+  // در پنل مدیریت نوار مقایسه معنا ندارد و روی جدول‌ها می‌نشیند
+  const visible = hydrated && items.length > 0 && !isFloatingChromeHidden(pathname)
 
   return (
     <AnimatePresence>

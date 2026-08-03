@@ -1,17 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { AuthUser } from '@/types/user'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'user' | 'admin'
-}
+/**
+ * وضعیت احراز هویت سمت کلاینت.
+ *
+ * ⚠️ این store فقط برای تجربهٔ کاربری است — در localStorage ذخیره
+ * می‌شود و کاربر می‌تواند آن را دستکاری کند. هیچ تصمیم امنیتی
+ * نباید صرفاً بر پایهٔ آن گرفته شود.
+ */
 
 interface AuthState {
-  user: User | null
+  user: AuthUser | null
   isLoggedIn: boolean
-  login: (user: User) => void
+  login: (user: AuthUser) => void
   logout: () => void
 }
 
@@ -28,3 +30,6 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+/** آیا کاربر فعلی نقش مدیر دارد؟ — selector مشترک گاردها */
+export const selectIsAdmin = (s: AuthState): boolean => s.user?.role === 'admin'

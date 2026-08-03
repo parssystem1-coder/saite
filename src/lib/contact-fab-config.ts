@@ -6,6 +6,8 @@
  * می‌تواند از API/DB بیاید و همین شکل را برگرداند؛ UI عوض نمی‌شود.
  */
 
+import { FLOATING_CHROME_HIDDEN_PREFIXES } from '@/lib/layout/floating-chrome'
+
 export type ContactFabChannelId = 'whatsapp' | 'instagram' | 'phone'
 
 export interface ContactFabChannelConfig {
@@ -40,7 +42,8 @@ export interface ContactFabConfig {
  */
 export const DEFAULT_CONTACT_FAB_CONFIG: ContactFabConfig = {
   enabled: true,
-  hideOnPathPrefixes: ['/admin'],
+  // منبع واحد با CompareBar — تعریف در lib/layout/floating-chrome
+  hideOnPathPrefixes: [...FLOATING_CHROME_HIDDEN_PREFIXES],
   channels: [
     {
       id: 'whatsapp',

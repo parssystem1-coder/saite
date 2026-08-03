@@ -14,6 +14,7 @@ import {
   type ContactFabChannelId,
 } from '@/lib/contact-fab-config'
 import { buildInstagramUrl, SITE } from '@/lib/constants'
+import { isFloatingChromeHidden } from '@/lib/layout/floating-chrome'
 import { cn } from '@/lib/utils'
 import { defaultConsultMessage, openWhatsAppHref, productQuoteMessage } from '@/lib/whatsapp'
 import { useCompareStore } from '@/store/compare-store'
@@ -87,7 +88,7 @@ export function ContactFab() {
   const config = getContactFabConfig()
 
   if (!config.enabled) return null
-  if (config.hideOnPathPrefixes.some((p) => pathname.startsWith(p))) return null
+  if (isFloatingChromeHidden(pathname, config.hideOnPathPrefixes)) return null
 
   const channels = getEnabledContactFabChannels(config)
   if (channels.length === 0) return null

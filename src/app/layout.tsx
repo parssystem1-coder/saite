@@ -3,6 +3,7 @@ import { CompareBar } from '@/components/compare/compare-bar'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
 import { ContactFab } from '@/components/layout/contact-fab'
+import { SkipLink } from '@/components/layout/skip-link'
 import Providers from '@/components/providers'
 import { SITE } from '@/lib/constants'
 import { vazirmatn } from '@/lib/fonts'
@@ -46,8 +47,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans">
         <Providers>
+          <SkipLink />
           <Header />
-          <main className="flex-1">{children}</main>
+          {/* tabIndex={-1} تا پس از پرش، فوکوس واقعاً روی main بنشیند */}
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </main>
           <Footer />
           <CompareBar />
           <ContactFab />

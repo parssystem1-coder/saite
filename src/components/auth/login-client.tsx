@@ -9,6 +9,7 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
+import { DEMO_ADMIN_EMAIL, resolveDemoRole } from '@/lib/auth/demo-account'
 import { loginSchema, type LoginInput } from '@/lib/schemas'
 import { useAuthStore } from '@/store/auth-store'
 
@@ -28,10 +29,20 @@ export function LoginClient() {
 
   const onSubmit = async (data: LoginInput) => {
     // ⚠️ ورود شبیه‌سازی‌شده. رمز عبور بررسی نمی‌شود چون بک‌اندی وجود ندارد.
-    // در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود.
+    // در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود
+    // و نقش کاربر باید از پاسخ سرور بیاید، نه از ایمیل واردشده.
     await new Promise((r) => setTimeout(r, 400))
-    login({ id: '1', name: 'کاربر آزمایشی', email: data.email, role: 'user' })
-    router.push(params.get('redirect') ?? '/dashboard')
+
+    const role = resolveDemoRole(data.email)
+    login({
+      id: role === 'admin' ? 'demo-admin' : 'demo-user',
+      name: role === 'admin' ? 'مدیر آزمایشی' : 'کاربر آزمایشی',
+      email: data.email,
+      role,
+    })
+
+    const redirect = params.get('redirect')
+    router.push(redirect ?? (role === 'admin' ? '/admin' : '/dashboard'))
   }
 
   return (
@@ -104,6 +115,15 @@ export function LoginClient() {
             <Link href="/register" className="font-bold text-primary hover:underline">
               ثبت‌نام کنید
             </Link>
+          </p>
+
+          {/* راهنمای فاز mock — با اتصال بک‌اند حذف می‌شود */}
+          <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">
+            نسخهٔ نمایشی: هر رمزی پذیرفته می‌شود. برای دیدن پنل مدیریت با{' '}
+            <span dir="ltr" className="font-mono text-primary">
+              {DEMO_ADMIN_EMAIL}
+            </span>{' '}
+            وارد شوید.
           </p>
         </form>
       </AuthCard>

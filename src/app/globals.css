@@ -139,6 +139,21 @@
     scroll-behavior: smooth;
   }
 
+  /* کاربرانی که حرکت کمتر خواسته‌اند نباید اسکرول نرم بگیرند */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /*
+    هدر sticky است؛ بدون این فاصله، پرش به #main-content یا #product-tabs
+    ابتدای محتوا را زیر هدر پنهان می‌کند.
+  */
+  [id] {
+    scroll-margin-top: 6.5rem;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));

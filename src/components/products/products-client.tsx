@@ -14,10 +14,9 @@ import { ProductToolbar } from '@/components/products/product-toolbar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
-import { SectionHeader } from '@/components/ui/section-header'
 import { useProductFilters } from '@/hooks/use-product-filters'
 import { getProductList } from '@/lib/api'
-import { CATEGORIES, type SortOption } from '@/lib/constants'
+import type { SortOption } from '@/lib/constants'
 import { countActiveFilters } from '@/lib/product-filters'
 
 const PER_PAGE = 9
@@ -83,24 +82,12 @@ export function ProductsClient() {
   const safePage = data?.page ?? page
 
   const activeCount = countActiveFilters(filters)
-  const activeCategory = CATEGORIES.find((c) => c.slug === filters.category)
   const showSkeleton = isPending && !data
 
   const closeMobileFilters = React.useCallback(() => setMobileFiltersOpen(false), [])
 
   return (
-    <div className="container mx-auto px-4 py-10">
-      <SectionHeader
-        as="h1"
-        title={activeCategory ? activeCategory.name : 'کاتالوگ محصولات'}
-        description={
-          activeCategory
-            ? activeCategory.description
-            : 'پرینتر، اسکنر، دستگاه کپی، فکس، مواد مصرفی و قطعات یدکی با ضمانت اصالت کالا.'
-        }
-        className="mb-8"
-      />
-
+    <>
       <div className="flex flex-col gap-8 lg:flex-row">
         <aside className="hidden w-72 shrink-0 lg:block">
           <div className="surface-3d sticky top-28 rounded-2xl p-5">
@@ -190,6 +177,6 @@ export function ProductsClient() {
         setParam={setParam}
         resetFilters={resetFilters}
       />
-    </div>
+    </>
   )
 }
