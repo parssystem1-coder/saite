@@ -1,8 +1,9 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CreditCard, MapPin, ShieldCheck } from 'lucide-react'
+import { MapPin } from 'lucide-react'
 import { useForm } from 'react-hook-form'
+import { PaymentMethodField } from '@/components/checkout/payment-method-field'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
@@ -33,6 +34,7 @@ export function CheckoutForm({ defaultName = '', isProcessing, onSubmit }: Check
       address: '',
       postalCode: '',
       note: '',
+      paymentMethod: 'online',
     },
   })
 
@@ -139,48 +141,10 @@ export function CheckoutForm({ defaultName = '', isProcessing, onSubmit }: Check
       </section>
 
       <section className="surface-3d rounded-2xl p-6 md:p-8">
-        <header className="mb-5 flex items-center gap-2">
-          <CreditCard className="size-5 text-primary" aria-hidden="true" />
-          <h2 className="text-lg font-bold text-foreground">روش پرداخت</h2>
-        </header>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="relative">
-            <input
-              type="radio"
-              name="payment"
-              id="online"
-              className="peer sr-only"
-              defaultChecked
-            />
-            <label
-              htmlFor="online"
-              className={cn(
-                'flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-border bg-surface-0/40 p-6 transition-all',
-                'peer-checked:border-primary peer-checked:bg-primary/10',
-                'hover:border-primary/40'
-              )}
-            >
-              <CreditCard className="mb-2 size-8 text-primary" aria-hidden="true" />
-              <span className="font-bold text-foreground">پرداخت آنلاین</span>
-              <span className="mt-1 text-center text-[11px] text-muted-foreground">
-                انتقال امن به درگاه بانکی معتبر
-              </span>
-            </label>
-          </div>
-
-          <div className="relative opacity-50 grayscale">
-            <input type="radio" name="payment" id="cod" className="peer sr-only" disabled />
-            <label
-              htmlFor="cod"
-              className="flex cursor-not-allowed flex-col items-center justify-center rounded-2xl border-2 border-border bg-surface-0/40 p-6"
-            >
-              <ShieldCheck className="mb-2 size-8 text-muted-foreground" aria-hidden="true" />
-              <span className="font-bold text-foreground">پرداخت در محل</span>
-              <span className="mt-1 text-center text-[11px] text-muted-foreground">فعلاً غیرفعال</span>
-            </label>
-          </div>
-        </div>
+        <PaymentMethodField
+          registration={register('paymentMethod')}
+          error={errors.paymentMethod?.message}
+        />
       </section>
 
       {/* دکمهٔ موبایل — در دسکتاپ از خلاصهٔ کناری submit می‌شود */}

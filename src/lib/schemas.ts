@@ -74,6 +74,20 @@ export const contactSchema = z.object({
 export type ContactInput = z.infer<typeof contactSchema>
 
 // ── تسویه‌حساب ──────────────────────────────────────────
+
+/**
+ * روش‌های پرداخت.
+ *
+ * ⚠️ `cod` (پرداخت در محل) در UI غیرفعال است اما در schema می‌ماند،
+ * چون هنگام فعال‌سازی نباید قرارداد داده عوض شود. اعتبارسنجی
+ * «آیا این روش الان مجاز است؟» کار سرور است نه فرم.
+ */
+export const PAYMENT_METHODS = ['online', 'cod'] as const
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
+
+/** روش‌هایی که در فاز فعلی واقعاً قابل انتخاب‌اند */
+export const ENABLED_PAYMENT_METHODS: readonly PaymentMethod[] = ['online']
+
 export const checkoutSchema = z.object({
   receiverName: persianName,
   phone: iranMobile,
@@ -85,6 +99,15 @@ export const checkoutSchema = z.object({
     .trim()
     .regex(/^\d{10}$/, 'کد پستی باید دقیقاً ۱۰ رقم باشد'),
   note: z.string().trim().max(500).optional(),
+  /**
+   * پیش از این، رادیوی روش پرداخت خارج از react-hook-form بود و
+   * انتخاب کاربر هرگز به onSubmit نمی‌رسید — باگی خاموش که در فاز
+   * بک‌اند همهٔ سفارش‌ها را «آنلاین» ثبت می‌کرد.
+   */
+  paymentMethod: z.enum(PAYMENT_METHODS).refine(
+    (m) => ENABLED_PAYMENT_METHODS.includes(m),
+    { message: 'این روش پرداخت در حال حاضر فعال نیست' }
+  ),
 })
 export type CheckoutInput = z.infer<typeof checkoutSchema>
 
@@ -94,10 +117,31 @@ export const productFormSchema = z.object({
   brand: z.string().min(1, 'برند را انتخاب کنید'),
   model: z.string().trim().min(2, 'مدل الزامی است'),
   category: z.string().min(1, 'دسته‌بندی را انتخاب کنید'),
-  price: z.coerce
-    .number({ message: 'قیمت باید عدد باشد' })
-    .int('قیمت باید عدد صحیح باشد')
-    .positive('قیمت باید بزرگ‌تر از صفر باشد'),
+  /**
+   * فیلد خالی با coerce به ۰ تبدیل می‌شود و پیام «بزرگ‌تر از صفر»
+   * می‌گیرد — گمراه‌کننده است. این پیش‌پردازش، خالی‌بودن را جدا
+   * تشخیص می‌دهد.
+   */
+  price: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+    z.coerce
+      .number({ message: 'قیمت را وارد کنید' })
+      .int('قیمت باید عدد صحیح باشد')
+      .positive('قیمت باید بزرگ‌تر از صفر باشد')
+  ),
   description: z.string().trim().max(2000).optional(),
 })
+/**
+ * خروجی پس از اعتبارسنجی — `price` قطعاً number است.
+ * برای onSubmit و لایهٔ داده استفاده شود.
+ */
 export type ProductFormInput = z.infer<typeof productFormSchema>
+
+/**
+ * ورودی خام فرم — `price` هنوز رشتهٔ داخل input است.
+ *
+ * چرا دو تایپ؟ `z.coerce.number()` ورودی را `unknown` و خروجی را
+ * `number` می‌بیند. react-hook-form هر دو را جدا می‌خواهد، وگرنه
+ * useForm با خطای Resolver ناسازگار شکست می‌خورد.
+ */
+export type ProductFormValues = z.input<typeof productFormSchema>

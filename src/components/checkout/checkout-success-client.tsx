@@ -6,20 +6,33 @@ import { useSearchParams } from 'next/navigation'
 import { useSyncExternalStore } from 'react'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
-import { formatNumber } from '@/lib/format'
+import {
+  isValidOrderRef,
+  PAYMENT_METHOD_LABELS,
+  readLastOrder,
+  readLastOrderRef,
+  type LastOrder,
+} from '@/lib/checkout/last-order'
+import { formatNumber, formatPriceWithUnit } from '@/lib/format'
 
 const subscribeNoop = () => () => {}
 
-function readStoredRef(): string | null {
+/** snapshot پایدار — بدون آن useSyncExternalStore در هر رندر شیء تازه می‌گیرد */
+let cachedRaw: string | null = null
+let cachedOrder: LastOrder | null = null
+
+function getOrderSnapshot(): LastOrder | null {
+  let raw: string | null = null
   try {
-    return sessionStorage.getItem('saite:last-order-ref')
+    raw = sessionStorage.getItem('saite:last-order-meta')
   } catch {
     return null
   }
-}
-
-function isValidRef(value: string | null | undefined): value is string {
-  return Boolean(value && /^\d{6}$/.test(value))
+  if (raw !== cachedRaw) {
+    cachedRaw = raw
+    cachedOrder = readLastOrder()
+  }
+  return cachedOrder
 }
 
 /**
@@ -33,9 +46,14 @@ export function CheckoutSuccessClient() {
   const fromQuery = searchParams.get('ref')
 
   // sessionStorage فقط سمت کلاینت؛ useSyncExternalStore از mismatch جلوگیری می‌کند
-  const fromStorage = useSyncExternalStore(subscribeNoop, readStoredRef, () => null)
+  const fromStorage = useSyncExternalStore(subscribeNoop, readLastOrderRef, () => null)
+  const order = useSyncExternalStore(subscribeNoop, getOrderSnapshot, () => null)
 
-  const orderRef = isValidRef(fromQuery) ? fromQuery : isValidRef(fromStorage) ? fromStorage : null
+  const orderRef = isValidOrderRef(fromQuery)
+    ? fromQuery
+    : isValidOrderRef(fromStorage)
+      ? fromStorage
+      : null
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -77,6 +95,32 @@ export function CheckoutSuccessClient() {
                 #{orderRef ? formatNumber(Number(orderRef)) : '—'}
               </p>
             </div>
+
+            {/* خلاصهٔ سفارش — تا پیش از این ذخیره می‌شد ولی هرگز نمایش داده نمی‌شد */}
+            {order && order.ref === orderRef && (
+              <dl className="mx-auto max-w-sm space-y-2.5 rounded-2xl border border-border bg-surface-0/40 p-5 text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">تحویل‌گیرنده</dt>
+                  <dd className="font-bold text-foreground">{order.receiverName}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">تعداد اقلام</dt>
+                  <dd className="font-bold text-foreground">
+                    {formatNumber(order.itemCount)} کالا
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-muted-foreground">روش پرداخت</dt>
+                  <dd className="font-bold text-foreground">
+                    {PAYMENT_METHOD_LABELS[order.paymentMethod]}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
+                  <dt className="text-muted-foreground">مبلغ پرداختی</dt>
+                  <dd className="font-black text-primary">{formatPriceWithUnit(order.total)}</dd>
+                </div>
+              </dl>
+            )}
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Button size="lg" className="h-12" asChild>

@@ -313,14 +313,41 @@ createdAt         24  →  0
 **قفل ضدرگرسیون:** `tests/lib/product-projection.test.ts` تضمین می‌کند
 هیچ‌کس فیلد سنگین را دوباره وارد مرز کلاینت نکند (تست تعداد دقیق کلیدها).
 
-### 🔵 فاز C — درستی داده و فرم‌ها `~۴ ساعت`
+### ✅ فاز C — درستی داده و فرم‌ها `انجام شد`
 
-| کار | فایل | معیار پذیرش |
-|---|---|---|
-| `paymentMethod` در Zod + RHF | `lib/schemas.ts`، `checkout-form.tsx` | مقدار در payload دیده شود |
-| اتصال داشبورد به storeهای واقعی | `dashboard-client.tsx` | عدد wishlist با صفحهٔ wishlist یکی باشد |
-| selector برای `useAuthStore` | `dashboard-client.tsx:13` | صفر subscribe بدون selector در کل پروژه |
-| فرم افزودن محصول ادمین با RHF+Zod | `app/admin/products/new/page.tsx` | اعتبارسنجی کار کند |
+| کار | فایل | معیار پذیرش | وضعیت |
+|---|---|---|:---:|
+| `paymentMethod` در Zod + RHF | `lib/schemas.ts`، `payment-method-field.tsx` | مقدار در payload دیده شود | ✅ |
+| نمایش خلاصهٔ سفارش در صفحهٔ موفقیت | `lib/checkout/last-order.ts` | روش پرداخت انتخابی نشان داده شود | ✅ |
+| اتصال داشبورد به storeهای واقعی | `dashboard-stats.tsx` | عدد wishlist با صفحهٔ wishlist یکی باشد | ✅ |
+| selector برای `useAuthStore` | `dashboard-client.tsx` | صفر subscribe بدون selector | ✅ |
+| فرم افزودن محصول ادمین با RHF+Zod | `admin-product-form.tsx` | اعتبارسنجی کار کند | ✅ |
+
+**اثبات رفع باگ اصلی** (`tests/components/payment-method-field.test.tsx`):
+تستی که فرم واقعی را submit می‌کند و بررسی می‌کند `paymentMethod` در
+payload هست — پیش از این رادیو خارج از react-hook-form بود و انتخاب
+کاربر هرگز به `onSubmit` نمی‌رسید.
+
+**سه یافتهٔ حین کار که در ممیزی ندیده بودم:**
+
+۱. `productFormSchema` از قبل نوشته و **تست شده** بود اما هیچ فرمی از
+   آن استفاده نمی‌کرد — دقیقاً مثل `ProductCardData` در فاز B.
+   الگوی تکرارشونده: «قرارداد نوشته می‌شود، اتصال فراموش می‌شود.»
+
+۲. `z.coerce.number()` باعث خطای تایپ در react-hook-form می‌شد چون
+   ورودی `unknown` و خروجی `number` است. با تفکیک `ProductFormValues`
+   (`z.input`) از `ProductFormInput` (`z.infer`) حل شد.
+
+۳. فیلد قیمت خالی پیام «باید بزرگ‌تر از صفر باشد» می‌داد چون coerce
+   رشتهٔ خالی را به ۰ تبدیل می‌کرد. با `z.preprocess` پیام درست
+   «قیمت را وارد کنید» شد.
+
+**داشبورد — حذف عدد جعلی:** «علاقه‌مندی‌ها: ۱۲» hardcode بود در حالی
+که فهرست واقعی کاربر می‌توانست خالی باشد. حالا از `useWishlistStore`،
+`useCartStore` و `useCompareStore` می‌آید. «سفارش‌ها» و «پیام‌ها»
+عمداً **حذف شدند** — بدون بک‌اند هیچ منبع صادقی ندارند و ساختن عدد
+جعلی همان اشتباه قبلی است. چهار دکمهٔ بدون `onClick` هم به لینک واقعی
+تبدیل شدند.
 
 ### 🔵 فاز D — پاک‌سازی و تست `~۴ ساعت`
 

@@ -109,10 +109,26 @@ describe('checkoutSchema', () => {
     city: 'تهران',
     address: 'خیابان ولیعصر، پلاک ۱۲۳، واحد ۴',
     postalCode: '1234567890',
+    paymentMethod: 'online',
   }
 
   it('ورودی معتبر را می‌پذیرد', () => {
     expect(checkoutSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('روش پرداخت الزامی است — بدون آن سفارش ثبت نمی‌شود', () => {
+    const { paymentMethod: _omit, ...withoutPayment } = valid
+    expect(checkoutSchema.safeParse(withoutPayment).success).toBe(false)
+  })
+
+  it('روش پرداخت ناشناخته را رد می‌کند', () => {
+    expect(checkoutSchema.safeParse({ ...valid, paymentMethod: 'bitcoin' }).success).toBe(false)
+  })
+
+  it('روش غیرفعال (cod) از سمت کلاینت قابل ارسال نیست', () => {
+    // معتبر در enum ولی خارج از ENABLED_PAYMENT_METHODS
+    const r = checkoutSchema.safeParse({ ...valid, paymentMethod: 'cod' })
+    expect(r.success).toBe(false)
   })
 
   it('کد پستی باید دقیقاً ۱۰ رقم باشد', () => {
@@ -153,5 +169,20 @@ describe('productFormSchema', () => {
 
   it('قیمت غیرعددی را رد می‌کند', () => {
     expect(productFormSchema.safeParse({ ...valid, price: 'رایگان' }).success).toBe(false)
+  })
+
+  it('قیمت خالی پیام «وارد کنید» می‌دهد نه «بزرگ‌تر از صفر»', () => {
+    // بدون preprocess، رشتهٔ خالی به ۰ تبدیل و پیام گمراه‌کننده می‌شد
+    const r = productFormSchema.safeParse({ ...valid, price: '' })
+    expect(errFor(r, 'price')).toBe('قیمت را وارد کنید')
+  })
+
+  it('برند و دستهٔ انتخاب‌نشده رد می‌شوند', () => {
+    expect(errFor(productFormSchema.safeParse({ ...valid, brand: '' }), 'brand')).toBe(
+      'برند را انتخاب کنید'
+    )
+    expect(errFor(productFormSchema.safeParse({ ...valid, category: '' }), 'category')).toBe(
+      'دسته‌بندی را انتخاب کنید'
+    )
   })
 })
