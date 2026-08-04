@@ -11,10 +11,14 @@ import {
   X,
 } from 'lucide-react'
 import Link from 'next/link'
+import { HeaderCountAction } from '@/components/layout/header-count-action'
 import { Button } from '@/components/ui/button'
 import { Menu3D, Menu3DItem } from '@/components/ui/menu-3d'
-import { formatNumber } from '@/lib/format'
-import { useCartHydrated, useHasHydrated } from '@/hooks/use-has-hydrated'
+import {
+  useCartHydrated,
+  useHasHydrated,
+  useWishlistHydrated,
+} from '@/hooks/use-has-hydrated'
 import { selectIsAdmin, useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
 import { useWishlistStore } from '@/store/wishlist-store'
@@ -28,6 +32,7 @@ interface HeaderActionsProps {
 export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps) {
   const hydrated = useHasHydrated()
   const cartReady = useCartHydrated()
+  const wishlistReady = useWishlistHydrated()
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const isAdmin = useAuthStore(selectIsAdmin)
@@ -37,27 +42,24 @@ export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps
 
   return (
     <nav className="ms-auto flex items-center gap-1.5" aria-label="میانبرهای حساب و سبد">
-      <Button size="icon" variant="ghost" asChild className="relative hidden sm:inline-flex">
-        <Link href="/wishlist" aria-label={`علاقه‌مندی‌ها، ${formatNumber(wishlistCount)} کالا`}>
-          <Heart />
-          {hydrated && wishlistCount > 0 && (
-            <span className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-              {formatNumber(wishlistCount)}
-            </span>
-          )}
-        </Link>
-      </Button>
+      <HeaderCountAction
+        href="/wishlist"
+        icon={Heart}
+        label="علاقه‌مندی‌ها"
+        count={wishlistCount}
+        ready={wishlistReady}
+        badgeClassName="bg-destructive text-destructive-foreground"
+        className="hidden sm:inline-flex"
+      />
 
-      <Button size="icon" variant="ghost" asChild className="relative">
-        <Link href="/cart" aria-label={`سبد خرید، ${formatNumber(itemCount)} کالا`}>
-          <ShoppingCart />
-          {cartReady && itemCount > 0 && (
-            <span className="absolute -top-1 -left-1 flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-glow-sm">
-              {formatNumber(itemCount)}
-            </span>
-          )}
-        </Link>
-      </Button>
+      <HeaderCountAction
+        href="/cart"
+        icon={ShoppingCart}
+        label="سبد خرید"
+        count={itemCount}
+        ready={cartReady}
+        badgeClassName="bg-primary text-primary-foreground shadow-glow-sm"
+      />
 
       {hydrated && isLoggedIn ? (
         <Menu3D
