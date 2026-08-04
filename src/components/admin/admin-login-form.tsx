@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertTriangle, Eye, EyeOff, Loader2, Lock, LogIn, User } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
@@ -158,6 +159,15 @@ export function AdminLoginForm() {
           </button>
         </div>
       </FormField>
+
+      <div className="flex justify-end">
+        <Link
+          href="/admin/recover"
+          className="text-[11px] font-bold text-muted-foreground transition-colors hover:text-primary"
+        >
+          دسترسی خود را از دست داده‌اید؟
+        </Link>
+      </div>
 
       {throttle.showWarning && (
         <p className="text-[11px] text-stock-low" role="status">
