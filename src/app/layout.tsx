@@ -1,9 +1,5 @@
 import type { Metadata } from 'next'
-import { CompareBar } from '@/components/compare/compare-bar'
-import { Footer } from '@/components/layout/footer'
-import { Header } from '@/components/layout/header'
-import { ContactFab } from '@/components/layout/contact-fab'
-import { SkipLink } from '@/components/layout/skip-link'
+import { StorefrontChrome } from '@/components/layout/storefront-chrome'
 import Providers from '@/components/providers'
 import { JsonLd } from '@/components/seo/json-ld'
 import { buildOrganizationLd, buildWebSiteLd } from '@/lib/seo/organization-ld'
@@ -51,15 +47,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {/* هویت سازمانی و سایت — یک‌بار در سطح ریشه، نه در هر صفحه */}
         <JsonLd data={[buildOrganizationLd(), buildWebSiteLd()]} />
         <Providers>
-          <SkipLink />
-          <Header />
-          {/* tabIndex={-1} تا پس از پرش، فوکوس واقعاً روی main بنشیند */}
-          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-            {children}
-          </main>
-          <Footer />
-          <CompareBar />
-          <ContactFab />
+          {/* هدر/فوتر فروشگاه در ناحیهٔ /admin رندر نمی‌شوند */}
+          <StorefrontChrome>{children}</StorefrontChrome>
         </Providers>
       </body>
     </html>

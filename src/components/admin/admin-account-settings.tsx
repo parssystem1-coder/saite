@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
 import { changeAdminPasswordSchema, type ChangeAdminPasswordInput } from '@/lib/schemas'
-import { useAuthStore } from '@/store/auth-store'
+import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
  * مدیریت حساب مدیر از داخل پنل.
@@ -27,7 +27,7 @@ import { useAuthStore } from '@/store/auth-store'
  *   • اطلاع‌رسانی ایمیلی به مدیر دربارهٔ تغییر
  */
 export function AdminAccountSettings() {
-  const user = useAuthStore((s) => s.user)
+  const admin = useAdminSessionStore((s) => s.admin)
   const [saved, setSaved] = React.useState(false)
 
   const {
@@ -64,7 +64,7 @@ export function AdminAccountSettings() {
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-surface-0/50 p-4">
             <dt className="text-[11px] text-muted-foreground">نام نمایشی</dt>
-            <dd className="mt-1 text-sm font-bold text-foreground">{user?.name ?? '—'}</dd>
+            <dd className="mt-1 text-sm font-bold text-foreground">{admin?.name ?? '—'}</dd>
           </div>
           <div className="rounded-xl border border-border bg-surface-0/50 p-4">
             <dt className="text-[11px] text-muted-foreground">نقش</dt>

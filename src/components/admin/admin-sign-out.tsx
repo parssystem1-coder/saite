@@ -4,7 +4,7 @@ import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/store/auth-store'
+import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
  * خروج از پنل مدیریت.
@@ -20,13 +20,13 @@ import { useAuthStore } from '@/store/auth-store'
  */
 export function AdminSignOut({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter()
-  const logout = useAuthStore((s) => s.logout)
+  const signOut = useAdminSessionStore((s) => s.signOut)
 
   const handleSignOut = React.useCallback(() => {
-    logout()
+    signOut()
     onNavigate?.()
     router.replace('/admin/login')
-  }, [logout, onNavigate, router])
+  }, [signOut, onNavigate, router])
 
   return (
     <Button

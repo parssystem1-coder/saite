@@ -13,3 +13,18 @@ export interface AuthUser {
   email: string
   role: UserRole
 }
+
+/**
+ * مشتری فروشگاه — نقش همیشه 'user'.
+ *
+ * تایپ باریک‌شده تا نشست مشتری هرگز نتواند نقش مدیر بگیرد.
+ * نشست مدیر مسیر و store جداگانهٔ خودش را دارد.
+ */
+export interface CustomerUser extends AuthUser {
+  role: 'user'
+}
+
+/** مدیر پنل — نقش همیشه 'admin' */
+export interface AdminUser extends AuthUser {
+  role: 'admin'
+}

@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  ShieldCheck,
   ShoppingCart,
   User,
   X,
@@ -19,7 +18,7 @@ import {
   useHasHydrated,
   useWishlistHydrated,
 } from '@/hooks/use-has-hydrated'
-import { selectIsAdmin, useAuthStore } from '@/store/auth-store'
+import { useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
 import { useWishlistStore } from '@/store/wishlist-store'
 
@@ -35,7 +34,6 @@ export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps
   const wishlistReady = useWishlistHydrated()
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const isAdmin = useAuthStore(selectIsAdmin)
   const logout = useAuthStore((s) => s.logout)
   const itemCount = useCartStore((s) => s.itemCount())
   const wishlistCount = useWishlistStore((s) => s.items.length)
@@ -81,14 +79,6 @@ export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps
               علاقه‌مندی‌ها
             </Menu3DItem>
           </Link>
-          {isAdmin && (
-            <Link href="/admin">
-              <Menu3DItem>
-                <ShieldCheck className="size-4 text-primary" />
-                پنل مدیریت
-              </Menu3DItem>
-            </Link>
-          )}
           <div className="my-1 h-px bg-border" />
           <Menu3DItem
             onClick={logout}

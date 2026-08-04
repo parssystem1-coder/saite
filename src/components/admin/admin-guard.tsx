@@ -1,15 +1,11 @@
 'use client'
 
-import { ShieldAlert } from 'lucide-react'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
 import { isAdminPath } from '@/lib/auth/safe-redirect'
-import { selectIsAdmin, useAuthStore } from '@/store/auth-store'
+import { useAdminSessionStore } from '@/store/admin-session-store'
 
 const ADMIN_LOGIN = '/admin/login'
 
@@ -17,16 +13,21 @@ const ADMIN_LOGIN = '/admin/login'
  * گارد دسترسی پنل مدیریت.
  *
  * ⚠️ این گارد «تجربهٔ کاربری» است، نه امنیت.
- * وضعیت ورود در localStorage نگهداری می‌شود و کاربر می‌تواند آن را
+ * وضعیت نشست در localStorage نگهداری می‌شود و کاربر می‌تواند آن را
  * جعل کند. تنها کاری که اینجا انجام می‌شود جلوگیری از نمایش تصادفی
  * پنل به بازدیدکنندهٔ عادی است.
+ *
+ * ── چرا فقط یک شرط؟ ──────────────────────────────────────────
+ * پیش از این دو حالت جدا بود: «وارد نشده» و «وارد شده ولی مدیر
+ * نیست». حالا نشست مدیر کاملاً جداست، پس حالت دوم بی‌معنا شده —
+ * مشتری هرگز نشست مدیر ندارد و برعکس.
  *
  * ── الزام فاز بک‌اند ──────────────────────────────────────────
  * محافظت واقعی باید در دو لایه اضافه شود و این کامپوننت باقی بماند
  * تا پرش صفحه پیش از پاسخ سرور رخ ندهد:
  *
- *   ۱. `middleware.ts` در ریشه — بررسی session کوکی‌محور روی
- *      matcher `/admin/:path*` و ریدایرکت سمت سرور.
+ *   ۱. `middleware.ts` در ریشه — بررسی کوکی `saite_admin_session`
+ *      روی matcher `/admin/((?!login).*)`ٔ و ریدایرکت سمت سرور.
  *   ۲. هر Route Handler / Server Action ادمین — بررسی مجدد نقش.
  *      هرگز به گارد کلاینتی اعتماد نکنید.
  */
@@ -34,53 +35,24 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const hydrated = useHasHydrated()
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const isAdmin = useAuthStore(selectIsAdmin)
+  const isAuthenticated = useAdminSessionStore((s) => s.isAdminAuthenticated)
 
   /*
-    کاربر ناشناس → صفحهٔ ورود **مدیر** (نه ورود مشتریان).
-    کاربر عادیِ واردشده → پیام «دسترسی ندارید» می‌بیند و ریدایرکت
-    نمی‌شود، تا بفهمد چه اتفاقی افتاده.
-
     مسیر فعلی به‌عنوان redirect ارسال می‌شود تا پس از ورود دقیقاً
     به همان صفحه برگردد — اما فقط اگر مسیر داخلی /admin باشد
     (اعتبارسنجی در lib/auth/safe-redirect).
   */
   React.useEffect(() => {
-    if (!hydrated || isLoggedIn) return
+    if (!hydrated || isAuthenticated) return
     const target = isAdminPath(pathname) ? pathname : '/admin'
     router.replace(`${ADMIN_LOGIN}?redirect=${encodeURIComponent(target)}`)
-  }, [hydrated, isLoggedIn, pathname, router])
+  }, [hydrated, isAuthenticated, pathname, router])
 
-  // تا پیش از قطعی‌شدن وضعیت ورود، فقط اسکلتون — نه پوسته، نه منو
-  if (!hydrated || !isLoggedIn) {
+  // تا پیش از قطعی‌شدن وضعیت نشست، فقط اسکلتون — نه پوسته، نه منو
+  if (!hydrated || !isAuthenticated) {
     return (
       <div className="container mx-auto px-4 py-8 md:py-10">
         <AdminSkeleton />
-      </div>
-    )
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="container mx-auto px-4 py-16">
-        <div className="surface-3d mx-auto max-w-xl rounded-2xl">
-          <EmptyState
-            icon={ShieldAlert}
-            title="دسترسی به پنل مدیریت ندارید"
-            description="این بخش مخصوص مدیران فروشگاه است. اگر فکر می‌کنید اشتباهی رخ داده، با پشتیبانی تماس بگیرید."
-            action={
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-                <Button asChild>
-                  <Link href="/dashboard">پنل کاربری من</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/">بازگشت به فروشگاه</Link>
-                </Button>
-              </div>
-            }
-          />
-        </div>
       </div>
     )
   }

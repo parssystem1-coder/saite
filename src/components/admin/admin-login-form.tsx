@@ -15,7 +15,7 @@ import {
 } from '@/lib/auth/admin-credentials'
 import { DEFAULT_REDIRECT, isAdminPath, resolveSafeRedirect } from '@/lib/auth/safe-redirect'
 import { adminLoginSchema, type AdminLoginInput } from '@/lib/schemas'
-import { useAuthStore } from '@/store/auth-store'
+import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
  * فرم ورود مدیر.
@@ -30,7 +30,7 @@ import { useAuthStore } from '@/store/auth-store'
 export function AdminLoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const login = useAuthStore((s) => s.login)
+  const signIn = useAdminSessionStore((s) => s.signIn)
 
   const [formError, setFormError] = React.useState<string | null>(null)
   const [attempts, setAttempts] = React.useState(0)
@@ -94,7 +94,7 @@ export function AdminLoginForm() {
       return
     }
 
-    login(result.user)
+    signIn(result.user)
     setAttempts(0)
 
     // مقصد فقط اگر مسیر داخلی معتبر باشد پذیرفته می‌شود
