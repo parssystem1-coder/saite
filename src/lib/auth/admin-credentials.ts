@@ -13,8 +13,8 @@ import type { AuthUser } from '@/types/user'
  *
  * ── نکتهٔ مهم پیش از انتشار ───────────────────────────────────
  * بلوک راهنمای صفحهٔ ورود با `IS_DEMO_MODE` در بیلد production
- * حذف می‌شود، اما **خودِ این تابع** همچنان در باندل می‌ماند —
- * چون منطق تأیید سمت کلاینت اجرا می‌شود. یعنی:
+ * حذف می‌شود، اما **خودِ تابع verifyAdminCredentials** همچنان در
+ * باندل می‌ماند — چون منطق تأیید سمت کلاینت اجرا می‌شود. یعنی:
  *
  *   با `next build`، رشتهٔ رمز هنوز در chunk قابل جستجو است.
  *
@@ -51,11 +51,46 @@ import type { AuthUser } from '@/types/user'
  *   • احراز هویت دومرحله‌ای (TOTP) برای نقش مدیر
  */
 
-/** نام کاربری نمایشی مدیر در فاز پوسته */
-export const DEMO_ADMIN_USERNAME = 'admin'
+/**
+ * ── تغییر اعتبارنامه بدون بک‌اند ──────────────────────────────
+ *
+ * اگر تنها مدیر سایت هستید و می‌خواهید نام کاربری/رمز پیش‌فرض را
+ * عوض کنید، فایل `.env.local` بسازید (در .gitignore هست و روی
+ * گیت نمی‌رود):
+ *
+ *   NEXT_PUBLIC_ADMIN_USERNAME=myname
+ *   NEXT_PUBLIC_ADMIN_PASSWORD=my-strong-passphrase
+ *
+ * سپس سرور را دوباره اجرا کنید (`npm run dev`).
+ *
+ * ⚠️ هشدار: پیشوند NEXT_PUBLIC یعنی مقدار در باندل مرورگر قرار
+ * می‌گیرد و قابل خواندن است. این فقط برای «عوض کردن مقدار
+ * پیش‌فرض در محیط توسعه» است، نه امنیت. رمز واقعی خود را اینجا
+ * نگذارید — از یک عبارت مخصوص همین پروژه استفاده کنید.
+ *
+ * ── اگر رمز را فراموش کردید ───────────────────────────────────
+ * چون مقدار در کد/‏env است و نه در دیتابیس، بازیابی ساده است:
+ *   ۱. `.env.local` را باز کنید و مقدار را ببینید یا عوض کنید.
+ *   ۲. اگر `.env.local` ندارید، مقدار پیش‌فرض همین فایل است.
+ *   ۳. صفحهٔ `/admin/recover` هم در محیط توسعه آن را نشان می‌دهد.
+ * هیچ راهی برای «قفل‌شدن دائمی» وجود ندارد.
+ */
 
-/** رمز نمایشی — عمداً واضح است تا کسی آن را رمز واقعی نپندارد */
-export const DEMO_ADMIN_PASSWORD = 'saite-demo-1404'
+const DEFAULT_ADMIN_USERNAME = 'admin'
+const DEFAULT_ADMIN_PASSWORD = 'saite-demo-1404'
+
+/** نام کاربری مدیر — قابل تغییر از .env.local */
+export const DEMO_ADMIN_USERNAME =
+  process.env.NEXT_PUBLIC_ADMIN_USERNAME?.trim() || DEFAULT_ADMIN_USERNAME
+
+/** رمز مدیر — قابل تغییر از .env.local */
+export const DEMO_ADMIN_PASSWORD =
+  process.env.NEXT_PUBLIC_ADMIN_PASSWORD?.trim() || DEFAULT_ADMIN_PASSWORD
+
+/** آیا اعتبارنامه از مقدار پیش‌فرض عوض شده؟ — برای هشدار در UI */
+export const IS_USING_DEFAULT_CREDENTIALS =
+  DEMO_ADMIN_USERNAME === DEFAULT_ADMIN_USERNAME &&
+  DEMO_ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD
 
 /** حداکثر تلاش ناموفق پیش از قفل موقت فرم */
 export const MAX_LOGIN_ATTEMPTS = 5
@@ -109,7 +144,7 @@ export async function verifyAdminCredentials(
   await new Promise((resolve) => setTimeout(resolve, 600))
 
   const username = credentials.username.trim().toLowerCase()
-  const usernameOk = safeCompare(username, DEMO_ADMIN_USERNAME)
+  const usernameOk = safeCompare(username, DEMO_ADMIN_USERNAME.toLowerCase())
   const passwordOk = safeCompare(credentials.password, DEMO_ADMIN_PASSWORD)
 
   // هر دو شرط جداگانه بررسی می‌شوند تا خروج زودهنگام نداشته باشیم

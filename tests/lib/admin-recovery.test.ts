@@ -1,46 +1,98 @@
 import { describe, expect, it } from 'vitest'
-import { getAdminRecoveryOptions } from '@/lib/auth/admin-recovery'
+import {
+  DEMO_ADMIN_PASSWORD,
+  DEMO_ADMIN_USERNAME,
+  IS_USING_DEFAULT_CREDENTIALS,
+  verifyAdminCredentials,
+} from '@/lib/auth/admin-credentials'
+import {
+  getBackendRecoveryOptions,
+  getSelfServiceRecoverySteps,
+} from '@/lib/auth/admin-recovery'
 import { SITE } from '@/lib/constants'
 
-describe('getAdminRecoveryOptions', () => {
-  it('چند راه بازیابی ارائه می‌دهد', () => {
-    const options = getAdminRecoveryOptions()
-    expect(options.length).toBeGreaterThanOrEqual(2)
+describe('راهنمای بازیابی در فاز بدون بک‌اند', () => {
+  it('🔑 مسیر عملی می‌دهد، نه بن‌بست', () => {
+    const steps = getSelfServiceRecoverySteps()
+    expect(steps.length).toBeGreaterThanOrEqual(3)
+    // هر مرحله باید دستور یا مسیر مشخصی داشته باشد
+    expect(steps.filter((s) => s.code).length).toBeGreaterThanOrEqual(2)
   })
 
-  it('🔑 هیچ گزینه‌ای ایمیل خودکار پیشنهاد نمی‌دهد', () => {
+  it('به فایل .env.local اشاره می‌کند', () => {
+    const steps = getSelfServiceRecoverySteps()
+    const joined = steps.map((s) => `${s.description} ${s.code ?? ''}`).join(' ')
+    expect(joined).toContain('.env.local')
+  })
+
+  it('نحوهٔ تعیین رمز جدید را نشان می‌دهد', () => {
+    const steps = getSelfServiceRecoverySteps()
+    const codes = steps.map((s) => s.code ?? '').join('\n')
+    expect(codes).toContain('NEXT_PUBLIC_ADMIN_PASSWORD')
+  })
+})
+
+describe('گزینه‌های بازیابی پس از اتصال بک‌اند', () => {
+  it('چند راه ارائه می‌دهد', () => {
+    expect(getBackendRecoveryOptions().length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('🔑 هیچ گزینه‌ای بازیابی خودکار ایمیلی پیشنهاد نمی‌دهد', () => {
     /*
       قاعدهٔ امنیتی: بازیابی ایمیلی صندوق ایمیل مدیر را به کلید
       کل فروشگاه تبدیل می‌کند. اگر روزی کسی این را اضافه کرد،
       این تست باید هشدار بدهد.
     */
-    const options = getAdminRecoveryOptions()
-    for (const option of options) {
+    for (const option of getBackendRecoveryOptions()) {
       expect(option.action?.href ?? '').not.toMatch(/^mailto:/)
       expect(option.action?.href ?? '').not.toContain('forgot-password')
     }
   })
 
+  it('🔑 راهی مستقل از ایمیل دارد — برای مدیر تنها', () => {
+    // اگر شما تنها مدیر باشید، «از مدیر دیگر کمک بگیر» کافی نیست
+    const cliOption = getBackendRecoveryOptions().find((o) => o.icon === 'terminal')
+    expect(cliOption).toBeDefined()
+    expect(cliOption?.code).toBeTruthy()
+  })
+
   it('راه تماس با پشتیبانی شمارهٔ واقعی سایت را می‌دهد', () => {
-    const phoneOption = getAdminRecoveryOptions().find((o) => o.icon === 'phone')
+    const phoneOption = getBackendRecoveryOptions().find((o) => o.icon === 'phone')
     expect(phoneOption?.action?.href).toBe(`tel:${SITE.phoneLtr}`)
   })
 
-  it('گزینهٔ «مدیر دیگر» به تنظیمات اشاره می‌کند', () => {
-    const usersOption = getAdminRecoveryOptions().find((o) => o.icon === 'users')
-    expect(usersOption?.description).toContain('تنظیمات')
-  })
-
-  it('دلیل نبود بازیابی خودکار برای کاربر توضیح داده می‌شود', () => {
-    const shieldOption = getAdminRecoveryOptions().find((o) => o.icon === 'shield')
-    expect(shieldOption).toBeDefined()
-    expect(shieldOption?.description.length).toBeGreaterThan(30)
-  })
-
   it('هر گزینه عنوان و توضیح معنادار دارد', () => {
-    for (const option of getAdminRecoveryOptions()) {
+    for (const option of [...getBackendRecoveryOptions(), ...getSelfServiceRecoverySteps()]) {
       expect(option.title.trim().length).toBeGreaterThan(5)
       expect(option.description.trim().length).toBeGreaterThan(20)
     }
+  })
+})
+
+describe('اعتبارنامهٔ قابل تنظیم از محیط', () => {
+  it('مقدار پیش‌فرض وجود دارد', () => {
+    expect(DEMO_ADMIN_USERNAME).toBeTruthy()
+    expect(DEMO_ADMIN_PASSWORD).toBeTruthy()
+  })
+
+  it('پرچم استفاده از مقدار پیش‌فرض درست است', () => {
+    // در تست، متغیر محیطی تنظیم نشده پس باید true باشد
+    expect(IS_USING_DEFAULT_CREDENTIALS).toBe(true)
+  })
+
+  it('🔑 ورود با مقدار فعلی کار می‌کند — هرچه باشد', async () => {
+    const result = await verifyAdminCredentials({
+      username: DEMO_ADMIN_USERNAME,
+      password: DEMO_ADMIN_PASSWORD,
+    })
+    expect(result.ok).toBe(true)
+  })
+
+  it('نام کاربری بدون حساسیت به حروف بزرگ کار می‌کند', async () => {
+    const result = await verifyAdminCredentials({
+      username: DEMO_ADMIN_USERNAME.toUpperCase(),
+      password: DEMO_ADMIN_PASSWORD,
+    })
+    expect(result.ok).toBe(true)
   })
 })
