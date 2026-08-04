@@ -6,6 +6,7 @@ import { AdminLoginForm } from '@/components/admin/admin-login-form'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TechText } from '@/components/ui/tech-text'
 import { DEMO_ADMIN_PASSWORD, DEMO_ADMIN_USERNAME } from '@/lib/auth/admin-credentials'
+import { IS_DEMO_MODE } from '@/lib/auth/demo-mode'
 import { SITE } from '@/lib/constants'
 
 export const metadata: Metadata = {
@@ -107,32 +108,35 @@ export default function AdminLoginPage() {
             </Suspense>
 
             {/*
-              راهنمای فاز پوسته — با اتصال بک‌اند این بلوک حذف می‌شود.
-              عمداً واضح نوشته شده تا کسی آن را «رمز واقعی» نپندارد.
+              راهنمای فاز پوسته — فقط در توسعهٔ محلی.
+              با `next build` این بلوک کاملاً از باندل حذف می‌شود،
+              پس اعتبارنامه هرگز روی هاست عمومی دیده نمی‌شود.
             */}
-            <div className="mt-6 rounded-lg border border-stock-low/25 bg-stock-low/8 px-3.5 py-3">
-              <p className="text-[10px] font-bold tracking-wide text-stock-low">
-                نسخهٔ نمایشی — بک‌اند متصل نیست
-              </p>
-              <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px]">
-                <div className="flex items-center gap-1.5">
-                  <dt className="text-muted-foreground">کاربر:</dt>
-                  <dd>
-                    <TechText className="font-bold text-foreground">
-                      {DEMO_ADMIN_USERNAME}
-                    </TechText>
-                  </dd>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <dt className="text-muted-foreground">رمز:</dt>
-                  <dd>
-                    <TechText className="font-bold text-foreground">
-                      {DEMO_ADMIN_PASSWORD}
-                    </TechText>
-                  </dd>
-                </div>
-              </dl>
-            </div>
+            {IS_DEMO_MODE && (
+              <div className="mt-6 rounded-lg border border-stock-low/25 bg-stock-low/8 px-3.5 py-3">
+                <p className="text-[10px] font-bold tracking-wide text-stock-low">
+                  محیط توسعه — این بخش در نسخهٔ منتشرشده نمایش داده نمی‌شود
+                </p>
+                <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px]">
+                  <div className="flex items-center gap-1.5">
+                    <dt className="text-muted-foreground">کاربر:</dt>
+                    <dd>
+                      <TechText className="font-bold text-foreground">
+                        {DEMO_ADMIN_USERNAME}
+                      </TechText>
+                    </dd>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <dt className="text-muted-foreground">رمز:</dt>
+                    <dd>
+                      <TechText className="font-bold text-foreground">
+                        {DEMO_ADMIN_PASSWORD}
+                      </TechText>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )}
 
             <nav className="mt-6 flex items-center justify-between border-t border-border pt-5 text-[11px]">
               <Link

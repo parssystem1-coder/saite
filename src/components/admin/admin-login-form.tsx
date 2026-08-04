@@ -15,6 +15,8 @@ import {
 } from '@/lib/auth/admin-credentials'
 import { DEFAULT_REDIRECT, isAdminPath, resolveSafeRedirect } from '@/lib/auth/safe-redirect'
 import { adminLoginSchema, type AdminLoginInput } from '@/lib/schemas'
+import { useLoginThrottle } from '@/hooks/use-login-throttle'
+import { useRedirectIfAuthenticated } from '@/hooks/use-redirect-if-authenticated'
 import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
@@ -31,39 +33,19 @@ export function AdminLoginForm() {
   const router = useRouter()
   const params = useSearchParams()
   const signIn = useAdminSessionStore((s) => s.signIn)
+  const isAuthenticated = useAdminSessionStore((s) => s.isAdminAuthenticated)
+
+  // مدیری که وارد است نباید فرم ورود ببیند
+  const shouldRender = useRedirectIfAuthenticated(isAuthenticated, '/admin')
 
   const [formError, setFormError] = React.useState<string | null>(null)
-  const [attempts, setAttempts] = React.useState(0)
-  /** ثانیه‌های باقی‌مانده تا باز شدن قفل؛ صفر یعنی قفل نیست */
-  const [secondsLeft, setSecondsLeft] = React.useState(0)
   const [showPassword, setShowPassword] = React.useState(false)
 
-  const isLocked = secondsLeft > 0
-
-  /*
-    شمارش معکوس قفل.
-
-    به‌جای نگه‌داشتن timestamp و مقایسه با Date.now() در هر رندر
-    (که تابع ناخالص در بدنهٔ رندر است)، فقط یک شمارنده نگه می‌داریم
-    و هر ثانیه یکی کم می‌کنیم. رندر کاملاً خالص می‌ماند.
-  */
-  React.useEffect(() => {
-    if (secondsLeft <= 0) return
-
-    const id = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          // قفل باز شد — شمارنده و خطا پاک می‌شوند
-          setAttempts(0)
-          setFormError(null)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(id)
-  }, [secondsLeft])
+  const throttle = useLoginThrottle({
+    maxAttempts: MAX_LOGIN_ATTEMPTS,
+    lockoutSeconds: Math.round(LOCKOUT_DURATION_MS / 1000),
+  })
+  const { isLocked, secondsLeft } = throttle
 
   const {
     register,
@@ -82,20 +64,15 @@ export function AdminLoginForm() {
     const result = await verifyAdminCredentials(data)
 
     if (!result.ok) {
-      const next = attempts + 1
-      setAttempts(next)
       // رمز پاک می‌شود تا تلاش دوباره آگاهانه باشد، نه Enter پی‌درپی
       setValue('password', '')
-
-      if (next >= MAX_LOGIN_ATTEMPTS) {
-        setSecondsLeft(Math.round(LOCKOUT_DURATION_MS / 1000))
-      }
+      throttle.registerFailure()
       setFormError(result.message)
       return
     }
 
     signIn(result.user)
-    setAttempts(0)
+    throttle.reset()
 
     // مقصد فقط اگر مسیر داخلی معتبر باشد پذیرفته می‌شود
     const requested = params.get('redirect')
@@ -106,8 +83,14 @@ export function AdminLoginForm() {
     router.replace(target)
   }
 
-  const remaining = MAX_LOGIN_ATTEMPTS - attempts
-  const showAttemptWarning = !isLocked && attempts > 0 && remaining <= 2
+
+  if (!shouldRender) {
+    return (
+      <p role="status" className="py-6 text-center text-sm text-muted-foreground">
+        در حال انتقال به پنل مدیریت…
+      </p>
+    )
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
@@ -176,9 +159,9 @@ export function AdminLoginForm() {
         </div>
       </FormField>
 
-      {showAttemptWarning && (
+      {throttle.showWarning && (
         <p className="text-[11px] text-stock-low" role="status">
-          {remaining} تلاش باقی مانده تا قفل موقت.
+          {throttle.remainingAttempts} تلاش باقی مانده تا قفل موقت.
         </p>
       )}
 

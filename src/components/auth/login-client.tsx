@@ -1,7 +1,16 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AtSign, Loader2, Lock, MonitorSmartphone, UserPlus } from 'lucide-react'
+import {
+  AtSign,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  MonitorSmartphone,
+  ShoppingBag,
+  UserPlus,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
@@ -11,18 +20,48 @@ import { SocialAuthButtons } from '@/components/auth/social-auth-buttons'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
+import { IS_DEMO_MODE } from '@/lib/auth/demo-mode'
+import { getLoginContextMessage } from '@/lib/auth/login-context'
 import { DEFAULT_REDIRECT, isAdminPath, resolveSafeRedirect } from '@/lib/auth/safe-redirect'
 import { isDeviceTrusted, trustCurrentDevice } from '@/lib/auth/trusted-devices'
 import { isMobileIdentifier, loginSchema, type LoginInput } from '@/lib/schemas'
+import { useLoginThrottle } from '@/hooks/use-login-throttle'
+import { useRedirectIfAuthenticated } from '@/hooks/use-redirect-if-authenticated'
 import { useAuthStore } from '@/store/auth-store'
 
 export function LoginClient() {
   const login = useAuthStore((s) => s.login)
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const router = useRouter()
   const params = useSearchParams()
 
   /** آیا این مرورگر برای حساب واردشده تازه است؟ */
   const [isNewDevice, setIsNewDevice] = React.useState(false)
+  const [showPassword, setShowPassword] = React.useState(false)
+
+  /*
+    محدودیت تلاش — همان هوکی که فرم مدیر استفاده می‌کند.
+    حساب مشتری هم نشانی و تاریخچهٔ خرید دارد، پس حدس رمز روی آن
+    هم باید کند شود. سقف بالاتر از مدیر است چون کاربر عادی
+    بیشتر رمز را اشتباه می‌زند.
+  */
+  const throttle = useLoginThrottle({ maxAttempts: 8, lockoutSeconds: 30 })
+
+  /*
+    مقصد بازگشت — همین‌جا یک بار محاسبه می‌شود تا هم برای ریدایرکت
+    کاربرِ از قبل واردشده و هم پس از ورود موفق یکسان باشد.
+    مسیرهای /admin رد می‌شوند چون این فرم نقش مدیر نمی‌دهد.
+  */
+  const requestedRedirect = params.get('redirect')
+  const destination = isAdminPath(requestedRedirect)
+    ? DEFAULT_REDIRECT.user
+    : resolveSafeRedirect(requestedRedirect, DEFAULT_REDIRECT.user)
+
+  // کاربری که وارد است نباید فرم ورود ببیند
+  const shouldRender = useRedirectIfAuthenticated(isLoggedIn, destination)
+
+  // چرا کاربر به این صفحه آمده؟ — از مقصد استنتاج می‌شود
+  const contextMessage = getLoginContextMessage(requestedRedirect)
 
   const {
     register,
@@ -34,6 +73,8 @@ export function LoginClient() {
   })
 
   const onSubmit = async (data: LoginInput) => {
+    if (throttle.isLocked) return
+
     /*
       ⚠️ ورود شبیه‌سازی‌شده. رمز بررسی نمی‌شود چون بک‌اندی وجود ندارد.
 
@@ -57,14 +98,18 @@ export function LoginClient() {
       role: 'user',
     })
 
-    // مقصد بازگشت اعتبارسنجی می‌شود تا Open Redirect ممکن نباشد.
-    // مسیرهای /admin هم رد می‌شوند چون این فرم نقش مدیر نمی‌دهد.
-    const requested = params.get('redirect')
-    const target = isAdminPath(requested)
-      ? DEFAULT_REDIRECT.user
-      : resolveSafeRedirect(requested, DEFAULT_REDIRECT.user)
+    throttle.reset()
+    router.push(destination)
+  }
 
-    router.push(target)
+  if (!shouldRender) {
+    return (
+      <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+        <p role="status" className="text-sm text-muted-foreground">
+          در حال انتقال…
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -74,6 +119,21 @@ export function LoginClient() {
         description="برای پیگیری سفارش‌ها و مشاهدهٔ علاقه‌مندی‌ها وارد شوید."
       >
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+          {contextMessage && (
+            <div
+              role="status"
+              className="rounded-xl border border-primary/25 bg-primary/10 p-3.5"
+            >
+              <p className="flex items-center gap-2 text-xs font-bold text-primary">
+                <ShoppingBag className="size-4 shrink-0" aria-hidden="true" />
+                {contextMessage.title}
+              </p>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                {contextMessage.description}
+              </p>
+            </div>
+          )}
+
           <FormField
             id="identifier"
             label="ایمیل یا شمارهٔ موبایل"
@@ -106,13 +166,49 @@ export function LoginClient() {
               <Input
                 {...register('password')}
                 {...fieldAria('password', !!errors.password)}
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className="pr-10"
+                disabled={throttle.isLocked}
+                className="pr-10 pl-10"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'پنهان کردن رمز' : 'نمایش رمز'}
+                aria-pressed={showPassword}
+                className="absolute top-1/2 left-2 -translate-y-1/2 rounded-lg p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
             </div>
           </FormField>
+
+          <div className="flex justify-end">
+            <Link
+              href="/forgot-password"
+              className="text-[11px] font-bold text-muted-foreground transition-colors hover:text-primary"
+            >
+              رمز عبور را فراموش کرده‌اید؟
+            </Link>
+          </div>
+
+          {throttle.isLocked && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-xl border border-stock-low/30 bg-stock-low/10 p-3 text-xs leading-relaxed text-stock-low"
+            >
+              <Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              به دلیل تلاش‌های ناموفق، ورود موقتاً قفل شد. لطفاً {throttle.secondsLeft} ثانیه
+              صبر کنید.
+            </p>
+          )}
+
+          {throttle.showWarning && (
+            <p role="status" className="text-[11px] text-stock-low">
+              {throttle.remainingAttempts} تلاش باقی مانده تا قفل موقت.
+            </p>
+          )}
 
           {isNewDevice && (
             <p
@@ -128,7 +224,12 @@ export function LoginClient() {
             </p>
           )}
 
-          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={isSubmitting || throttle.isLocked}
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin" />
@@ -160,15 +261,17 @@ export function LoginClient() {
             </Button>
           </div>
 
-          {/* راهنمای فاز mock — با اتصال بک‌اند حذف می‌شود */}
-          <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">
-            نسخهٔ نمایشی: هر ایمیل/موبایل و رمزی پذیرفته می‌شود.
-            <br />
-            مدیر سایت هستید؟{' '}
-            <Link href="/admin/login" className="font-bold text-primary hover:underline">
-              ورود از مسیر مدیریت
-            </Link>
-          </p>
+          {/* راهنمای فاز mock — فقط در توسعهٔ محلی */}
+          {IS_DEMO_MODE && (
+            <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">
+              محیط توسعه: هر ایمیل/موبایل و رمزی پذیرفته می‌شود.
+              <br />
+              مدیر سایت هستید؟{' '}
+              <Link href="/admin/login" className="font-bold text-primary hover:underline">
+                ورود از مسیر مدیریت
+              </Link>
+            </p>
+          )}
         </form>
       </AuthCard>
     </div>

@@ -65,6 +65,12 @@ export const loginSchema = z.object({
 })
 export type LoginInput = z.infer<typeof loginSchema>
 
+/** بازیابی رمز — همان شناسهٔ دوگانهٔ ورود */
+export const forgotPasswordSchema = z.object({
+  identifier: loginIdentifier,
+})
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
 /**
  * ورود مدیر — عمداً جدا از `loginSchema` مشتریان.
  *
