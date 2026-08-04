@@ -326,6 +326,50 @@ node -v
 
 ---
 
+## 🔄 خطای `Cannot find module '.../src/app/admin/.../page.js'`
+
+### پیام خطا
+
+```
+.next/types/validator.ts:168:39 - error TS2307:
+  Cannot find module '../../src/app/admin/orders/page.js'
+Found 26 errors in the same file
+```
+
+### ✅ کد شما سالم است — این cache قدیمی است
+
+نکتهٔ کلیدی: هر ۲۶ خطا در **یک فایل** هستند و آن فایل داخل `.next/`
+است، نه `src/`. یعنی هیچ‌کدام از کد شما نیست.
+
+**چرا رخ می‌دهد؟** Next.js هنگام بیلد، فایل
+`.next/types/validator.ts` را از روی ساختار مسیرها می‌سازد. اگر
+مسیرها بعداً جابه‌جا شوند — مثلاً `src/app/admin/orders` به
+`src/app/admin/(panel)/orders` منتقل شود — آن فایل قدیمی همچنان
+به مسیر قبلی اشاره می‌کند و `tsc` شکایت می‌کند.
+
+این معمولاً پس از `git pull` یا `git merge` پیش می‌آید که ساختار
+پوشه‌ها تغییر کرده باشد.
+
+### راه‌حل: یک دستور
+
+```bash
+cd /d/saite
+rm -rf .next
+npm run verify
+```
+
+> `.next` در `.gitignore` است و کاملاً بازتولیدشدنی — پاک‌کردنش
+> هیچ چیزی از دست نمی‌دهد.
+
+### چرا `npm run dev` بدون خطا کار می‌کرد؟
+
+چون `next dev` خودش فایل types را بازسازی می‌کند، اما `tsc --noEmit`
+فقط می‌خواند. به همین دلیل ممکن است سایت درست اجرا شود ولی
+`type-check` خطا بدهد.
+
+
+---
+
 ## ✅ چک‌لیست سلامت
 
 بعد از نصب موفق، این را اجرا کنید:
@@ -339,8 +383,11 @@ npm run verify
 ```
 ✓ type-check   بدون خطا
 ✓ lint         بدون خطا
-✓ Tests        231 passed (28 فایل)
-✓ Build        65 صفحه
+✓ Tests        356 passed (39 فایل)
+✓ Build        68 صفحه
 ```
+
+> 💡 اگر `type-check` خطای `Cannot find module '.../page.js'` داد،
+> بخش بالا را ببینید: `rm -rf .next` مشکل را حل می‌کند.
 
 اگر همهٔ این‌ها سبز بود، پروژه کاملاً سالم است.

@@ -62,8 +62,8 @@ git push origin arena/019fc7c0-saite
 Install dependencies  →  npm ci
 Type check            →  npm run type-check
 Lint                  →  npm run lint
-Test                  →  npm test        (231 تست)
-Build                 →  npm run build   (65 صفحه)
+Test                  →  npm test        (356 تست)
+Build                 →  npm run build   (68 صفحه)
 ```
 
 هر پنج مرحله روی همین کد به‌صورت محلی سبز هستند، پس اگر CI قرمز
