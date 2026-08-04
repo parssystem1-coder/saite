@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   checkoutSchema,
+  isMobileIdentifier,
   contactSchema,
   loginSchema,
   productFormSchema,
@@ -13,20 +14,48 @@ function errFor(result: { success: boolean; error?: { issues: { path: PropertyKe
   return result.error?.issues.find((i) => i.path[0] === field)?.message
 }
 
-describe('loginSchema', () => {
-  it('ورودی معتبر را می‌پذیرد', () => {
-    expect(loginSchema.safeParse({ email: 'a@b.com', password: 'secret12' }).success).toBe(true)
+describe('loginSchema — ورود با ایمیل یا موبایل', () => {
+  it('ایمیل معتبر را می‌پذیرد', () => {
+    expect(
+      loginSchema.safeParse({ identifier: 'a@b.com', password: 'secret12' }).success
+    ).toBe(true)
   })
 
-  it('ایمیل نامعتبر را رد می‌کند', () => {
-    const r = loginSchema.safeParse({ email: 'not-an-email', password: 'x' })
+  it('🔑 شمارهٔ موبایل را هم می‌پذیرد — ایمیل اجباری نیست', () => {
+    expect(
+      loginSchema.safeParse({ identifier: '09123456789', password: 'secret12' }).success
+    ).toBe(true)
+  })
+
+  it('رشتهٔ بی‌معنا را رد می‌کند', () => {
+    const r = loginSchema.safeParse({ identifier: 'not-an-email', password: 'x' })
     expect(r.success).toBe(false)
-    expect(errFor(r, 'email')).toBe('قالب پست الکترونیک معتبر نیست')
+    expect(errFor(r, 'identifier')).toBe('ایمیل معتبر یا شمارهٔ موبایل ۱۱ رقمی وارد کنید')
   })
 
-  it('ایمیل خالی پیام اختصاصی می‌دهد', () => {
-    const r = loginSchema.safeParse({ email: '', password: 'x' })
-    expect(errFor(r, 'email')).toBe('پست الکترونیک الزامی است')
+  it('شمارهٔ موبایل با طول اشتباه رد می‌شود', () => {
+    expect(loginSchema.safeParse({ identifier: '0912345', password: 'x' }).success).toBe(false)
+    expect(loginSchema.safeParse({ identifier: '091234567890', password: 'x' }).success).toBe(
+      false
+    )
+  })
+
+  it('شناسهٔ خالی پیام اختصاصی می‌دهد', () => {
+    const r = loginSchema.safeParse({ identifier: '', password: 'x' })
+    expect(errFor(r, 'identifier')).toBe('ایمیل یا شمارهٔ موبایل را وارد کنید')
+  })
+})
+
+describe('isMobileIdentifier', () => {
+  it('موبایل ایرانی را تشخیص می‌دهد', () => {
+    expect(isMobileIdentifier('09123456789')).toBe(true)
+    expect(isMobileIdentifier('  09123456789  ')).toBe(true)
+  })
+
+  it('ایمیل و ورودی نامعتبر را موبایل نمی‌داند', () => {
+    expect(isMobileIdentifier('a@b.com')).toBe(false)
+    expect(isMobileIdentifier('0912345')).toBe(false)
+    expect(isMobileIdentifier('')).toBe(false)
   })
 })
 
@@ -58,6 +87,22 @@ describe('registerSchema', () => {
 
   it('موبایل درست را می‌پذیرد', () => {
     expect(registerSchema.safeParse({ ...valid, phone: '09301234567' }).success).toBe(true)
+  })
+
+  it('🔑 ثبت‌نام بدون ایمیل ممکن است — بسیاری از مشتریان ایمیل ندارند', () => {
+    const { email: _omit, ...withoutEmail } = valid
+    expect(registerSchema.safeParse(withoutEmail).success).toBe(true)
+    expect(registerSchema.safeParse({ ...valid, email: '' }).success).toBe(true)
+  })
+
+  it('اگر ایمیل داده شود، باید معتبر باشد', () => {
+    const r = registerSchema.safeParse({ ...valid, email: 'not-an-email' })
+    expect(r.success).toBe(false)
+  })
+
+  it('🔑 موبایل همچنان الزامی است — کانال اصلی اطلاع‌رسانی سفارش', () => {
+    const { phone: _omit, ...withoutPhone } = valid
+    expect(registerSchema.safeParse(withoutPhone).success).toBe(false)
   })
 
   it('رمز کوتاه‌تر از ۸ کاراکتر را رد می‌کند', () => {

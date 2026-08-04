@@ -1,20 +1,19 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { GitBranch, Globe, Loader2, Lock, Mail } from 'lucide-react'
+import { AtSign, Loader2, Lock, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { AuthCard } from '@/components/auth/auth-card'
+import { SocialAuthButtons } from '@/components/auth/social-auth-buttons'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
-import {
-  DEFAULT_REDIRECT,
-  isAdminPath,
-  resolveSafeRedirect,
-} from '@/lib/auth/safe-redirect'
-import { loginSchema, type LoginInput } from '@/lib/schemas'
+import { DEFAULT_REDIRECT, isAdminPath, resolveSafeRedirect } from '@/lib/auth/safe-redirect'
+import { isDeviceTrusted, trustCurrentDevice } from '@/lib/auth/trusted-devices'
+import { isMobileIdentifier, loginSchema, type LoginInput } from '@/lib/schemas'
 import { useAuthStore } from '@/store/auth-store'
 
 export function LoginClient() {
@@ -22,30 +21,39 @@ export function LoginClient() {
   const router = useRouter()
   const params = useSearchParams()
 
+  /** آیا این مرورگر برای حساب واردشده تازه است؟ */
+  const [isNewDevice, setIsNewDevice] = React.useState(false)
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { identifier: '', password: '' },
   })
 
   const onSubmit = async (data: LoginInput) => {
     /*
       ⚠️ ورود شبیه‌سازی‌شده. رمز بررسی نمی‌شود چون بک‌اندی وجود ندارد.
-      در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود.
 
-      نکتهٔ امنیتی: این فرم **همیشه** نقش `user` می‌دهد. پیش از این
-      نقش از روی ایمیل حدس زده می‌شد که یعنی هر کسی با تایپ یک ایمیل
-      خاص مدیر می‌شد. ورود مدیر مسیر جداگانهٔ خودش را دارد.
+      نکتهٔ امنیتی: این فرم همیشه نقش `user` می‌دهد. ورود مدیر مسیر
+      جداگانهٔ خودش را دارد (/admin/login).
     */
     await new Promise((r) => setTimeout(r, 400))
+
+    const identifier = data.identifier.trim()
+    const usedMobile = isMobileIdentifier(identifier)
+
+    // ثبت این مرورگر تا دفعهٔ بعد رمز نخواهد
+    const wasTrusted = isDeviceTrusted(identifier)
+    trustCurrentDevice(identifier)
+    setIsNewDevice(!wasTrusted)
 
     login({
       id: 'demo-user',
       name: 'کاربر آزمایشی',
-      email: data.email,
+      email: usedMobile ? '' : identifier,
       role: 'user',
     })
 
@@ -66,16 +74,24 @@ export function LoginClient() {
         description="برای پیگیری سفارش‌ها و مشاهدهٔ علاقه‌مندی‌ها وارد شوید."
       >
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
-          <FormField id="email" label="پست الکترونیک" required error={errors.email?.message}>
+          <FormField
+            id="identifier"
+            label="ایمیل یا شمارهٔ موبایل"
+            required
+            error={errors.identifier?.message}
+            hint="مثلاً ۰۹۱۲۳۴۵۶۷۸۹ یا name@example.com"
+          >
             <div className="relative">
-              <Mail className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <AtSign
+                className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
               <Input
-                {...register('email')}
-                {...fieldAria('email', !!errors.email)}
-                type="email"
+                {...register('identifier')}
+                {...fieldAria('identifier', !!errors.identifier, true)}
                 dir="ltr"
-                autoComplete="email"
-                placeholder="name@example.com"
+                autoComplete="username"
+                placeholder="09123456789"
                 className="pr-10 text-right font-mono"
               />
             </div>
@@ -83,7 +99,10 @@ export function LoginClient() {
 
           <FormField id="password" label="رمز عبور" required error={errors.password?.message}>
             <div className="relative">
-              <Lock className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Lock
+                className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden="true"
+              />
               <Input
                 {...register('password')}
                 {...fieldAria('password', !!errors.password)}
@@ -94,6 +113,20 @@ export function LoginClient() {
               />
             </div>
           </FormField>
+
+          {isNewDevice && (
+            <p
+              role="status"
+              className="flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/10 p-3 text-[11px] leading-relaxed text-muted-foreground"
+            >
+              <MonitorSmartphone
+                className="mt-0.5 size-4 shrink-0 text-primary"
+                aria-hidden="true"
+              />
+              این دستگاه به فهرست دستگاه‌های شما اضافه شد. دفعهٔ بعد از همین مرورگر، رمز
+              خواسته نمی‌شود.
+            </p>
+          )}
 
           <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
@@ -106,23 +139,7 @@ export function LoginClient() {
             )}
           </Button>
 
-          <div className="relative py-2">
-            <span className="absolute inset-x-0 top-1/2 h-px bg-border" />
-            <span className="relative mx-auto block w-fit bg-surface-1 px-3 text-[11px] font-bold text-muted-foreground">
-              یا ورود با
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button type="button" variant="secondary" disabled>
-              <Globe />
-              Google
-            </Button>
-            <Button type="button" variant="secondary" disabled>
-              <GitBranch />
-              GitHub
-            </Button>
-          </div>
+          <SocialAuthButtons />
 
           <p className="text-center text-sm text-muted-foreground">
             حساب کاربری ندارید؟{' '}
@@ -133,7 +150,7 @@ export function LoginClient() {
 
           {/* راهنمای فاز mock — با اتصال بک‌اند حذف می‌شود */}
           <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">
-            نسخهٔ نمایشی: هر ایمیل و رمزی پذیرفته می‌شود.
+            نسخهٔ نمایشی: هر ایمیل/موبایل و رمزی پذیرفته می‌شود.
             <br />
             مدیر سایت هستید؟{' '}
             <Link href="/admin/login" className="font-bold text-primary hover:underline">

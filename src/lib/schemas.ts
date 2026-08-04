@@ -29,6 +29,30 @@ const email = z
   .min(1, 'پست الکترونیک الزامی است')
   .email('قالب پست الکترونیک معتبر نیست')
 
+/** ایمیل اختیاری — رشتهٔ خالی هم پذیرفته می‌شود */
+const optionalEmail = z.union([z.literal(''), email]).optional()
+
+/**
+ * شناسهٔ ورود: ایمیل **یا** شمارهٔ موبایل.
+ *
+ * چرا؟ بخش بزرگی از مشتریان ایرانی ایمیل فعال ندارند یا آن را
+ * به خاطر نمی‌آورند، اما شمارهٔ موبایلشان را همیشه می‌دانند.
+ * اجبار به ایمیل یعنی از دست دادن همان کاربر در لحظهٔ خرید.
+ */
+const loginIdentifier = z
+  .string()
+  .trim()
+  .min(1, 'ایمیل یا شمارهٔ موبایل را وارد کنید')
+  .refine(
+    (v) => /^09\d{9}$/.test(v) || z.string().email().safeParse(v).success,
+    'ایمیل معتبر یا شمارهٔ موبایل ۱۱ رقمی وارد کنید'
+  )
+
+/** آیا این رشته شمارهٔ موبایل است؟ — برای انتخاب مسیر ورود */
+export function isMobileIdentifier(value: string): boolean {
+  return /^09\d{9}$/.test(value.trim())
+}
+
 const password = z
   .string()
   .min(8, 'رمز عبور باید حداقل ۸ کاراکتر باشد')
@@ -36,7 +60,7 @@ const password = z
 
 // ── احراز هویت ──────────────────────────────────────────
 export const loginSchema = z.object({
-  email,
+  identifier: loginIdentifier,
   password: z.string().min(1, 'رمز عبور الزامی است'),
 })
 export type LoginInput = z.infer<typeof loginSchema>
@@ -88,11 +112,18 @@ export const changeAdminPasswordSchema = z
   })
 export type ChangeAdminPasswordInput = z.infer<typeof changeAdminPasswordSchema>
 
+/*
+  ثبت‌نام مشتری.
+
+  موبایل الزامی است و ایمیل اختیاری — نه برعکس. دلیل: موبایل
+  کانال اصلی اطلاع‌رسانی سفارش در ایران است و برای پیگیری مرسوله
+  لازم می‌شود، در حالی که بسیاری از خریداران ایمیل فعال ندارند.
+*/
 export const registerSchema = z
   .object({
     name: persianName,
-    email,
     phone: iranMobile,
+    email: optionalEmail,
     password,
     confirmPassword: z.string().min(1, 'تکرار رمز عبور الزامی است'),
   })

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
 import { DashboardStats } from '@/components/dashboard/dashboard-stats'
+import { TrustedDevicesPanel } from '@/components/dashboard/trusted-devices-panel'
 import { RecentlyViewed } from '@/components/products/recently-viewed'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -89,6 +90,8 @@ export function DashboardClient() {
           </section>
 
           <DashboardStats />
+
+          <TrustedDevicesPanel accountKey={user?.email || user?.id || ''} />
 
           <RecentlyViewed title="اخیراً دیده‌اید" />
         </main>
