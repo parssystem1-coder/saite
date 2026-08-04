@@ -1,52 +1,62 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { AuthUser } from '@/types/user'
+import type { AdminUser } from '@/types/user'
 
 /**
- * نشست پنل مدیریت — **کاملاً جدا از نشست مشتری**.
+ * بازتاب نشست مدیر در کلاینت — **نه منبع حقیقت**.
  *
- * ── چرا دو نشست جدا؟ ──────────────────────────────────────────
- * پیش از این هر دو نقش در `auth-store` مشترک بودند. نتیجه:
- * وقتی مدیر وارد پنل می‌شد، فروشگاه هم او را «مشتری واردشده»
- * می‌دید — سبد خرید، علاقه‌مندی و مسیر تسویه‌حساب برایش باز
- * می‌شد. این هم از نظر تجربهٔ کاربری گیج‌کننده است و هم از نظر
- * امنیتی نادرست:
+ * ══════════════════════════════════════════════════════════════
+ *  چرا `persist` حذف شد
+ * ══════════════════════════════════════════════════════════════
+ * نسخهٔ قبلی این store نشست را در `localStorage` نگه می‌داشت. سه
+ * مشکل داشت:
  *
- *  ۱. **اصل کمترین امتیاز**: نشست مدیر نباید مجوز خرید بدهد.
- *     یک XSS در فروشگاه نباید بتواند از نشست مدیر سوءاستفاده کند.
- *  ۲. **جداسازی دامنه**: خروج از پنل نباید سبد خرید مشتری را
- *     پاک کند و برعکس.
- *  ۳. **حسابرسی**: عملیات مدیریتی باید به هویت مدیر نسبت داده
- *     شود، نه به یک نشست مبهم که هر دو نقش را دارد.
+ *  ۱. **قابل جعل بود.** کاربر می‌توانست در DevTools بنویسد
+ *     `localStorage.setItem('admin-session', '{"state":{"isAdminAuthenticated":true}}')`
+ *     و پنل باز می‌شد. گارد فقط همین مقدار را می‌خواند.
  *
- * ── الزام فاز بک‌اند ──────────────────────────────────────────
- * این تفکیک باید در سرور هم بازتاب پیدا کند:
- *   • دو کوکی جدا با نام و مسیر متفاوت:
- *       `saite_session`       → Path=/
- *       `saite_admin_session` → Path=/admin  ← به فروشگاه ارسال نمی‌شود
- *   • هر دو httpOnly + secure + sameSite=strict
- *   • کوکی مدیر عمر کوتاه‌تر (مثلاً ۳۰ دقیقه بی‌فعالیتی)
- *   • middleware فقط کوکی مدیر را برای /admin بررسی کند
+ *  ۲. **در دسترس هر اسکریپتی بود.** یک XSS کافی بود تا نشست
+ *     مدیر خوانده شود.
+ *
+ *  ۳. **با سرور همگام نبود.** کوکی سرور منقضی می‌شد اما کلاینت
+ *     همچنان فکر می‌کرد وارد است.
+ *
+ * حالا منبع حقیقت کوکی `httpOnly` است که جاوااسکریپت اصلاً آن را
+ * نمی‌بیند. این store فقط نتیجهٔ `GET /api/admin/session` را برای
+ * UI نگه می‌دارد — پس جعل کردنش هیچ دری باز نمی‌کند: صفحه ممکن
+ * است لحظه‌ای رندر شود، اما `proxy.ts` درخواست بعدی را ریدایرکت
+ * می‌کند و هیچ Route Handler ادمینی پاسخ نمی‌دهد.
+ *
+ * ── چرا هنوز store لازم است؟ ──────────────────────────────────
+ * برای اینکه سایدبار، نوار نشست و گارد بدون فراخوانی مکرر شبکه
+ * وضعیت را بدانند. یک بار خوانده می‌شود، همه‌جا استفاده می‌شود.
  */
 
+/** وضعیت بارگذاری نشست — سه‌حالته، نه بولین */
+export type AdminSessionStatus = 'unknown' | 'authenticated' | 'anonymous'
+
 interface AdminSessionState {
-  admin: AuthUser | null
+  admin: AdminUser | null
+  /**
+   * `unknown` یعنی هنوز از سرور نپرسیده‌ایم.
+   *
+   * تفکیک این حالت از `anonymous` مهم است: اگر یکی بودند، گارد
+   * در اولین رندر کاربر واردشده را هم بیرون می‌انداخت.
+   */
+  status: AdminSessionStatus
   isAdminAuthenticated: boolean
-  signIn: (admin: AuthUser) => void
-  signOut: () => void
+  setAdmin: (admin: AdminUser | null) => void
+  clear: () => void
 }
 
-export const useAdminSessionStore = create<AdminSessionState>()(
-  persist(
-    (set) => ({
-      admin: null,
-      isAdminAuthenticated: false,
-      signIn: (admin) => set({ admin, isAdminAuthenticated: true }),
-      signOut: () => set({ admin: null, isAdminAuthenticated: false }),
+export const useAdminSessionStore = create<AdminSessionState>()((set) => ({
+  admin: null,
+  status: 'unknown',
+  isAdminAuthenticated: false,
+  setAdmin: (admin) =>
+    set({
+      admin,
+      status: admin ? 'authenticated' : 'anonymous',
+      isAdminAuthenticated: admin !== null,
     }),
-    {
-      // کلید جدا از 'auth-storage' مشتری
-      name: 'admin-session',
-    }
-  )
-)
+  clear: () => set({ admin: null, status: 'anonymous', isAdminAuthenticated: false }),
+}))

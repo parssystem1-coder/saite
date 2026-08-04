@@ -9,16 +9,14 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
+import { requestAdminLogin } from '@/lib/auth/admin-login-client'
 import {
   LOCKOUT_DURATION_MS,
   MAX_LOGIN_ATTEMPTS,
-  verifyAdminCredentials,
-} from '@/lib/auth/admin-credentials'
+} from '@/lib/auth/admin-login-contract'
 import { DEFAULT_REDIRECT, isAdminPath, resolveSafeRedirect } from '@/lib/auth/safe-redirect'
 import { adminLoginSchema, type AdminLoginInput } from '@/lib/schemas'
 import { useLoginThrottle } from '@/hooks/use-login-throttle'
-import { useRedirectIfAuthenticated } from '@/hooks/use-redirect-if-authenticated'
-import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
  * فرم ورود مدیر.
@@ -33,11 +31,6 @@ import { useAdminSessionStore } from '@/store/admin-session-store'
 export function AdminLoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const signIn = useAdminSessionStore((s) => s.signIn)
-  const isAuthenticated = useAdminSessionStore((s) => s.isAdminAuthenticated)
-
-  // مدیری که وارد است نباید فرم ورود ببیند
-  const shouldRender = useRedirectIfAuthenticated(isAuthenticated, '/admin')
 
   const [formError, setFormError] = React.useState<string | null>(null)
   const [showPassword, setShowPassword] = React.useState(false)
@@ -62,7 +55,11 @@ export function AdminLoginForm() {
     if (isLocked) return
     setFormError(null)
 
-    const result = await verifyAdminCredentials(data)
+    /*
+      تأیید روی سرور انجام می‌شود. این تابع هیچ دانشی از رمز
+      ندارد — فقط درخواست می‌فرستد و پاسخ را می‌خواند.
+    */
+    const result = await requestAdminLogin(data.username, data.password)
 
     if (!result.ok) {
       // رمز پاک می‌شود تا تلاش دوباره آگاهانه باشد، نه Enter پی‌درپی
@@ -72,7 +69,6 @@ export function AdminLoginForm() {
       return
     }
 
-    signIn(result.user)
     throttle.reset()
 
     // مقصد فقط اگر مسیر داخلی معتبر باشد پذیرفته می‌شود
@@ -81,16 +77,14 @@ export function AdminLoginForm() {
       ? resolveSafeRedirect(requested, DEFAULT_REDIRECT.admin)
       : DEFAULT_REDIRECT.admin
 
+    /*
+      `refresh` پیش از `replace` لازم است: کوکی تازه ست شده و
+      Server Componentها باید دوباره با نشست جدید اجرا شوند.
+      بدون این، layout پنل همان نتیجهٔ «بدون نشست» را از کش
+      برمی‌گرداند و کاربر به حلقهٔ ریدایرکت می‌افتد.
+    */
+    router.refresh()
     router.replace(target)
-  }
-
-
-  if (!shouldRender) {
-    return (
-      <p role="status" className="py-6 text-center text-sm text-muted-foreground">
-        در حال انتقال به پنل مدیریت…
-      </p>
-    )
   }
 
   return (

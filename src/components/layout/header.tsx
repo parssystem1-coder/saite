@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
-import { AdminSessionBar } from '@/components/layout/admin-session-bar'
 import { HeaderActions } from '@/components/layout/header-actions'
 import { HeaderSearch } from '@/components/layout/header-search'
 import { HeaderTopbar } from '@/components/layout/header-topbar'
@@ -34,7 +33,6 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50">
-      <AdminSessionBar />
       <HeaderTopbar />
 
       <div className="border-b border-border bg-surface-0/85 shadow-depth-2 backdrop-blur-xl">

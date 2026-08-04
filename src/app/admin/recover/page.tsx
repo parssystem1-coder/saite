@@ -13,10 +13,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { TechText } from '@/components/ui/tech-text'
 import {
-  DEMO_ADMIN_PASSWORD,
-  DEMO_ADMIN_USERNAME,
+  ADMIN_PASSWORD,
+  ADMIN_USERNAME,
   IS_USING_DEFAULT_CREDENTIALS,
-} from '@/lib/auth/admin-credentials'
+} from '@/lib/auth/server/admin-secret'
 import {
   getBackendRecoveryOptions,
   getSelfServiceRecoverySteps,
@@ -29,6 +29,9 @@ export const metadata: Metadata = {
   description: 'راه‌های بازیابی دسترسی به پنل مدیریت',
   robots: { index: false, follow: false, nocache: true },
 }
+
+/** وابسته به متغیرهای محیطی سرور — نباید استاتیک شود */
+export const dynamic = 'force-dynamic'
 
 const ICONS: Record<RecoveryOption['icon'], LucideIcon> = {
   terminal: Terminal,
@@ -128,7 +131,7 @@ export default function AdminRecoverPage() {
                     <dt className="text-muted-foreground">نام کاربری</dt>
                     <dd>
                       <TechText className="rounded-md border border-border bg-surface-0 px-2.5 py-1 font-bold text-foreground">
-                        {DEMO_ADMIN_USERNAME}
+                        {ADMIN_USERNAME}
                       </TechText>
                     </dd>
                   </div>
@@ -136,7 +139,7 @@ export default function AdminRecoverPage() {
                     <dt className="text-muted-foreground">رمز عبور</dt>
                     <dd>
                       <TechText className="rounded-md border border-border bg-surface-0 px-2.5 py-1 font-bold text-foreground">
-                        {DEMO_ADMIN_PASSWORD}
+                        {ADMIN_PASSWORD}
                       </TechText>
                     </dd>
                   </div>

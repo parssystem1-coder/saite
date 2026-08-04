@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DEMO_ADMIN_PASSWORD,
-  DEMO_ADMIN_USERNAME,
-  IS_USING_DEFAULT_CREDENTIALS,
-  verifyAdminCredentials,
-} from '@/lib/auth/admin-credentials'
-import {
   getBackendRecoveryOptions,
   getSelfServiceRecoverySteps,
 } from '@/lib/auth/admin-recovery'
@@ -28,7 +22,7 @@ describe('راهنمای بازیابی در فاز بدون بک‌اند', () 
   it('نحوهٔ تعیین رمز جدید را نشان می‌دهد', () => {
     const steps = getSelfServiceRecoverySteps()
     const codes = steps.map((s) => s.code ?? '').join('\n')
-    expect(codes).toContain('NEXT_PUBLIC_ADMIN_PASSWORD')
+    expect(codes).toContain('ADMIN_PASSWORD')
   })
 })
 
@@ -66,33 +60,5 @@ describe('گزینه‌های بازیابی پس از اتصال بک‌اند'
       expect(option.title.trim().length).toBeGreaterThan(5)
       expect(option.description.trim().length).toBeGreaterThan(20)
     }
-  })
-})
-
-describe('اعتبارنامهٔ قابل تنظیم از محیط', () => {
-  it('مقدار پیش‌فرض وجود دارد', () => {
-    expect(DEMO_ADMIN_USERNAME).toBeTruthy()
-    expect(DEMO_ADMIN_PASSWORD).toBeTruthy()
-  })
-
-  it('پرچم استفاده از مقدار پیش‌فرض درست است', () => {
-    // در تست، متغیر محیطی تنظیم نشده پس باید true باشد
-    expect(IS_USING_DEFAULT_CREDENTIALS).toBe(true)
-  })
-
-  it('🔑 ورود با مقدار فعلی کار می‌کند — هرچه باشد', async () => {
-    const result = await verifyAdminCredentials({
-      username: DEMO_ADMIN_USERNAME,
-      password: DEMO_ADMIN_PASSWORD,
-    })
-    expect(result.ok).toBe(true)
-  })
-
-  it('نام کاربری بدون حساسیت به حروف بزرگ کار می‌کند', async () => {
-    const result = await verifyAdminCredentials({
-      username: DEMO_ADMIN_USERNAME.toUpperCase(),
-      password: DEMO_ADMIN_PASSWORD,
-    })
-    expect(result.ok).toBe(true)
   })
 })

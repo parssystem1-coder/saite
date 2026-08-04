@@ -22,7 +22,7 @@ const customer: CustomerUser = {
 beforeEach(() => {
   localStorage.clear()
   useAuthStore.setState({ user: null, isLoggedIn: false })
-  useAdminSessionStore.setState({ admin: null, isAdminAuthenticated: false })
+  useAdminSessionStore.setState({ admin: null, status: 'unknown', isAdminAuthenticated: false })
   useCartStore.setState({ items: [] })
 })
 
@@ -34,7 +34,7 @@ beforeEach(() => {
  */
 describe('جداسازی نشست مدیر و مشتری', () => {
   it('🔑 ورود مدیر، مشتری را وارد نمی‌کند', () => {
-    useAdminSessionStore.getState().signIn(admin)
+    useAdminSessionStore.getState().setAdmin(admin)
 
     expect(useAdminSessionStore.getState().isAdminAuthenticated).toBe(true)
     // فروشگاه باید او را مهمان ببیند
@@ -52,9 +52,9 @@ describe('جداسازی نشست مدیر و مشتری', () => {
 
   it('🔑 خروج مدیر به نشست مشتری دست نمی‌زند', () => {
     useAuthStore.getState().login(customer)
-    useAdminSessionStore.getState().signIn(admin)
+    useAdminSessionStore.getState().setAdmin(admin)
 
-    useAdminSessionStore.getState().signOut()
+    useAdminSessionStore.getState().clear()
 
     expect(useAdminSessionStore.getState().isAdminAuthenticated).toBe(false)
     // مشتری همچنان وارد است — سبد و مسیر خریدش نباید بپرد
@@ -64,7 +64,7 @@ describe('جداسازی نشست مدیر و مشتری', () => {
 
   it('🔑 خروج مشتری، نشست مدیر را قطع نمی‌کند', () => {
     useAuthStore.getState().login(customer)
-    useAdminSessionStore.getState().signIn(admin)
+    useAdminSessionStore.getState().setAdmin(admin)
 
     useAuthStore.getState().logout()
 
@@ -74,24 +74,44 @@ describe('جداسازی نشست مدیر و مشتری', () => {
 
   it('🔑 خروج مدیر سبد خرید مشتری را پاک نمی‌کند', () => {
     useCartStore.getState().addItem(sampleProduct, 2)
-    useAdminSessionStore.getState().signIn(admin)
+    useAdminSessionStore.getState().setAdmin(admin)
 
-    useAdminSessionStore.getState().signOut()
+    useAdminSessionStore.getState().clear()
 
     expect(useCartStore.getState().itemCount()).toBe(2)
   })
 
   it('دو نشست هم‌زمان می‌توانند فعال باشند و مستقل بمانند', () => {
     useAuthStore.getState().login(customer)
-    useAdminSessionStore.getState().signIn(admin)
+    useAdminSessionStore.getState().setAdmin(admin)
 
     expect(useAuthStore.getState().user?.role).toBe('user')
     expect(useAdminSessionStore.getState().admin?.role).toBe('admin')
   })
 
-  it('🔑 نشست مدیر و مشتری کلید ذخیره‌سازی متفاوت دارند', () => {
-    // اگر کلید یکی بود، یکی دیگری را بازنویسی می‌کرد
-    expect(useAdminSessionStore.persist.getOptions().name).toBe('admin-session')
+  it('🔑 نشست مدیر اصلاً در localStorage ذخیره نمی‌شود', () => {
+    /*
+      این تست جای تست قبلی «کلیدهای متفاوت» را گرفت.
+
+      قبلاً نشست مدیر با `persist` در localStorage می‌رفت و تست
+      فقط بررسی می‌کرد کلیدش با کلید مشتری قاطی نشود. اما مشکل
+      بزرگ‌تر این بود که **اصلاً نباید آنجا باشد**: هر اسکریپتی
+      می‌توانست بخواندش و کاربر می‌توانست با یک خط در DevTools
+      جعلش کند.
+
+      حالا منبع حقیقت کوکی httpOnly است و این store فقط بازتاب
+      حافظه‌ای آن است.
+    */
+    useAdminSessionStore.getState().setAdmin(admin)
+
+    const keys = Object.keys(localStorage)
+    expect(keys).not.toContain('admin-session')
+    expect(
+      keys.some((key) => localStorage.getItem(key)?.includes('isAdminAuthenticated'))
+    ).toBe(false)
+  })
+
+  it('🔑 نشست مشتری همچنان کلید مخصوص خودش را دارد', () => {
     expect(useAuthStore.persist.getOptions().name).toBe('auth-storage')
   })
 })
