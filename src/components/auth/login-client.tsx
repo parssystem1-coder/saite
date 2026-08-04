@@ -9,7 +9,11 @@ import { AuthCard } from '@/components/auth/auth-card'
 import { Button } from '@/components/ui/button'
 import { fieldAria, FormField } from '@/components/ui/form-field'
 import { Input } from '@/components/ui/input'
-import { DEMO_ADMIN_EMAIL, resolveDemoRole } from '@/lib/auth/demo-account'
+import {
+  DEFAULT_REDIRECT,
+  isAdminPath,
+  resolveSafeRedirect,
+} from '@/lib/auth/safe-redirect'
 import { loginSchema, type LoginInput } from '@/lib/schemas'
 import { useAuthStore } from '@/store/auth-store'
 
@@ -28,21 +32,31 @@ export function LoginClient() {
   })
 
   const onSubmit = async (data: LoginInput) => {
-    // ⚠️ ورود شبیه‌سازی‌شده. رمز عبور بررسی نمی‌شود چون بک‌اندی وجود ندارد.
-    // در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود
-    // و نقش کاربر باید از پاسخ سرور بیاید، نه از ایمیل واردشده.
+    /*
+      ⚠️ ورود شبیه‌سازی‌شده. رمز بررسی نمی‌شود چون بک‌اندی وجود ندارد.
+      در فاز بک‌اند با NextAuth (Credentials + bcrypt) جایگزین می‌شود.
+
+      نکتهٔ امنیتی: این فرم **همیشه** نقش `user` می‌دهد. پیش از این
+      نقش از روی ایمیل حدس زده می‌شد که یعنی هر کسی با تایپ یک ایمیل
+      خاص مدیر می‌شد. ورود مدیر مسیر جداگانهٔ خودش را دارد.
+    */
     await new Promise((r) => setTimeout(r, 400))
 
-    const role = resolveDemoRole(data.email)
     login({
-      id: role === 'admin' ? 'demo-admin' : 'demo-user',
-      name: role === 'admin' ? 'مدیر آزمایشی' : 'کاربر آزمایشی',
+      id: 'demo-user',
+      name: 'کاربر آزمایشی',
       email: data.email,
-      role,
+      role: 'user',
     })
 
-    const redirect = params.get('redirect')
-    router.push(redirect ?? (role === 'admin' ? '/admin' : '/dashboard'))
+    // مقصد بازگشت اعتبارسنجی می‌شود تا Open Redirect ممکن نباشد.
+    // مسیرهای /admin هم رد می‌شوند چون این فرم نقش مدیر نمی‌دهد.
+    const requested = params.get('redirect')
+    const target = isAdminPath(requested)
+      ? DEFAULT_REDIRECT.user
+      : resolveSafeRedirect(requested, DEFAULT_REDIRECT.user)
+
+    router.push(target)
   }
 
   return (
@@ -119,11 +133,12 @@ export function LoginClient() {
 
           {/* راهنمای فاز mock — با اتصال بک‌اند حذف می‌شود */}
           <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">
-            نسخهٔ نمایشی: هر رمزی پذیرفته می‌شود. برای دیدن پنل مدیریت با{' '}
-            <span dir="ltr" className="font-mono text-primary">
-              {DEMO_ADMIN_EMAIL}
-            </span>{' '}
-            وارد شوید.
+            نسخهٔ نمایشی: هر ایمیل و رمزی پذیرفته می‌شود.
+            <br />
+            مدیر سایت هستید؟{' '}
+            <Link href="/admin/login" className="font-bold text-primary hover:underline">
+              ورود از مسیر مدیریت
+            </Link>
           </p>
         </form>
       </AuthCard>

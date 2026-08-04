@@ -41,6 +41,53 @@ export const loginSchema = z.object({
 })
 export type LoginInput = z.infer<typeof loginSchema>
 
+/**
+ * ورود مدیر — عمداً جدا از `loginSchema` مشتریان.
+ *
+ * تفاوت‌ها و دلیلشان:
+ *  • «نام کاربری» به‌جای ایمیل: حساب مدیر در پنل ساخته می‌شود، نه
+ *    با ثبت‌نام عمومی. ایمیل‌محور بودن این توهم را می‌سازد که
+ *    می‌توان با آن ثبت‌نام کرد.
+ *  • پیام‌های اعتبارسنجی عمداً کلی‌اند و نمی‌گویند کدام فیلد در
+ *    سیستم وجود دارد.
+ */
+export const adminLoginSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(1, 'نام کاربری را وارد کنید')
+    .max(64, 'نام کاربری بیش از حد طولانی است'),
+  password: z
+    .string()
+    .min(1, 'رمز عبور را وارد کنید')
+    .max(128, 'رمز عبور بیش از حد طولانی است'),
+})
+export type AdminLoginInput = z.infer<typeof adminLoginSchema>
+
+/** رمز مدیر سخت‌گیرانه‌تر از رمز مشتری است */
+const adminPassword = z
+  .string()
+  .min(10, 'رمز مدیر باید حداقل ۱۰ کاراکتر باشد')
+  .max(128, 'رمز عبور بیش از حد طولانی است')
+  .regex(/[a-zA-Z]/, 'رمز باید حداقل یک حرف داشته باشد')
+  .regex(/[0-9]/, 'رمز باید حداقل یک رقم داشته باشد')
+
+export const changeAdminPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'رمز فعلی را وارد کنید'),
+    newPassword: adminPassword,
+    confirmPassword: z.string().min(1, 'تکرار رمز الزامی است'),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'رمز جدید و تکرار آن یکسان نیستند',
+    path: ['confirmPassword'],
+  })
+  .refine((d) => d.newPassword !== d.currentPassword, {
+    message: 'رمز جدید باید با رمز فعلی متفاوت باشد',
+    path: ['newPassword'],
+  })
+export type ChangeAdminPasswordInput = z.infer<typeof changeAdminPasswordSchema>
+
 export const registerSchema = z
   .object({
     name: persianName,

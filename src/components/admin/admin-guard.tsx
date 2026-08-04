@@ -2,15 +2,16 @@
 
 import { ShieldAlert } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import * as React from 'react'
 import { AdminSkeleton } from '@/components/admin/admin-skeleton'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { isAdminPath } from '@/lib/auth/safe-redirect'
 import { selectIsAdmin, useAuthStore } from '@/store/auth-store'
 
-const LOGIN_REDIRECT = '/login?redirect=/admin'
+const ADMIN_LOGIN = '/admin/login'
 
 /**
  * گارد دسترسی پنل مدیریت.
@@ -31,15 +32,25 @@ const LOGIN_REDIRECT = '/login?redirect=/admin'
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const hydrated = useHasHydrated()
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const isAdmin = useAuthStore(selectIsAdmin)
 
-  // کاربر ناشناس → به ورود. کاربر عادی → پیام «دسترسی ندارید» می‌بیند
-  // (ریدایرکت نمی‌شود تا بفهمد چه اتفاقی افتاده).
+  /*
+    کاربر ناشناس → صفحهٔ ورود **مدیر** (نه ورود مشتریان).
+    کاربر عادیِ واردشده → پیام «دسترسی ندارید» می‌بیند و ریدایرکت
+    نمی‌شود، تا بفهمد چه اتفاقی افتاده.
+
+    مسیر فعلی به‌عنوان redirect ارسال می‌شود تا پس از ورود دقیقاً
+    به همان صفحه برگردد — اما فقط اگر مسیر داخلی /admin باشد
+    (اعتبارسنجی در lib/auth/safe-redirect).
+  */
   React.useEffect(() => {
-    if (hydrated && !isLoggedIn) router.replace(LOGIN_REDIRECT)
-  }, [hydrated, isLoggedIn, router])
+    if (!hydrated || isLoggedIn) return
+    const target = isAdminPath(pathname) ? pathname : '/admin'
+    router.replace(`${ADMIN_LOGIN}?redirect=${encodeURIComponent(target)}`)
+  }, [hydrated, isLoggedIn, pathname, router])
 
   // تا پیش از قطعی‌شدن وضعیت ورود، فقط اسکلتون — نه پوسته، نه منو
   if (!hydrated || !isLoggedIn) {

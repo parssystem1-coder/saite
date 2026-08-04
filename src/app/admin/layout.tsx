@@ -1,23 +1,26 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { AdminGuard } from '@/components/admin/admin-guard'
-import { AdminShell } from '@/components/admin/admin-shell'
-
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-}
 
 /**
- * Layout مشترک ادمین — سایدبار یک‌بار mount می‌شود.
- * صفحات فرزند فقط محتوای main را برمی‌گردانند.
+ * ریشهٔ بخش مدیریت.
  *
- * ترتیب مهم است: گارد **بیرون** پوسته است تا کاربر بدون دسترسی
- * حتی ساختار منوی مدیریت (نام ۲۳ ماژول) را هم نبیند.
+ * اینجا عمداً **هیچ گاردی نیست** — چون `/admin/login` هم زیر همین
+ * مسیر است و اگر گارد اینجا بود، حلقهٔ بی‌پایان ریدایرکت می‌ساخت:
+ * گارد → /admin/login → گارد → …
+ *
+ * ساختار:
+ *   /admin/layout.tsx          ← فقط metadata (همین فایل)
+ *   /admin/login/page.tsx      ← بدون گارد، ورود مدیر
+ *   /admin/(panel)/layout.tsx  ← گارد + پوستهٔ پنل
+ *
+ * `(panel)` یک Route Group است: در URL ظاهر نمی‌شود اما اجازه
+ * می‌دهد layout جداگانه‌ای فقط برای صفحات محافظت‌شده داشته باشیم.
  */
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <AdminGuard>
-      <AdminShell>{children}</AdminShell>
-    </AdminGuard>
-  )
+export const metadata: Metadata = {
+  // هیچ صفحه‌ای از بخش مدیریت نباید ایندکس شود
+  robots: { index: false, follow: false, nocache: true },
+}
+
+export default function AdminRootLayout({ children }: { children: ReactNode }) {
+  return <>{children}</>
 }
