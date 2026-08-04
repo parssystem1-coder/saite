@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
-import { CompareBar } from '@/components/compare/compare-bar'
-import { Footer } from '@/components/layout/footer'
-import { Header } from '@/components/layout/header'
-import { ContactFab } from '@/components/layout/contact-fab'
+import { StorefrontChrome } from '@/components/layout/storefront-chrome'
 import Providers from '@/components/providers'
+import { JsonLd } from '@/components/seo/json-ld'
+import { buildOrganizationLd, buildWebSiteLd } from '@/lib/seo/organization-ld'
 import { SITE } from '@/lib/constants'
 import { vazirmatn } from '@/lib/fonts'
 import './globals.css'
@@ -45,12 +44,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
       <body className="flex min-h-full flex-col font-sans">
+        {/* هویت سازمانی و سایت — یک‌بار در سطح ریشه، نه در هر صفحه */}
+        <JsonLd data={[buildOrganizationLd(), buildWebSiteLd()]} />
         <Providers>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <CompareBar />
-          <ContactFab />
+          {/* هدر/فوتر فروشگاه در ناحیهٔ /admin رندر نمی‌شوند */}
+          <StorefrontChrome>{children}</StorefrontChrome>
         </Providers>
       </body>
     </html>

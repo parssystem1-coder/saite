@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
 import { AdminNavGroupItem } from '@/components/admin/admin-nav-group'
+import { AdminSignOut } from '@/components/admin/admin-sign-out'
 import { Button } from '@/components/ui/button'
 import { ADMIN_NAV, isAdminGroupActive } from '@/lib/admin/nav'
 import { cn } from '@/lib/utils'
@@ -59,12 +60,18 @@ function AdminNavBody({
         ))}
       </nav>
 
-      <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/10 p-3">
-        <p className="text-center text-[10px] font-bold text-primary">وضعیت سیستم</p>
-        <div className="mt-1.5 flex items-center justify-center gap-2">
-          <span className="size-2 animate-pulse rounded-full bg-stock-in" />
-          <span className="text-[10px] font-bold text-muted-foreground">نمایشی — آمادهٔ بک‌اند</span>
+      <div className="mt-6 space-y-3">
+        <div className="rounded-2xl border border-primary/20 bg-primary/10 p-3">
+          <p className="text-center text-[10px] font-bold text-primary">وضعیت سیستم</p>
+          <div className="mt-1.5 flex items-center justify-center gap-2">
+            <span className="size-2 animate-pulse rounded-full bg-stock-in" />
+            <span className="text-[10px] font-bold text-muted-foreground">
+              نمایشی — آمادهٔ بک‌اند
+            </span>
+          </div>
         </div>
+
+        <AdminSignOut onNavigate={onNavigate} />
       </div>
     </div>
   )
@@ -111,7 +118,7 @@ export function AdminSidebar() {
         <div id="admin-mobile-nav" className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-overlay backdrop-blur-sm"
             aria-label="بستن منو"
             onClick={closeMobile}
           />

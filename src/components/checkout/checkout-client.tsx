@@ -7,6 +7,7 @@ import { CheckoutSkeleton } from '@/components/checkout/checkout-skeleton'
 import { CheckoutSummary } from '@/components/checkout/checkout-summary'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { useCartHydrated } from '@/hooks/use-has-hydrated'
+import { generateOrderRef, saveLastOrder } from '@/lib/checkout/last-order'
 import type { CheckoutInput } from '@/lib/schemas'
 import { useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
@@ -52,16 +53,14 @@ export function CheckoutClient() {
     await new Promise((resolve) => setTimeout(resolve, 1200))
 
     // شمارهٔ پیگیری موقت برای صفحهٔ موفقیت (تا وقتی سفارش واقعی نداریم)
-    const ref = String(Math.floor(100000 + Math.random() * 900000))
-    try {
-      sessionStorage.setItem('saite:last-order-ref', ref)
-      sessionStorage.setItem('saite:last-order-meta', JSON.stringify({
-        receiverName: data.receiverName,
-        itemCount: items.length,
-      }))
-    } catch {
-      // sessionStorage ممکن است در حالت private محدود باشد
-    }
+    const ref = generateOrderRef()
+    saveLastOrder({
+      ref,
+      receiverName: data.receiverName,
+      itemCount: items.length,
+      total: totalPrice(),
+      paymentMethod: data.paymentMethod,
+    })
 
     clearCart()
     router.push(`/checkout/success?ref=${ref}`)

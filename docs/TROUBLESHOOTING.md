@@ -1,5 +1,13 @@
 # 🛠 عیب‌یابی نصب و اجرا
 
+> **📌 پکیج منیجر پروژه: npm**
+>
+> بخش‌هایی از این سند تاریخچهٔ مشکلات pnpm را ثبت کرده‌اند. از
+> ۳ اوت ۲۰۲۶، پروژه رسماً فقط با **npm** کار می‌کند:
+> `pnpm-lock.yaml` حذف شده و CI با `npm ci` اجرا می‌شود.
+> بخش‌های مربوط به pnpm فقط برای مرجع تاریخی مانده‌اند.
+
+
 ---
 
 ## ❌ خطای `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`
@@ -19,7 +27,7 @@
 اگر آخرین نسخهٔ مخزن را بگیرید، دیگر این خطا را نمی‌بینید:
 
 ```bash
-git pull origin arena/019fc243-saite
+git pull origin arena/019fc7c0-saite
 # ترجیح روی ویندوز با اتصال ناپایدار:
 npm install --no-audit --no-fund
 # یا در صورت اتصال پایدار:
@@ -89,7 +97,7 @@ Downloading next@16.2.12: 6.70 MB/34.52 MB
 آخرین نسخه را بگیرید:
 
 ```bash
-git pull origin arena/019fc243-saite
+git pull origin arena/019fc7c0-saite
 pnpm install
 ```
 
@@ -231,7 +239,7 @@ npm install --prefer-offline --no-audit --no-fund
 ### پیام خطا
 
 ```
-At D:\saite\scripts\install-windows.ps1:25 char:1
+At D:\saite\scripts\install-with-npm.ps1:25 char:1
 + }
 Unexpected token '}' in expression or statement.
 + ... "  âœ… Ù†ØµØ¨ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª" ...
@@ -250,8 +258,8 @@ Windows PowerShell 5.1 فایل‌های `.ps1` را به‌صورت **ANSI** م
 آخرین نسخه را بگیرید:
 
 ```powershell
-git pull origin arena/019fc243-saite
-.\scripts\install-windows.ps1
+git pull origin arena/019fc7c0-saite
+.\scripts\install-with-npm.ps1
 ```
 
 > 📌 اگر خودتان اسکریپت PowerShell می‌نویسید، متن غیرانگلیسی در آن
@@ -273,7 +281,7 @@ rm -rf node_modules
 rm -rf .next
 
 # ۳. گرفتن آخرین نسخهٔ سالم
-git pull origin arena/019fc243-saite
+git pull origin arena/019fc7c0-saite
 
 # ۴. نصب دوباره
 pnpm install
@@ -291,7 +299,7 @@ pnpm dev
 cd D:\saite
 Remove-Item -Recurse -Force node_modules
 Remove-Item -Recurse -Force .next
-git pull origin arena/019fc243-saite
+git pull origin arena/019fc7c0-saite
 pnpm install
 pnpm dev
 ```
@@ -323,11 +331,7 @@ node -v
 بعد از نصب موفق، این را اجرا کنید:
 
 ```bash
-# اگر با npm نصب کرده‌اید:
 npm run verify
-
-# اگر با pnpm نصب کرده‌اید:
-pnpm verify
 ```
 
 خروجی مورد انتظار:
@@ -335,8 +339,8 @@ pnpm verify
 ```
 ✓ type-check   بدون خطا
 ✓ lint         بدون خطا
-✓ Tests        85 passed
-✓ Build        38 صفحه
+✓ Tests        231 passed (28 فایل)
+✓ Build        65 صفحه
 ```
 
 اگر همهٔ این‌ها سبز بود، پروژه کاملاً سالم است.

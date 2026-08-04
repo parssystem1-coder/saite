@@ -14,6 +14,7 @@ import {
   type ContactFabChannelId,
 } from '@/lib/contact-fab-config'
 import { buildInstagramUrl, SITE } from '@/lib/constants'
+import { isFloatingChromeHidden } from '@/lib/layout/floating-chrome'
 import { cn } from '@/lib/utils'
 import { defaultConsultMessage, openWhatsAppHref, productQuoteMessage } from '@/lib/whatsapp'
 import { useCompareStore } from '@/store/compare-store'
@@ -87,7 +88,7 @@ export function ContactFab() {
   const config = getContactFabConfig()
 
   if (!config.enabled) return null
-  if (config.hideOnPathPrefixes.some((p) => pathname.startsWith(p))) return null
+  if (isFloatingChromeHidden(pathname, config.hideOnPathPrefixes)) return null
 
   const channels = getEnabledContactFabChannels(config)
   if (channels.length === 0) return null
@@ -108,7 +109,7 @@ export function ContactFab() {
       <div
         className={cn(
           'pointer-events-auto flex flex-col items-center gap-2.5 rounded-full p-2',
-          'border border-white/10 bg-surface-1/75 shadow-depth-4 backdrop-blur-xl',
+          'border border-border bg-surface-1/75 shadow-depth-4 backdrop-blur-xl',
           'supports-[backdrop-filter]:bg-surface-1/60'
         )}
       >
@@ -155,6 +156,3 @@ export function ContactFab() {
     </nav>
   )
 }
-
-/** @deprecated از ContactFab استفاده کنید — برای سازگاری importهای قدیمی */
-export { ContactFab as WhatsAppFab }

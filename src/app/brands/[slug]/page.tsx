@@ -9,6 +9,7 @@ import { getProducts } from '@/lib/api'
 import { BRANDS } from '@/lib/constants'
 import { formatNumber } from '@/lib/format'
 import { buildBreadcrumbLd } from '@/lib/seo/breadcrumb-ld'
+import { toProductCardData } from '@/types/product'
 import { JsonLd } from '@/components/seo/json-ld'
 
 type Props = { params: Promise<{ slug: string }> }
@@ -45,33 +46,37 @@ export default async function BrandPage({ params }: Props) {
     <>
       <JsonLd data={breadcrumbLd} />
       <PageShell
-        title=""
+        width="full"
         crumbs={[
           { label: 'خانه', href: '/' },
           { label: 'برندها', href: '/brands' },
           { label: brand.displayName },
         ]}
+        header={
+          <header className="mb-10">
+            {/*
+              عنوان لاتین است و باید dir="ltr" بماند، اما همچنان باید
+              تنها <h1> صفحه باشد. پیش از این PageShell یک <h1> خالی
+              رندر می‌کرد و این عنوان فقط یک span بود.
+            */}
+            <h1 className="text-3xl font-black text-primary md:text-4xl">
+              <TechText>{brand.displayName}</TechText>
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {brand.name} — {formatNumber(all.length)} کالا در کاتالوگ
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button asChild>
+                <Link href={`/products?brand=${brand.slug}`}>فیلتر در فروشگاه</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/contact">مشاورهٔ خرید این برند</Link>
+              </Button>
+            </div>
+          </header>
+        }
       >
-        <header className="not-prose mb-8">
-          <TechText className="text-3xl font-black text-primary md:text-4xl">
-            {brand.displayName}
-          </TechText>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {brand.name} — {formatNumber(all.length)} کالا در کاتالوگ
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href={`/products?brand=${brand.slug}`}>فیلتر در فروشگاه</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/contact">مشاورهٔ خرید این برند</Link>
-            </Button>
-          </div>
-        </header>
-
-        <div className="not-prose">
-          <BrandProducts products={all} />
-        </div>
+        <BrandProducts products={all.map(toProductCardData)} />
       </PageShell>
     </>
   )

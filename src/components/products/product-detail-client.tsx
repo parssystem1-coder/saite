@@ -10,13 +10,18 @@ import { TrackProductView } from '@/components/products/track-product-view'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { SectionHeader } from '@/components/ui/section-header'
 import { CATEGORIES } from '@/lib/constants'
-import type { Product } from '@/types/product'
+import type { Product, ProductCardData } from '@/types/product'
 
 interface Props {
   product: Product
-  related: Product[]
+  /**
+   * محصولات مرتبط و مصرفی‌های سازگار.
+   * عمداً ProductCardData: این گریدها فقط کارت نشان می‌دهند و
+   * ارسال specs/reviews هر کالا payload را بی‌دلیل سنگین می‌کند.
+   */
+  related: ProductCardData[]
   /** مصرفی و قطعات سازگار با این دستگاه — مسیر فروش مکمل */
-  consumables: Product[]
+  consumables: ProductCardData[]
 }
 
 function initialTabFromHash(): ProductTabKey {

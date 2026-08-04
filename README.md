@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/status-in_development-orange" alt="Status">
   <img src="https://img.shields.io/badge/node-%3E%3D22-green" alt="Node">
-  <img src="https://img.shields.io/badge/pnpm-11-blue" alt="pnpm">
+  <img src="https://img.shields.io/badge/npm-10-red" alt="npm">
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="License">
 </p>
 
@@ -15,11 +15,13 @@
 
 | لایه | تکنولوژی |
 |------|-----------|
-| **فریم‌ورک** | Next.js 15 (App Router) |
-| **زبان** | TypeScript (strict) |
-| **استایل** | Tailwind CSS + shadcn/ui |
-| **پکیج منیجر** | pnpm |
-| **تست** | Vitest + Testing Library + Playwright |
+| **فریم‌ورک** | Next.js 16 (App Router) + React 19 |
+| **زبان** | TypeScript (strict + noUnusedLocals) |
+| **استایل** | Tailwind CSS v4 (توکن‌محور) |
+| **وضعیت** | Zustand (کلاینت) + TanStack Query (سرور) |
+| **فرم** | React Hook Form + Zod |
+| **پکیج منیجر** | npm |
+| **تست** | Vitest + Testing Library |
 | **لینتر** | ESLint + Prettier |
 | **CI/CD** | GitHub Actions |
 
@@ -29,25 +31,26 @@
 
 ### پیش‌نیازها
 
-- Node.js ≥ 22
-- pnpm ≥ 11
+- Node.js ≥ 22 (نسخهٔ ۶۴ بیتی)
+- npm ≥ 10 — همراه Node نصب می‌شود
 
 ### نصب و اجرا
 
 ```bash
-# نصب pnpm (اگر ندارید)
-npm install -g pnpm
-
 # کلون مخزن
 git clone https://github.com/parssystem1-coder/saite.git
 cd saite
 
 # نصب وابستگی‌ها
-pnpm install
+npm install
 
 # اجرای سرور توسعه
-pnpm dev
+npm run dev
 ```
+
+> 💡 روی Git Bash در ویندوز، `npm run dev` را **جداگانه** اجرا کنید.
+> اگر چند دستور را یک‌جا paste کنید، با پایان ورودی، shell بسته
+> می‌شود و سرور هم با آن خاتمه می‌یابد.
 
 سایت روی `http://localhost:3000` در دسترس خواهد بود.
 
@@ -55,13 +58,13 @@ pnpm dev
 
 | دستور | توضیح |
 |-------|--------|
-| `pnpm dev` | سرور توسعه (hot reload) |
-| `pnpm build` | بیلد production |
-| `pnpm start` | اجرای نسخهٔ production |
-| `pnpm lint` | اجرای لینتر |
-| `pnpm test` | اجرای تست‌های واحد |
-| `pnpm type-check` | بررسی تایپ‌ها |
-| `pnpm verify` | اجرای همهٔ بررسی‌ها (type + lint + test + build) |
+| `npm run dev` | سرور توسعه (hot reload) |
+| `npm run build` | بیلد production |
+| `npm start` | اجرای نسخهٔ production |
+| `npm run lint` | اجرای لینتر |
+| `npm test` | اجرای تست‌های واحد |
+| `npm run type-check` | بررسی تایپ‌ها |
+| `npm run verify` | اجرای همهٔ بررسی‌ها (type + lint + test + build) |
 
 ---
 

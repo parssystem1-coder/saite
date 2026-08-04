@@ -80,3 +80,27 @@ export const SERVICE_DETAILS: ServiceDetail[] = [
 export function getServiceBySlug(slug: string) {
   return SERVICE_DETAILS.find((s) => s.slug === slug)
 }
+
+/** خلاصهٔ خدمت برای کارت‌های صفحهٔ اصلی و فهرست خدمات */
+export interface ServiceSummary {
+  slug: string
+  icon: LucideIcon
+  title: string
+  description: string
+  href: string
+}
+
+/**
+ * خلاصهٔ همهٔ خدمات — منبع واحد کارت‌ها.
+ *
+ * پیش از این، `app/page.tsx` و `app/services/page.tsx` هرکدام آرایهٔ
+ * `SERVICES` خودشان را داشتند؛ یعنی سه تعریف موازی برای یک مفهوم.
+ * افزودن خدمت جدید یعنی ویرایش هر سه.
+ */
+export const SERVICE_SUMMARIES: ServiceSummary[] = SERVICE_DETAILS.map((s) => ({
+  slug: s.slug,
+  icon: s.icon,
+  title: s.title,
+  description: s.description,
+  href: `/services/${s.slug}`,
+}))

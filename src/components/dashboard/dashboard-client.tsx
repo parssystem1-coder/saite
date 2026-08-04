@@ -1,121 +1,97 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { User, Package, Heart, Settings, Shield, Bell } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import * as React from 'react'
+import { DashboardSidebar } from '@/components/dashboard/dashboard-sidebar'
+import { DashboardStats } from '@/components/dashboard/dashboard-stats'
+import { TrustedDevicesPanel } from '@/components/dashboard/trusted-devices-panel'
+import { RecentlyViewed } from '@/components/products/recently-viewed'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useSignOut } from '@/hooks/use-sign-out'
 import { useAuthStore } from '@/store/auth-store'
 
+function DashboardSkeleton() {
+  return (
+    <div className="container mx-auto px-4 py-12" aria-busy="true" aria-live="polite">
+      <span className="sr-only">در حال بارگذاری پنل کاربری…</span>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        <Skeleton className="h-96 rounded-2xl lg:col-span-1" />
+        <div className="space-y-6 lg:col-span-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 rounded-2xl" />
+            ))}
+          </div>
+          <Skeleton className="h-56 rounded-2xl" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * orchestration پنل کاربری.
+ * سایدبار و شاخص‌ها در ماژول‌های جدا هستند.
+ */
 export function DashboardClient() {
-  const { user, isLoggedIn } = useAuthStore()
   const router = useRouter()
   const hydrated = useHasHydrated()
 
-  useEffect(() => {
-    if (hydrated && !isLoggedIn) {
-      router.push('/login')
-    }
+  // selector به‌جای useAuthStore() — تنها جایی در پروژه بود که کل
+  // store را subscribe می‌کرد و با هر تغییر، کل داشبورد re-render می‌شد
+  const user = useAuthStore((s) => s.user)
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
+
+
+  React.useEffect(() => {
+    if (hydrated && !isLoggedIn) router.replace('/login?redirect=/dashboard')
   }, [hydrated, isLoggedIn, router])
 
-  if (!hydrated || !isLoggedIn) return null
+  const handleLogout = useSignOut('/')
 
-  const stats = [
-    { label: 'سفارشات جاری', value: '۲', icon: Package },
-    { label: 'علاقه‌مندی‌ها', value: '۱۲', icon: Heart },
-    { label: 'پیام‌ها', value: '۵', icon: Bell },
-  ]
+  // اسکلتون به‌جای null — پیش از این صفحه لحظه‌ای سفید می‌شد
+  if (!hydrated || !isLoggedIn) return <DashboardSkeleton />
+
+  const firstName = user?.name.split(' ')[0] ?? ''
 
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-        {/* Sidebar Menu */}
-        <motion.aside 
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="lg:col-span-1 space-y-4"
-        >
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl shadow-2xl">
-            <div className="flex flex-col items-center text-center mb-8">
-              <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center mb-4 border-2 border-primary/50">
-                <User className="h-10 w-10 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold">{user?.name}</h2>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
+        <DashboardSidebar user={user} onLogout={handleLogout} />
 
-            <nav className="space-y-2">
-              {[
-                { label: 'داشبورد', icon: Shield, active: true },
-                { label: 'سفارشات من', icon: Package },
-                { label: 'لیست علاقه‌مندی', icon: Heart },
-                { label: 'تنظیمات حساب', icon: Settings },
-              ].map((item, i) => (
-                <button
-                  key={i}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                    item.active ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-white/5 text-muted-foreground'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="font-medium">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </motion.aside>
-
-        {/* Main Content */}
-        <main className="lg:col-span-3 space-y-8">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {stats.map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="rounded-3xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-all group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                    <stat.icon className="h-6 w-6" />
-                  </div>
-                  <span className="text-3xl font-black">{stat.value}</span>
-                </div>
-                <p className="text-muted-foreground font-medium">{stat.label}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Recent Activity / Welcome */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-10 relative overflow-hidden"
-          >
+        <main className="space-y-8 lg:col-span-3">
+          <section className="surface-3d relative overflow-hidden rounded-2xl p-8 md:p-10">
+            <div
+              aria-hidden="true"
+              className="absolute -bottom-20 -left-20 size-64 rounded-full bg-primary/10 blur-[80px]"
+            />
             <div className="relative z-10">
-              <h3 className="mb-4 text-2xl font-black tracking-tight">
-                خوش آمدید، {user?.name.split(' ')[0]}
-              </h3>
-              <p className="max-w-xl leading-relaxed text-muted-foreground">
-                از این بخش می‌توانید وضعیت سفارش‌ها و علاقه‌مندی‌های خود را پیگیری کنید.
-                پیشنهادهای ویژهٔ مرتبط با تجهیزات اداری به‌زودی اینجا نمایش داده می‌شود.
+              <h1 className="text-2xl font-black tracking-tight text-foreground">
+                خوش آمدید{firstName ? `، ${firstName}` : ''}
+              </h1>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                از این بخش سبد خرید، علاقه‌مندی‌ها و کالاهای در حال مقایسهٔ خود را دنبال
+                کنید. پیگیری سفارش‌ها پس از اتصال سامانهٔ فروش فعال می‌شود.
               </p>
-              <div className="mt-8">
-                <Button size="lg" className="px-8 shadow-xl shadow-primary/20" asChild>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Button asChild>
                   <Link href="/products">مشاهدهٔ محصولات</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/contact">درخواست مشاوره</Link>
                 </Button>
               </div>
             </div>
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/10 blur-[80px]"
-            />
-          </motion.section>
+          </section>
+
+          <DashboardStats />
+
+          <TrustedDevicesPanel accountKey={user?.email || user?.id || ''} />
+
+          <RecentlyViewed title="اخیراً دیده‌اید" />
         </main>
       </div>
     </div>

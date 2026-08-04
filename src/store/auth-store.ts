@@ -1,17 +1,26 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { AuthUser, CustomerUser } from '@/types/user'
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'user' | 'admin'
-}
+/**
+ * نشست **مشتری** فروشگاه.
+ *
+ * ⚠️ این store فقط برای تجربهٔ کاربری است — در localStorage ذخیره
+ * می‌شود و کاربر می‌تواند آن را دستکاری کند. هیچ تصمیم امنیتی
+ * نباید صرفاً بر پایهٔ آن گرفته شود.
+ *
+ * ── چرا اینجا نقش admin وجود ندارد؟ ───────────────────────────
+ * تایپ ورودی عمداً `CustomerUser` است (نقش ثابت 'user'). پیش از
+ * این `AuthUser` بود و یعنی هر کد کلاینتی می‌توانست با یک
+ * `login({ role: 'admin' })` نشست مدیر بسازد. حالا نشست مدیر
+ * فقط از `admin-session-store` می‌آید و تایپ‌چکر جلوی اشتباه را
+ * می‌گیرد.
+ */
 
 interface AuthState {
-  user: User | null
+  user: CustomerUser | null
   isLoggedIn: boolean
-  login: (user: User) => void
+  login: (user: CustomerUser) => void
   logout: () => void
 }
 
@@ -28,3 +37,5 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+export type { AuthUser }

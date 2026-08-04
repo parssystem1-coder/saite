@@ -1,38 +1,62 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { CatalogSkeleton } from '@/components/products/catalog-skeleton'
 import { ProductsClient } from '@/components/products/products-client'
-import { ProductCardSkeleton } from '@/components/ui/skeleton'
+import { SectionHeader } from '@/components/ui/section-header'
+import { firstParam, resolveCatalogHeading } from '@/lib/catalog-heading'
 
-export const metadata: Metadata = {
-  title: 'کاتالوگ محصولات',
-  description:
-    'پرینتر، اسکنر، دستگاه کپی، فکس، مواد مصرفی و قطعات یدکی؛ فیلتر بر اساس برند، فناوری چاپ و ردهٔ کاربری.',
+type SearchParams = Promise<Record<string, string | string[] | undefined>>
+
+function readHeadingParams(params: Record<string, string | string[] | undefined>) {
+  return {
+    category: firstParam(params.category),
+    brand: firstParam(params.brand),
+    q: firstParam(params.q),
+  }
 }
 
-/** اسکلتون هم‌ابعاد صفحه تا هنگام بارگذاری، چیدمان نپرد */
-function CatalogSkeleton() {
+/**
+ * متادیتای وابسته به فیلتر.
+ * پیش از این هر ۶ آدرس `?category=` عنوان یکسان داشتند.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams
+}): Promise<Metadata> {
+  const params = readHeadingParams(await searchParams)
+  const { title, description } = resolveCatalogHeading(params)
+
+  return {
+    title,
+    description,
+    // صفحات فیلترشده نباید با کاتالوگ اصلی رقابت کنند
+    alternates: { canonical: '/products' },
+    robots: params.q ? { index: false, follow: true } : undefined,
+  }
+}
+
+/**
+ * صفحهٔ کاتالوگ — Server Page + Client island.
+ *
+ * چرا عنوان اینجاست و نه داخل ProductsClient؟
+ * چون کل کاتالوگ داخل مرز Suspense است، هر چیزی درون آن در HTML
+ * اولیه دیده نمی‌شود. اندازه‌گیری خروجی بیلد نشان داد
+ * `products.html` هیچ `<h1>` و هیچ لینک محصولی نداشت — فقط اسکلتون.
+ * حالا عنوان و توضیح دسته در HTML سرور هستند و فقط گرید تعاملی
+ * به کلاینت موکول می‌شود.
+ */
+export default async function ProductsPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = readHeadingParams(await searchParams)
+  const { title, description } = resolveCatalogHeading(params)
+
   return (
     <div className="container mx-auto px-4 py-10">
-      <div className="flex flex-col gap-8 lg:flex-row">
-        <div className="hidden w-72 shrink-0 lg:block">
-          <div className="surface-3d h-[32rem] rounded-2xl" />
-        </div>
-        <div className="grid min-w-0 flex-1 grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <ProductCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
+      <SectionHeader as="h1" title={title} description={description} className="mb-8" />
 
-export default function ProductsPage() {
-  // useSearchParams نیازمند مرز Suspense است تا صفحه بتواند
-  // به‌صورت استاتیک پیش‌رندر شود.
-  return (
-    <Suspense fallback={<CatalogSkeleton />}>
-      <ProductsClient />
-    </Suspense>
+      <Suspense fallback={<CatalogSkeleton />}>
+        <ProductsClient />
+      </Suspense>
+    </div>
   )
 }

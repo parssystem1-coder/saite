@@ -1,20 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import {
-  Copy,
-  Droplets,
-  LayoutGrid,
-  LogOut,
-  Package,
-  PackageSearch,
-  Printer,
-  ScanLine,
-  Send,
-  Settings,
-  User,
-  Wrench,
-} from 'lucide-react'
+import { LayoutGrid, LogOut, Package, PackageSearch, Settings, User } from 'lucide-react'
 import * as React from 'react'
 import { ProductGrid } from '@/components/products/product-grid'
 import { Badge } from '@/components/ui/badge'
@@ -30,17 +17,9 @@ import { SpecTable } from '@/components/ui/spec-table'
 import { StockBadge } from '@/components/ui/stock-badge'
 import { TechText } from '@/components/ui/tech-text'
 import { getProducts } from '@/lib/api'
+import { getCategoryIcon } from '@/lib/category-icons'
 import { BRANDS, CATEGORIES, STOCK_STATUS_MAP } from '@/lib/constants'
 import type { StockStatus } from '@/types/product'
-
-const CATEGORY_ICONS = {
-  Printer,
-  ScanLine,
-  Copy,
-  Send,
-  Droplets,
-  Wrench,
-} as const
 
 const SAMPLE_SLUGS = [
   'canon-i-sensys-lbp-2900',
@@ -299,7 +278,7 @@ export function DesignSystemClient() {
       <Section title="۱۰. دسته‌بندی‌های دامنه" subtitle="شش دستهٔ اصلی فروشگاه">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {CATEGORIES.map((cat) => {
-            const Icon = CATEGORY_ICONS[cat.icon as keyof typeof CATEGORY_ICONS]
+            const Icon = getCategoryIcon(cat.icon)
             return (
               <Card3D key={cat.slug} maxTilt={4}>
                 <div className="flex flex-col items-center p-4 text-center">

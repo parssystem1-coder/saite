@@ -12,6 +12,7 @@ import { CATEGORIES } from '@/lib/constants'
 import { buildBreadcrumbLd } from '@/lib/seo/breadcrumb-ld'
 import { buildFaqPageLd } from '@/lib/seo/faq-ld'
 import { buildProductLd } from '@/lib/seo/product-ld'
+import { toProductCardData } from '@/types/product'
 
 type Props = { params: Promise<{ id: string }> }
 
@@ -70,7 +71,11 @@ export default async function ProductDetailPage({ params }: Props) {
       <JsonLd data={productLd} />
       <JsonLd data={breadcrumbLd} />
       {faqLd && <JsonLd data={faqLd} />}
-      <ProductDetailClient product={product} related={related} consumables={consumables} />
+      <ProductDetailClient
+        product={product}
+        related={related.map(toProductCardData)}
+        consumables={consumables.map(toProductCardData)}
+      />
     </>
   )
 }

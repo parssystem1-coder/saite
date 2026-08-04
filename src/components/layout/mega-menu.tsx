@@ -1,13 +1,12 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { ChevronDown, Copy, Droplets, LayoutGrid, Printer, ScanLine, Send, Wrench } from 'lucide-react'
+import { ChevronDown, LayoutGrid } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
+import { getCategoryIcon } from '@/lib/category-icons'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-
-const ICONS = { Printer, ScanLine, Copy, Send, Droplets, Wrench } as const
 
 /**
  * مگامنوی دسته‌بندی‌ها با پنل سه‌بعدی.
@@ -96,7 +95,7 @@ export function MegaMenu() {
                 </p>
                 <ul className="grid grid-cols-2 gap-1.5">
                   {CATEGORIES.map((c) => {
-                    const Icon = ICONS[c.icon as keyof typeof ICONS]
+                    const Icon = getCategoryIcon(c.icon)
                     return (
                       <li key={c.slug}>
                         <Link

@@ -15,10 +15,11 @@ export const metadata: Metadata = {
 export default function BlogPage() {
   return (
     <PageShell
+      width="full"
       title="مجلهٔ آموزشی"
       description="راهنمای خرید و نکات نگهداری تجهیزات اداری، نوشتهٔ تیم فنی ما."
     >
-      <div className="grid gap-6 not-prose md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {ARTICLES.map((a) => (
           <Link
             key={a.slug}

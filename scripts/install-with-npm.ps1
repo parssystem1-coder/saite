@@ -1,15 +1,16 @@
 # ===========================================================
-#  Saite - Install using npm instead of pnpm
+#  Saite - Resilient dependency install for Windows
 #
 #  Usage:   .\scripts\install-with-npm.ps1
 #
-#  Why:
-#  pnpm restarts downloads from zero on every retry, so on a link
-#  that drops around 20MB the 44MB swc tarball can never finish.
-#  npm resumes and uses a longer default timeout, so it gets through.
+#  Why this exists:
+#  The "next" (35MB) and "@next/swc-win32-x64-msvc" (44MB) tarballs
+#  time out on slow or throttled links. This script applies very
+#  conservative network settings and retries automatically.
 #
-#  This installs the exact same package versions. It only changes the
-#  tool used to fetch them.
+#  npm is the project's package manager. Plain "npm install" works
+#  fine on a stable connection - use this script only if downloads
+#  keep dropping.
 # ===========================================================
 
 $ErrorActionPreference = 'Continue'
@@ -54,7 +55,7 @@ for ($i = 1; $i -le 5; $i++) {
         Write-Host ""
         Write-Host "Then open http://localhost:3000" -ForegroundColor Gray
         Write-Host ""
-        Write-Host "Note: use 'npm run <script>' instead of 'pnpm <script>'" -ForegroundColor DarkGray
+        Write-Host "Next step: npm run dev" -ForegroundColor DarkGray
         Write-Host ""
         exit 0
     }
