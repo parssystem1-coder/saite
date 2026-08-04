@@ -46,10 +46,19 @@ export interface TrustedDevice {
   deviceId: string
   /** حسابی که روی این دستگاه وارد شده */
   accountKey: string
+  /** توصیف کامل — «Chrome روی ویندوز» */
   label: string
-  kind: 'mobile' | 'desktop'
+  /** نام مرورگر جدا — برای نمایش برجسته در UI */
+  browser: string
+  /** نام سیستم‌عامل جدا */
+  os: string
+  kind: 'mobile' | 'tablet' | 'desktop'
+  /** ISO — اولین ورود از این دستگاه */
+  firstSeenAt: string
   /** ISO — آخرین ورود موفق */
   lastSeenAt: string
+  /** آیا نشست این دستگاه هنوز فعال است؟ */
+  isActive: boolean
 }
 
 function readAll(): TrustedDevice[] {
@@ -59,7 +68,7 @@ function readAll(): TrustedDevice[] {
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isTrustedDevice)
+    return parsed.filter(isTrustedDevice).map(withDefaults)
   } catch {
     return []
   }
@@ -74,6 +83,18 @@ function isTrustedDevice(value: unknown): value is TrustedDevice {
     typeof v.label === 'string' &&
     typeof v.lastSeenAt === 'string'
   )
+}
+
+/** پرکردن فیلدهای جدید برای رکوردهای قدیمی — بدون آن UI خالی می‌ماند */
+function withDefaults(device: TrustedDevice): TrustedDevice {
+  return {
+    ...device,
+    browser: device.browser ?? device.label ?? 'نامشخص',
+    os: device.os ?? 'نامشخص',
+    kind: device.kind ?? 'desktop',
+    firstSeenAt: device.firstSeenAt ?? device.lastSeenAt,
+    isActive: device.isActive ?? true,
+  }
 }
 
 function writeAll(devices: TrustedDevice[]): void {
@@ -114,15 +135,23 @@ export function trustCurrentDevice(accountKey: string): TrustedDevice | null {
   const info = getDeviceInfo()
   const now = new Date().toISOString()
 
+  const all = readAll()
+  const existing = all.find((d) => d.deviceId === id && d.accountKey === key)
+
   const entry: TrustedDevice = {
     deviceId: id,
     accountKey: key,
     label: info.label,
+    browser: info.browser,
+    os: info.os,
     kind: info.kind,
+    // اولین ورود حفظ می‌شود تا کاربر بداند از کی این دستگاه را دارد
+    firstSeenAt: existing?.firstSeenAt ?? now,
     lastSeenAt: now,
+    isActive: true,
   }
 
-  const others = readAll().filter((d) => !(d.deviceId === id && d.accountKey === key))
+  const others = all.filter((d) => !(d.deviceId === id && d.accountKey === key))
 
   // جدیدترین اول؛ قدیمی‌ترها بیرون از سقف حذف می‌شوند
   const forThisAccount = [entry, ...others.filter((d) => d.accountKey === key)]
@@ -141,6 +170,31 @@ export function listTrustedDevices(accountKey: string): TrustedDevice[] {
   return readAll()
     .filter((d) => d.accountKey === key)
     .sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt))
+}
+
+/**
+ * پایان نشست دستگاه فعلی — دستگاه در فهرست می‌ماند اما «فعال» نیست.
+ *
+ * تفاوت با revokeDevice: اینجا دستگاه فراموش نمی‌شود، فقط نشستش
+ * بسته می‌شود. کاربر می‌بیند «آخرین ورود: ۲ روز پیش» به‌جای اینکه
+ * ردیف ناپدید شود.
+ */
+export function endSessionOnCurrentDevice(accountKey: string): void {
+  const id = getDeviceId()
+  if (!id) return
+  const key = normalizeAccountKey(accountKey)
+  writeAll(
+    readAll().map((d) =>
+      d.deviceId === id && d.accountKey === key ? { ...d, isActive: false } : d
+    )
+  )
+}
+
+/** آیا نشست فعالی روی دستگاه دیگری باز است؟ */
+export function hasActiveSessionElsewhere(accountKey: string): boolean {
+  const id = getDeviceId()
+  const key = normalizeAccountKey(accountKey)
+  return readAll().some((d) => d.accountKey === key && d.deviceId !== id && d.isActive)
 }
 
 /** حذف یک دستگاه — دفعهٔ بعد از آن دستگاه رمز لازم می‌شود */

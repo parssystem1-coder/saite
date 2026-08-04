@@ -18,6 +18,7 @@ import {
   useHasHydrated,
   useWishlistHydrated,
 } from '@/hooks/use-has-hydrated'
+import { useSignOut } from '@/hooks/use-sign-out'
 import { useAuthStore } from '@/store/auth-store'
 import { useCartStore } from '@/store/cart-store'
 import { useWishlistStore } from '@/store/wishlist-store'
@@ -34,7 +35,7 @@ export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps
   const wishlistReady = useWishlistHydrated()
 
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const logout = useAuthStore((s) => s.logout)
+  const signOut = useSignOut('/')
   const itemCount = useCartStore((s) => s.itemCount())
   const wishlistCount = useWishlistStore((s) => s.items.length)
 
@@ -81,7 +82,7 @@ export function HeaderActions({ mobileOpen, onToggleMobile }: HeaderActionsProps
           </Link>
           <div className="my-1 h-px bg-border" />
           <Menu3DItem
-            onClick={logout}
+            onClick={signOut}
             className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="size-4" />

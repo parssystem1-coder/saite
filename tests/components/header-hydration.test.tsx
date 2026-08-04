@@ -23,6 +23,24 @@ import { sampleProduct } from '../fixtures/product'
 
 const noop = () => {}
 
+/*
+  HeaderActions از useSignOut استفاده می‌کند که به router نیاز دارد.
+  در تست واحد، App Router mount نشده — پس mock می‌کنیم.
+  فقط در همین فایل، تا سایر تست‌ها رفتار واقعی را حفظ کنند.
+*/
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}))
+
 function setupCartWithItem() {
   useCartStore.setState({ items: [] })
   useCartStore.getState().addItem(sampleProduct, 1)

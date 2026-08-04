@@ -10,6 +10,7 @@ import { RecentlyViewed } from '@/components/products/recently-viewed'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useHasHydrated } from '@/hooks/use-has-hydrated'
+import { useSignOut } from '@/hooks/use-sign-out'
 import { useAuthStore } from '@/store/auth-store'
 
 function DashboardSkeleton() {
@@ -43,16 +44,13 @@ export function DashboardClient() {
   // store را subscribe می‌کرد و با هر تغییر، کل داشبورد re-render می‌شد
   const user = useAuthStore((s) => s.user)
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  const logout = useAuthStore((s) => s.logout)
+
 
   React.useEffect(() => {
     if (hydrated && !isLoggedIn) router.replace('/login?redirect=/dashboard')
   }, [hydrated, isLoggedIn, router])
 
-  const handleLogout = React.useCallback(() => {
-    logout()
-    router.replace('/')
-  }, [logout, router])
+  const handleLogout = useSignOut('/')
 
   // اسکلتون به‌جای null — پیش از این صفحه لحظه‌ای سفید می‌شد
   if (!hydrated || !isLoggedIn) return <DashboardSkeleton />

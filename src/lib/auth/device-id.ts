@@ -64,10 +64,14 @@ export function getDeviceId(): string {
 // ── توصیف خوانا برای نمایش در فهرست دستگاه‌ها ─────────────────
 
 export interface DeviceInfo {
-  /** مثلاً «کروم روی ویندوز» */
+  /** مثلاً «Chrome روی ویندوز» */
   label: string
-  /** موبایل یا رومیزی — برای انتخاب آیکون */
-  kind: 'mobile' | 'desktop'
+  /** نام مرورگر به‌تنهایی — برای نمایش جدا در UI */
+  browser: string
+  /** نام سیستم‌عامل به‌تنهایی */
+  os: string
+  /** موبایل، تبلت یا رومیزی — برای انتخاب آیکون */
+  kind: 'mobile' | 'tablet' | 'desktop'
 }
 
 function detectBrowser(ua: string): string {
@@ -97,11 +101,26 @@ function detectOs(ua: string): string {
  */
 export function getDeviceInfo(userAgent?: string): DeviceInfo {
   const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '')
-  if (!ua) return { label: 'دستگاه ناشناس', kind: 'desktop' }
+  if (!ua) {
+    return {
+      label: 'دستگاه ناشناس',
+      browser: 'نامشخص',
+      os: 'نامشخص',
+      kind: 'desktop',
+    }
+  }
 
-  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua)
+  const browser = detectBrowser(ua)
+  const os = detectOs(ua)
+
+  // تبلت پیش از موبایل بررسی می‌شود چون iPad رشتهٔ Mobile هم دارد
+  const isTablet = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua)
+  const isMobile = /Android|iPhone|iPod|Mobile/i.test(ua)
+
   return {
-    label: `${detectBrowser(ua)} روی ${detectOs(ua)}`,
-    kind: isMobile ? 'mobile' : 'desktop',
+    label: `${browser} روی ${os}`,
+    browser,
+    os,
+    kind: isTablet ? 'tablet' : isMobile ? 'mobile' : 'desktop',
   }
 }

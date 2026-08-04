@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AtSign, Loader2, Lock, MonitorSmartphone } from 'lucide-react'
+import { AtSign, Loader2, Lock, MonitorSmartphone, UserPlus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
@@ -141,12 +141,24 @@ export function LoginClient() {
 
           <SocialAuthButtons />
 
-          <p className="text-center text-sm text-muted-foreground">
-            حساب کاربری ندارید؟{' '}
-            <Link href="/register" className="font-bold text-primary hover:underline">
-              ثبت‌نام کنید
-            </Link>
-          </p>
+          {/*
+            ثبت‌نام یک «کنش» است نه یک پانویس.
+            پیش از این متن ریز و کم‌رنگ بود و کاربر تازه آن را
+            نمی‌دید — یعنی همان لحظه‌ای که می‌خواست حساب بسازد،
+            مسیرش پیدا نبود. حالا دکمهٔ تمام‌عرض با مرز مشخص است.
+          */}
+          <div className="rounded-2xl border border-primary/25 bg-primary/8 p-4 text-center">
+            <p className="text-sm font-bold text-foreground">هنوز حساب ندارید؟</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              ساخت حساب کمتر از یک دقیقه طول می‌کشد.
+            </p>
+            <Button variant="outline" size="lg" className="mt-3.5 w-full" asChild>
+              <Link href="/register">
+                <UserPlus />
+                ساخت حساب کاربری
+              </Link>
+            </Button>
+          </div>
 
           {/* راهنمای فاز mock — با اتصال بک‌اند حذف می‌شود */}
           <p className="rounded-xl border border-border bg-surface-0/50 p-3 text-center text-[11px] leading-relaxed text-muted-foreground">

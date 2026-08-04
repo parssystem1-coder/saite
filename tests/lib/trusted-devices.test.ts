@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getDeviceId, getDeviceInfo } from '@/lib/auth/device-id'
 import {
   __clearTrustedDevices,
+  endSessionOnCurrentDevice,
+  hasActiveSessionElsewhere,
   getTrustedDevicesServerSnapshot,
   getTrustedDevicesSnapshot,
   isCurrentDevice,
@@ -200,5 +202,109 @@ describe('کمکی‌ها', () => {
     __clearTrustedDevices()
     localStorage.setItem('saite:trusted-devices', '{ not json')
     expect(listTrustedDevices(ACCOUNT)).toEqual([])
+  })
+})
+
+describe('وضعیت نشست — «آیا روی دستگاه دیگری باز مانده؟»', () => {
+  it('🔑 ورود، نشست را فعال می‌کند', () => {
+    trustCurrentDevice(ACCOUNT)
+    const [device] = listTrustedDevices(ACCOUNT)
+    expect(device.isActive).toBe(true)
+  })
+
+  it('🔑 خروج، نشست را می‌بندد اما دستگاه را فراموش نمی‌کند', () => {
+    trustCurrentDevice(ACCOUNT)
+    endSessionOnCurrentDevice(ACCOUNT)
+
+    const [device] = listTrustedDevices(ACCOUNT)
+    expect(device.isActive).toBe(false)
+    // دستگاه در فهرست می‌ماند تا کاربر تاریخچه را ببیند
+    expect(listTrustedDevices(ACCOUNT)).toHaveLength(1)
+  })
+
+  it('🔑 نشست باز روی دستگاه دیگر تشخیص داده می‌شود', () => {
+    trustCurrentDevice(ACCOUNT)
+    expect(hasActiveSessionElsewhere(ACCOUNT)).toBe(false)
+
+    const stored = JSON.parse(localStorage.getItem('saite:trusted-devices') ?? '[]')
+    stored.push({
+      deviceId: 'other-laptop',
+      accountKey: ACCOUNT,
+      label: 'Firefox روی لینوکس',
+      browser: 'Firefox',
+      os: 'لینوکس',
+      kind: 'desktop',
+      firstSeenAt: '2026-01-01T00:00:00Z',
+      lastSeenAt: '2026-01-01T00:00:00Z',
+      isActive: true,
+    })
+    localStorage.setItem('saite:trusted-devices', JSON.stringify(stored))
+
+    expect(hasActiveSessionElsewhere(ACCOUNT)).toBe(true)
+  })
+
+  it('دستگاه خارج‌شده «نشست باز» شمرده نمی‌شود', () => {
+    trustCurrentDevice(ACCOUNT)
+    const stored = JSON.parse(localStorage.getItem('saite:trusted-devices') ?? '[]')
+    stored.push({
+      deviceId: 'old-phone',
+      accountKey: ACCOUNT,
+      label: 'Safari روی iOS',
+      browser: 'Safari',
+      os: 'iOS',
+      kind: 'mobile',
+      firstSeenAt: '2026-01-01T00:00:00Z',
+      lastSeenAt: '2026-01-01T00:00:00Z',
+      isActive: false,
+    })
+    localStorage.setItem('saite:trusted-devices', JSON.stringify(stored))
+
+    expect(hasActiveSessionElsewhere(ACCOUNT)).toBe(false)
+  })
+
+  it('ورود دوباره پس از خروج، نشست را باز می‌کند', () => {
+    trustCurrentDevice(ACCOUNT)
+    endSessionOnCurrentDevice(ACCOUNT)
+    trustCurrentDevice(ACCOUNT)
+
+    expect(listTrustedDevices(ACCOUNT)[0].isActive).toBe(true)
+  })
+
+  it('🔑 firstSeenAt در ورودهای بعدی حفظ می‌شود', () => {
+    const first = trustCurrentDevice(ACCOUNT)
+    const second = trustCurrentDevice(ACCOUNT)
+    expect(second?.firstSeenAt).toBe(first?.firstSeenAt)
+  })
+})
+
+describe('اطلاعات مرورگر در رکورد دستگاه', () => {
+  it('🔑 مرورگر و سیستم‌عامل جدا ذخیره می‌شوند', () => {
+    trustCurrentDevice(ACCOUNT)
+    const [device] = listTrustedDevices(ACCOUNT)
+
+    expect(device.browser).toBeTruthy()
+    expect(device.os).toBeTruthy()
+    expect(['mobile', 'tablet', 'desktop']).toContain(device.kind)
+  })
+
+  it('رکورد قدیمی بدون فیلدهای جدید، مقدار پیش‌فرض می‌گیرد', () => {
+    // شبیه‌سازی دادهٔ ذخیره‌شده پیش از افزودن browser/os
+    localStorage.setItem(
+      'saite:trusted-devices',
+      JSON.stringify([
+        {
+          deviceId: 'legacy',
+          accountKey: ACCOUNT,
+          label: 'Chrome روی ویندوز',
+          kind: 'desktop',
+          lastSeenAt: '2026-01-01T00:00:00Z',
+        },
+      ])
+    )
+
+    const [device] = listTrustedDevices(ACCOUNT)
+    expect(device.browser).toBeTruthy()
+    expect(device.firstSeenAt).toBe('2026-01-01T00:00:00Z')
+    expect(device.isActive).toBe(true)
   })
 })
