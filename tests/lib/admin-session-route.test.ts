@@ -45,6 +45,10 @@ function loginRequest(body: unknown, ip = '203.0.113.1'): Request {
   })
 }
 
+function logoutRequest(): Request {
+  return new Request('http://localhost:3000/admin/api/session', { method: 'DELETE' })
+}
+
 beforeEach(() => {
   recorded.length = 0
   __resetAllRateLimits()
@@ -218,7 +222,7 @@ describe('🔑 محدودیت نرخ سمت سرور', () => {
 
 describe('خروج', () => {
   it('🔑 کوکی با maxAge=0 باطل می‌شود', async () => {
-    await DELETE()
+    await DELETE(logoutRequest())
 
     const cookie = recorded.find((c) => c.name === ADMIN_SESSION_COOKIE)
     expect(cookie?.options.maxAge).toBe(0)
@@ -226,7 +230,7 @@ describe('خروج', () => {
   })
 
   it('کوکی ابطال هم httpOnly می‌ماند', async () => {
-    await DELETE()
+    await DELETE(logoutRequest())
 
     const cookie = recorded.find((c) => c.name === ADMIN_SESSION_COOKIE)
     expect(cookie?.options.httpOnly).toBe(true)

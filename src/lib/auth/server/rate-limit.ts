@@ -1,5 +1,12 @@
 import 'server-only'
 
+import {
+  createFileStore,
+  createMemoryStore,
+  DEFAULT_RATE_LIMIT_PATH,
+  type RateLimitStore,
+} from '@/lib/auth/server/rate-limit-store'
+
 /**
  * محدودیت نرخ ورود — سمت سرور، بر اساس IP.
  *
@@ -7,31 +14,30 @@ import 'server-only'
  * آن hook در حافظهٔ کامپوننت است: با رفرش صفحه پاک می‌شود و با
  * curl اصلاً وجود ندارد. فقط تجربهٔ کاربر را بهتر می‌کند.
  *
- * این ماژول واقعاً محدود می‌کند، چون مهاجم به حافظهٔ سرور دسترسی
+ * این ماژول واقعاً محدود می‌کند، چون مهاجم به وضعیت سرور دسترسی
  * ندارد.
  *
- * ── محدودیت صادقانه ───────────────────────────────────────────
- * شمارنده در حافظهٔ process است، پس:
- *   • با ری‌استارت سرور صفر می‌شود
- *   • روی چند instance (serverless / چند container) مشترک نیست
+ * ── پایداری ───────────────────────────────────────────────────
+ * شمارنده روی دیسک ذخیره می‌شود (`rate-limit-store.ts`). پیش از
+ * این فقط در حافظهٔ process بود و با هر ری‌استارت صفر می‌شد —
+ * یعنی مهاجم فقط کافی بود منتظر یک deploy بماند.
  *
- * برای یک فروشگاه تک-سروره کافی است. اگر روزی افقی مقیاس دادید،
- * این را با Redis یا Upstash جایگزین کنید — رابط تابع همان
- * می‌ماند و فقط بدنه عوض می‌شود.
+ * در تست از نسخهٔ حافظه‌ای استفاده می‌شود تا فایل‌های موقت
+ * ناخواسته ساخته نشوند.
  */
 
-interface Bucket {
-  count: number
-  resetAt: number
-}
+const store: RateLimitStore =
+  process.env.NODE_ENV === 'test'
+    ? createMemoryStore()
+    : createFileStore(DEFAULT_RATE_LIMIT_PATH)
 
-const buckets = new Map<string, Bucket>()
+/** هر چند عملیات یک‌بار سطل‌های منقضی پاک شوند */
+const SWEEP_INTERVAL = 64
+let operationCount = 0
 
-/** پاک‌سازی سطل‌های منقضی تا حافظه بی‌نهایت رشد نکند */
-function sweep(now: number): void {
-  for (const [key, bucket] of buckets) {
-    if (bucket.resetAt <= now) buckets.delete(key)
-  }
+function maybeSweep(now: number): void {
+  operationCount += 1
+  if (operationCount % SWEEP_INTERVAL === 0) store.sweep(now)
 }
 
 export interface RateLimitResult {
@@ -56,42 +62,41 @@ export function consumeRateLimit(
   windowMs: number
 ): RateLimitResult {
   const now = Date.now()
+  maybeSweep(now)
 
-  // هر بار که سطل‌ها بزرگ شدند، منقضی‌ها را پاک کن
-  if (buckets.size > 512) sweep(now)
-
-  const existing = buckets.get(key)
+  const existing = store.get(key)
 
   if (!existing || existing.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs })
+    store.set(key, { count: 1, resetAt: now + windowMs })
     return { allowed: true, remaining: maxAttempts - 1, retryAfterSeconds: 0 }
   }
 
-  existing.count += 1
+  const next = { count: existing.count + 1, resetAt: existing.resetAt }
+  store.set(key, next)
 
-  if (existing.count > maxAttempts) {
+  if (next.count > maxAttempts) {
     return {
       allowed: false,
       remaining: 0,
-      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+      retryAfterSeconds: Math.max(1, Math.ceil((next.resetAt - now) / 1000)),
     }
   }
 
   return {
     allowed: true,
-    remaining: maxAttempts - existing.count,
+    remaining: maxAttempts - next.count,
     retryAfterSeconds: 0,
   }
 }
 
 /** صفر کردن شمارنده پس از ورود موفق */
 export function resetRateLimit(key: string): void {
-  buckets.delete(key)
+  store.delete(key)
 }
 
 /** فقط برای تست — پاک‌کردن کامل وضعیت */
 export function __resetAllRateLimits(): void {
-  buckets.clear()
+  store.clear()
 }
 
 /**

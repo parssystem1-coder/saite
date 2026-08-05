@@ -1,7 +1,16 @@
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, Eye, EyeOff, Loader2, Lock, LogIn, User } from 'lucide-react'
+import {
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  LogIn,
+  Smartphone,
+  User,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import * as React from 'react'
@@ -35,6 +44,16 @@ export function AdminLoginForm() {
   const [formError, setFormError] = React.useState<string | null>(null)
   const [showPassword, setShowPassword] = React.useState(false)
 
+  /*
+    فیلد کد دومرحله‌ای فقط پس از اعلام سرور ظاهر می‌شود.
+
+    چرا از ابتدا نشان داده نمی‌شود؟ چون نمایشش به هر بازدیدکننده
+    می‌گوید این حساب TOTP دارد — اطلاعاتی که به مهاجم کمک می‌کند
+    بداند با چه چیزی روبه‌روست. سرور آن را فقط **پس از تأیید
+    نام کاربری و رمز** برمی‌گرداند.
+  */
+  const [totpRequired, setTotpRequired] = React.useState(false)
+
   const throttle = useLoginThrottle({
     maxAttempts: MAX_LOGIN_ATTEMPTS,
     lockoutSeconds: Math.round(LOCKOUT_DURATION_MS / 1000),
@@ -48,7 +67,7 @@ export function AdminLoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<AdminLoginInput>({
     resolver: zodResolver(adminLoginSchema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { username: '', password: '', totpCode: '' },
   })
 
   const onSubmit = async (data: AdminLoginInput) => {
@@ -59,11 +78,30 @@ export function AdminLoginForm() {
       تأیید روی سرور انجام می‌شود. این تابع هیچ دانشی از رمز
       ندارد — فقط درخواست می‌فرستد و پاسخ را می‌خواند.
     */
-    const result = await requestAdminLogin(data.username, data.password)
+    const result = await requestAdminLogin(data.username, data.password, data.totpCode)
 
     if (!result.ok) {
+      if (result.totpRequired) {
+        setTotpRequired(true)
+        setValue('totpCode', '')
+        setFormError(result.message)
+
+        /*
+          «کد لازم است» شکست حساب نمی‌شود.
+
+          کاربر رمز درست داده و فقط مرحلهٔ دوم مانده. اگر
+          شمارندهٔ قفل را زیاد می‌کردیم، کاربر واقعی که برای
+          اولین بار کد را می‌بیند بی‌دلیل جریمه می‌شد.
+          کد **غلط** اما شکست است و پایین‌تر شمرده می‌شود.
+        */
+        if (!result.message.includes('وارد کنید')) throttle.registerFailure()
+        return
+      }
+
       // رمز پاک می‌شود تا تلاش دوباره آگاهانه باشد، نه Enter پی‌درپی
       setValue('password', '')
+      setValue('totpCode', '')
+      setTotpRequired(false)
       throttle.registerFailure()
       setFormError(result.message)
       return
@@ -154,6 +192,42 @@ export function AdminLoginForm() {
         </div>
       </FormField>
 
+      {/*
+        کد دومرحله‌ای — فقط پس از اعلام سرور.
+
+        `inputMode="numeric"` روی موبایل صفحه‌کلید عددی می‌آورد و
+        `autoComplete="one-time-code"` به مرورگر اجازه می‌دهد کد
+        را از پیامک یا برنامهٔ احراز هویت پیشنهاد دهد.
+      */}
+      {totpRequired && (
+        <FormField
+          id="totpCode"
+          label="کد ورود دومرحله‌ای"
+          required
+          error={errors.totpCode?.message}
+          hint="کد شش‌رقمی برنامهٔ احراز هویت"
+        >
+          <div className="relative">
+            <Smartphone
+              className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              {...register('totpCode')}
+              {...fieldAria('totpCode', !!errors.totpCode, true)}
+              dir="ltr"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="۱۲۳۴۵۶"
+              disabled={isLocked}
+              autoFocus
+              className="pr-10 text-center font-mono tracking-[0.4em]"
+            />
+          </div>
+        </FormField>
+      )}
+
       <div className="flex justify-end">
         <Link
           href="/admin/recover"
@@ -183,7 +257,7 @@ export function AdminLoginForm() {
         ) : (
           <>
             <LogIn />
-            ورود به پنل مدیریت
+            {totpRequired ? 'تأیید و ورود' : 'ورود به پنل مدیریت'}
           </>
         )}
       </Button>

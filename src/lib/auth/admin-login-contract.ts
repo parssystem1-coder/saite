@@ -60,6 +60,20 @@ export const SERVER_RATE_LIMIT = {
   windowMs: 15 * 60_000,
 } as const
 
+/** پیام وقتی حساب TOTP دارد ولی کد وارد نشده */
+export const TOTP_REQUIRED_MESSAGE = 'کد ورود دومرحله‌ای را وارد کنید.'
+
+/**
+ * پیام وقتی کد دومرحله‌ای غلط است.
+ *
+ * ── چرا این پیام از پیام رمز جداست؟ ───────────────────────────
+ * برخلاف نام کاربری/رمز، اینجا تفکیک نشت اطلاعات نیست: کاربر
+ * قبلاً رمز درست را داده، پس مهاجمی که به این مرحله رسیده از
+ * وجود حساب خبر دارد. مبهم نگه‌داشتن پیام فقط کاربر واقعی را
+ * سردرگم می‌کند («رمزم را درست زدم، چرا می‌گوید غلط است؟»).
+ */
+export const TOTP_INVALID_MESSAGE = 'کد دومرحله‌ای نادرست یا منقضی شده است.'
+
 /** بدنهٔ پاسخ موفق */
 export interface AdminLoginSuccess {
   ok: true
@@ -69,6 +83,13 @@ export interface AdminLoginSuccess {
 export interface AdminLoginFailure {
   ok: false
   message: string
+  /**
+   * وقتی `true` است، فرم باید فیلد کد دومرحله‌ای را نشان دهد.
+   *
+   * سرور این را فقط **پس از تأیید نام کاربری و رمز** برمی‌گرداند،
+   * پس خودش نشت اطلاعات نیست.
+   */
+  totpRequired?: boolean
 }
 
 export type AdminLoginResponse = AdminLoginSuccess | AdminLoginFailure

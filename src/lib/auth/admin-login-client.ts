@@ -21,12 +21,15 @@ import {
  * را می‌فرستد اما مرورگر نگهش نمی‌دارد.
  */
 
-export type AdminLoginResult = { ok: true } | { ok: false; message: string }
+export type AdminLoginResult =
+  | { ok: true }
+  | { ok: false; message: string; totpRequired?: boolean }
 
 /** ارسال اعتبارنامه به سرور */
 export async function requestAdminLogin(
   username: string,
   password: string,
+  totpCode?: string,
   signal?: AbortSignal
 ): Promise<AdminLoginResult> {
   let response: Response
@@ -35,7 +38,7 @@ export async function requestAdminLogin(
     response = await fetch(ADMIN_LOGIN_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, totpCode: totpCode || undefined }),
       credentials: 'same-origin',
       signal,
     })
@@ -59,6 +62,7 @@ export async function requestAdminLogin(
     return {
       ok: false,
       message: body && !body.ok ? body.message : INVALID_CREDENTIALS_MESSAGE,
+      totpRequired: body && !body.ok ? body.totpRequired : undefined,
     }
   }
 
