@@ -57,14 +57,14 @@ export function getSelfServiceRecoverySteps(): RecoveryOption[] {
       description:
         'در این حالت اعتبارنامه در فایل زیر تعریف شده و با یک جستجو پیدا می‌شود.',
       icon: 'terminal',
-      code: 'grep DEFAULT_ADMIN src/lib/auth/admin-credentials.ts',
+      code: 'grep DEFAULT_ADMIN src/lib/auth/server/admin-secret.ts',
     },
     {
       title: 'رمز جدید تعیین کنید',
       description:
-        'فایل .env.local را بسازید یا ویرایش کنید، سپس سرور را دوباره اجرا کنید. مقدار جدید بلافاصله اعمال می‌شود.',
+        'فایل .env.local را بسازید یا ویرایش کنید، سپس سرور را دوباره اجرا کنید. توجه: این نام‌ها پیشوند NEXT_PUBLIC ندارند — یعنی فقط روی سرور خوانده می‌شوند و وارد باندل مرورگر نمی‌شوند.',
       icon: 'shield',
-      code: 'NEXT_PUBLIC_ADMIN_USERNAME=myname\nNEXT_PUBLIC_ADMIN_PASSWORD=my-strong-passphrase',
+      code: 'ADMIN_USERNAME=myname\nADMIN_PASSWORD=my-strong-passphrase',
     },
   ]
 }

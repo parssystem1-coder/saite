@@ -1,11 +1,13 @@
 import { ArrowRight, Lock, ScrollText, ShieldCheck, Terminal } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import { AdminLoginForm } from '@/components/admin/admin-login-form'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TechText } from '@/components/ui/tech-text'
-import { DEMO_ADMIN_PASSWORD, DEMO_ADMIN_USERNAME } from '@/lib/auth/admin-credentials'
+import { ADMIN_PASSWORD, ADMIN_USERNAME } from '@/lib/auth/server/admin-secret'
+import { hasAdminSession } from '@/lib/auth/server/admin-session'
 import { IS_DEMO_MODE } from '@/lib/auth/demo-mode'
 import { SITE } from '@/lib/constants'
 
@@ -14,6 +16,12 @@ export const metadata: Metadata = {
   description: 'ورود به پنل مدیریت فروشگاه',
   robots: { index: false, follow: false, nocache: true },
 }
+
+/**
+ * این صفحه به کوکی نشست و متغیرهای محیطی سرور وابسته است، پس
+ * نباید به‌صورت استاتیک تولید شود.
+ */
+export const dynamic = 'force-dynamic'
 
 const SECURITY_NOTES = [
   { icon: Lock, text: 'اتصال رمزنگاری‌شده و نشست مجزا از حساب مشتریان' },
@@ -37,7 +45,18 @@ const SECURITY_NOTES = [
  * کاربری که اشتباهی اینجا آمده، از روی ظاهر می‌فهمد جای درستی
  * نیست — پیش از آنکه فرم را پر کند.
  */
-export default function AdminLoginPage() {
+export default async function AdminLoginPage() {
+  /*
+    مدیری که نشست معتبر دارد نباید فرم ورود ببیند.
+
+    این بررسی سمت سرور است و جای `useRedirectIfAuthenticated`
+    قبلی را می‌گیرد — آن hook وضعیت را از localStorage می‌خواند که
+    هم قابل جعل بود و هم با کوکی سرور همگام نبود.
+  */
+  if (await hasAdminSession()) {
+    redirect('/admin')
+  }
+
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-surface-0 px-4 py-10">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-border shadow-depth-4">
@@ -109,8 +128,14 @@ export default function AdminLoginPage() {
 
             {/*
               راهنمای فاز پوسته — فقط در توسعهٔ محلی.
-              با `next build` این بلوک کاملاً از باندل حذف می‌شود،
-              پس اعتبارنامه هرگز روی هاست عمومی دیده نمی‌شود.
+
+              این صفحه یک Server Component است، پس `ADMIN_PASSWORD`
+              روی سرور خوانده و مستقیم داخل HTML رندر می‌شود. مقدار
+              وارد باندل جاوااسکریپت **نمی‌شود** — برخلاف قبل که در
+              chunk کلاینت قابل جستجو بود.
+
+              با `NODE_ENV=production` کل بلوک حذف می‌شود، پس روی
+              هاست حتی در HTML هم دیده نخواهد شد.
             */}
             {IS_DEMO_MODE && (
               <div className="mt-6 rounded-lg border border-stock-low/25 bg-stock-low/8 px-3.5 py-3">
@@ -122,7 +147,7 @@ export default function AdminLoginPage() {
                     <dt className="text-muted-foreground">کاربر:</dt>
                     <dd>
                       <TechText className="font-bold text-foreground">
-                        {DEMO_ADMIN_USERNAME}
+                        {ADMIN_USERNAME}
                       </TechText>
                     </dd>
                   </div>
@@ -130,7 +155,7 @@ export default function AdminLoginPage() {
                     <dt className="text-muted-foreground">رمز:</dt>
                     <dd>
                       <TechText className="font-bold text-foreground">
-                        {DEMO_ADMIN_PASSWORD}
+                        {ADMIN_PASSWORD}
                       </TechText>
                     </dd>
                   </div>

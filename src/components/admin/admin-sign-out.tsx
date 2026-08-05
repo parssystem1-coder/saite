@@ -4,29 +4,42 @@ import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
+import { requestAdminLogout } from '@/lib/auth/admin-login-client'
 import { useAdminSessionStore } from '@/store/admin-session-store'
 
 /**
  * خروج از پنل مدیریت.
  *
- * چرا `replace` و نه `push`؟ تا کاربر با دکمهٔ Back مرورگر به صفحهٔ
- * پنل برنگردد. صفحه دوباره گارد را رد نمی‌کند، اما لحظه‌ای محتوای
- * کش‌شده دیده می‌شود که تجربهٔ بدی است.
+ * ── چرا سرور هم خبردار می‌شود ─────────────────────────────────
+ * نسخهٔ قبلی فقط state کلاینت را پاک می‌کرد. اما نشست واقعی در
+ * کوکی سرور است: بدون `DELETE /admin/api/session` کاربر «خارج
+ * شده» بود ولی کوکی‌اش هنوز معتبر بود — کافی بود صفحه را رفرش
+ * کند تا دوباره داخل باشد.
  *
- * ── فاز بک‌اند ────────────────────────────────────────────────
- * علاوه بر پاک‌کردن state، باید `POST /api/auth/logout` صدا زده شود
- * تا کوکی session سمت سرور هم باطل شود. پاک‌کردن state کلاینت
- * به‌تنهایی یعنی نشست روی سرور همچنان معتبر است.
+ * ── چرا `replace` و نه `push`؟ ────────────────────────────────
+ * تا کاربر با دکمهٔ Back مرورگر به صفحهٔ پنل برنگردد و لحظه‌ای
+ * محتوای کش‌شده را نبیند.
+ *
+ * ── چرا `refresh`؟ ────────────────────────────────────────────
+ * تا Server Componentها دوباره اجرا شوند و کش مسیر با وضعیت
+ * «بدون نشست» به‌روز شود.
  */
 export function AdminSignOut({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter()
-  const signOut = useAdminSessionStore((s) => s.signOut)
+  const clear = useAdminSessionStore((s) => s.clear)
+  const [isPending, setIsPending] = React.useState(false)
 
-  const handleSignOut = React.useCallback(() => {
-    signOut()
+  const handleSignOut = React.useCallback(async () => {
+    setIsPending(true)
+
+    // ابطال کوکی سرور — بدون این، نشست واقعاً بسته نمی‌شود
+    await requestAdminLogout()
+
+    clear()
     onNavigate?.()
+    router.refresh()
     router.replace('/admin/login')
-  }, [signOut, onNavigate, router])
+  }, [clear, onNavigate, router])
 
   return (
     <Button
@@ -34,10 +47,11 @@ export function AdminSignOut({ onNavigate }: { onNavigate?: () => void }) {
       variant="ghost"
       size="sm"
       onClick={handleSignOut}
+      disabled={isPending}
       className="w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive"
     >
       <LogOut className="size-4" />
-      خروج از پنل
+      {isPending ? 'در حال خروج…' : 'خروج از پنل'}
     </Button>
   )
 }
