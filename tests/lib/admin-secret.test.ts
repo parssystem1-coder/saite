@@ -3,9 +3,16 @@ import {
   ADMIN_PASSWORD,
   ADMIN_PROFILE,
   ADMIN_USERNAME,
+  checkAdminCredentials,
+  IS_PASSWORD_HASHED,
+  IS_TOTP_ENABLED,
   IS_USING_DEFAULT_CREDENTIALS,
-  matchesAdminCredentials,
 } from '@/lib/auth/server/admin-secret'
+
+/** کمک‌کننده: فقط بله/خیر می‌خواهیم */
+async function matches(username: string, password: string): Promise<boolean> {
+  return (await checkAdminCredentials(username, password)).ok
+}
 
 /**
  * تأیید اعتبارنامه — حالا فقط سمت سرور.
@@ -17,37 +24,33 @@ import {
  */
 
 describe('تأیید اعتبارنامه', () => {
-  it('اعتبارنامهٔ درست پذیرفته می‌شود', () => {
-    expect(matchesAdminCredentials(ADMIN_USERNAME, ADMIN_PASSWORD)).toBe(true)
+  it('اعتبارنامهٔ درست پذیرفته می‌شود', async () => {
+    expect(await matches(ADMIN_USERNAME, ADMIN_PASSWORD)).toBe(true)
   })
 
-  it('نام کاربری بدون حساسیت به حروف بزرگ و فاصله', () => {
-    expect(
-      matchesAdminCredentials(`  ${ADMIN_USERNAME.toUpperCase()}  `, ADMIN_PASSWORD)
-    ).toBe(true)
+  it('نام کاربری بدون حساسیت به حروف بزرگ و فاصله', async () => {
+    expect(await matches(`  ${ADMIN_USERNAME.toUpperCase()}  `, ADMIN_PASSWORD)).toBe(true)
   })
 
-  it('🔑 رمز به حروف بزرگ و کوچک حساس است', () => {
-    expect(matchesAdminCredentials(ADMIN_USERNAME, ADMIN_PASSWORD.toUpperCase())).toBe(
-      false
-    )
+  it('🔑 رمز به حروف بزرگ و کوچک حساس است', async () => {
+    expect(await matches(ADMIN_USERNAME, ADMIN_PASSWORD.toUpperCase())).toBe(false)
   })
 
-  it('رمز غلط رد می‌شود', () => {
-    expect(matchesAdminCredentials(ADMIN_USERNAME, 'wrong-password')).toBe(false)
+  it('رمز غلط رد می‌شود', async () => {
+    expect(await matches(ADMIN_USERNAME, 'wrong-password')).toBe(false)
   })
 
-  it('نام کاربری غلط رد می‌شود', () => {
-    expect(matchesAdminCredentials('someone', ADMIN_PASSWORD)).toBe(false)
+  it('نام کاربری غلط رد می‌شود', async () => {
+    expect(await matches('someone', ADMIN_PASSWORD)).toBe(false)
   })
 
-  it('ورودی خالی رد می‌شود', () => {
-    expect(matchesAdminCredentials('', '')).toBe(false)
+  it('ورودی خالی رد می‌شود', async () => {
+    expect(await matches('', '')).toBe(false)
   })
 
-  it('رمز با فاصلهٔ اضافی رد می‌شود — trim نمی‌شود', () => {
+  it('رمز با فاصلهٔ اضافی رد می‌شود — trim نمی‌شود', async () => {
     // فاصله بخشی از رمز است؛ trim کردنش فضای حدس را کوچک می‌کند
-    expect(matchesAdminCredentials(ADMIN_USERNAME, ` ${ADMIN_PASSWORD} `)).toBe(false)
+    expect(await matches(ADMIN_USERNAME, ` ${ADMIN_PASSWORD} `)).toBe(false)
   })
 })
 
@@ -64,6 +67,19 @@ describe('پیکربندی', () => {
 
   it('رمز نمایشی به‌وضوح نمایشی است — با رمز واقعی اشتباه نشود', () => {
     expect(ADMIN_PASSWORD).toContain('demo')
+  })
+
+  it('در پیکربندی پیش‌فرض، رمز هش‌نشده است', () => {
+    /*
+      این تست وضعیت **توسعه** را ثبت می‌کند، نه توصیه.
+      `npm run admin:check` همین را به‌عنوان مورد بحرانی
+      گزارش می‌دهد.
+    */
+    expect(IS_PASSWORD_HASHED).toBe(false)
+  })
+
+  it('در پیکربندی پیش‌فرض، ورود دومرحله‌ای خاموش است', () => {
+    expect(IS_TOTP_ENABLED).toBe(false)
   })
 
   it('🔑 پروفایل مدیر هیچ دادهٔ حساسی ندارد', () => {

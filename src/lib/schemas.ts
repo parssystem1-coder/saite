@@ -91,6 +91,20 @@ export const adminLoginSchema = z.object({
     .string()
     .min(1, 'رمز عبور را وارد کنید')
     .max(128, 'رمز عبور بیش از حد طولانی است'),
+  /*
+    کد ورود دومرحله‌ای.
+
+    اختیاری است چون فرم آن را فقط وقتی نشان می‌دهد که سرور
+    اعلام کند فعال است. اعتبارسنجی واقعی («این حساب TOTP دارد
+    پس کد الزامی است») سمت سرور انجام می‌شود — اگر اینجا الزامی
+    می‌شد، نصب‌هایی که TOTP ندارند نمی‌توانستند وارد شوند.
+  */
+  totpCode: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'کد باید شش رقم باشد')
+    .optional()
+    .or(z.literal('')),
 })
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>
 

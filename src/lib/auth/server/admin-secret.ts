@@ -6,42 +6,45 @@ import 'server-only'
  * ══════════════════════════════════════════════════════════════
  *  چرا این فایل وجود دارد
  * ══════════════════════════════════════════════════════════════
- * تا پیش از این، `verifyAdminCredentials` در مرورگر اجرا می‌شد و
- * رمز داخل باندل جاوااسکریپت قرار می‌گرفت. اثبات عینی:
+ * تا پیش از این، تأیید رمز در مرورگر اجرا می‌شد و رمز داخل باندل
+ * جاوااسکریپت قرار می‌گرفت. اثبات عینی روی کد قبلی:
  *
  *   npm run build
  *   grep -rl "saite-demo-1404" .next/static
  *   → .next/static/chunks/3e9hd4ipezm--.js
  *
- * یعنی هر بازدیدکننده می‌توانست با Ctrl+F در سورس صفحه رمز پنل
- * مدیریت را پیدا کند. هیچ ترفند کلاینتی این را حل نمی‌کند —
- * چون مشکل «پنهان‌کردن» نیست، «جای اجرا» است.
- *
  * ── نقش `import 'server-only'` ────────────────────────────────
- * این ایمپورت یک نگهبان زمان-بیلد است. اگر روزی کسی اشتباهاً این
- * ماژول را از یک Client Component ایمپورت کند، بیلد **می‌شکند**:
+ * نگهبان زمان-بیلد. اگر کسی این ماژول را از یک Client Component
+ * ایمپورت کند، بیلد **می‌شکند**. پس نشت دوباره با کامپایلر
+ * جلوگیری می‌شود، نه با بازبینی کد.
  *
- *   Error: This module cannot be imported from a Client Component
+ * ══════════════════════════════════════════════════════════════
+ *  دو حالت رمز: متن ساده و هش
+ * ══════════════════════════════════════════════════════════════
+ * `ADMIN_PASSWORD` می‌تواند یکی از این دو باشد:
  *
- * پس نشت دوباره ممکن نیست — نه با بازبینی کد، بلکه با کامپایلر.
+ *  ۱. **متن ساده** — راحت برای توسعهٔ محلی. اگر کسی به فایل
+ *     `.env.local` دسترسی پیدا کند، رمز را می‌بیند.
  *
- * ── چرا NEXT_PUBLIC حذف شد؟ ───────────────────────────────────
- * هر متغیر با پیشوند `NEXT_PUBLIC_` در زمان بیلد داخل باندل
- * مرورگر جایگزین می‌شود. نام‌های جدید عمداً بدون آن پیشوندند تا
- * فقط روی سرور خوانده شوند:
+ *  ۲. **هش scrypt** — با `npm run admin:hash-password` ساخته
+ *     می‌شود. رشته با `scrypt.` شروع می‌شود و از رویش نمی‌توان
+ *     رمز را بازیابی کرد.
  *
- *   ADMIN_USERNAME  (نه NEXT_PUBLIC_ADMIN_USERNAME)
- *   ADMIN_PASSWORD  (نه NEXT_PUBLIC_ADMIN_PASSWORD)
+ * تشخیص خودکار است: اگر مقدار با `scrypt.` شروع شود، به‌عنوان هش
+ * تأیید می‌شود؛ وگرنه مقایسهٔ مستقیم.
  *
- * ── این هنوز فاز پوسته است ────────────────────────────────────
- * رمز همچنان متن ساده در `.env.local` است، نه هش در دیتابیس.
- * چیزی که عوض شد: دیگر در **مرورگر** نیست. برای production واقعی
- * هنوز لازم است:
- *   • هش با bcrypt/argon2
- *   • rate limit سمت سرور روی IP (نه فقط شمارندهٔ درون‌حافظه‌ای)
- *   • ثبت لاگ ورود و احراز هویت دومرحله‌ای
+ * چرا هر دو پشتیبانی می‌شوند؟ چون اجبار به هش کردن در فاز توسعه،
+ * راه‌اندازی را کند می‌کند بدون آنکه چیزی اضافه کند — رمز نمایشی
+ * که در مستندات هم نوشته شده، هش کردنش معنا ندارد. اما برای
+ * انتشار، `npm run admin:check` هشدار می‌دهد.
  */
 
+import {
+  hashPassword,
+  isPasswordHash,
+  verifyPassword,
+} from '@/lib/auth/server/password-hash'
+import { verifyTotpCode } from '@/lib/auth/server/totp'
 import type { AdminUser } from '@/types/user'
 
 const DEFAULT_ADMIN_USERNAME = 'admin'
@@ -51,15 +54,35 @@ const DEFAULT_ADMIN_PASSWORD = 'saite-demo-1404'
 export const ADMIN_USERNAME =
   process.env.ADMIN_USERNAME?.trim() || DEFAULT_ADMIN_USERNAME
 
-/** رمز مدیر — فقط از محیط سرور، هرگز در باندل کلاینت */
+/**
+ * رمز مدیر یا هش آن — فقط از محیط سرور.
+ *
+ * ⚠️ این مقدار را هرگز به کلاینت نفرستید. صفحهٔ ورود در حالت
+ * توسعه آن را در HTML سرور رندر می‌کند که با `NODE_ENV=production`
+ * حذف می‌شود.
+ */
 export const ADMIN_PASSWORD =
   process.env.ADMIN_PASSWORD?.trim() || DEFAULT_ADMIN_PASSWORD
 
+/** آیا رمز به‌صورت هش ذخیره شده؟ */
+export const IS_PASSWORD_HASHED = isPasswordHash(ADMIN_PASSWORD)
+
 /**
- * آیا اعتبارنامه هنوز مقدار پیش‌فرض است؟
+ * کلید TOTP — اگر تعریف شود، ورود دومرحله‌ای **اجباری** می‌شود.
  *
- * برای هشدار در UI استفاده می‌شود — اما توجه: خود این مقدار
- * بولین است، نه رمز. پس ارسالش به کلاینت نشت محسوب نمی‌شود.
+ * عمداً «اختیاری برای فعال‌سازی، اجباری پس از فعال‌سازی» است:
+ * اگر کاربر بتواند در فرم ورود از آن رد شود، هیچ محافظتی اضافه
+ * نکرده‌ایم.
+ */
+export const ADMIN_TOTP_SECRET = process.env.ADMIN_TOTP_SECRET?.trim() || ''
+
+/** آیا ورود دومرحله‌ای فعال است؟ */
+export const IS_TOTP_ENABLED = ADMIN_TOTP_SECRET.length > 0
+
+/**
+ * آیا اعتبارنامه هنوز مقدار پیش‌فرض است؟ — برای هشدار در UI.
+ *
+ * خود این مقدار بولین است، نه رمز؛ ارسالش به کلاینت نشت نیست.
  */
 export const IS_USING_DEFAULT_CREDENTIALS =
   ADMIN_USERNAME === DEFAULT_ADMIN_USERNAME && ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD
@@ -69,8 +92,7 @@ export const IS_USING_DEFAULT_CREDENTIALS =
  *
  * مقایسهٔ معمولی (`===`) به‌محض اولین کاراکتر متفاوت خارج می‌شود،
  * پس مدت اجرا اطلاعات لو می‌دهد. حالا که این کد روی سرور است،
- * این محافظت واقعاً معنا دارد — برخلاف قبل که در مرورگر خودِ
- * مهاجم اجرا می‌شد.
+ * این محافظت واقعاً معنا دارد.
  */
 function safeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false
@@ -89,17 +111,55 @@ export const ADMIN_PROFILE: AdminUser = {
   role: 'admin',
 }
 
+/** نتیجهٔ تفکیک‌شدهٔ تأیید — تا Route Handler بداند چه پاسخی بدهد */
+export type CredentialCheck =
+  | { ok: true }
+  | { ok: false; reason: 'credentials' }
+  | { ok: false; reason: 'totp-required' }
+  | { ok: false; reason: 'totp-invalid' }
+
 /**
- * بررسی اعتبارنامه — **فقط روی سرور اجرا می‌شود**.
+ * بررسی اعتبارنامه — **فقط روی سرور**.
  *
  * نام کاربری بدون حساسیت به حروف بزرگ/کوچک و فاصله بررسی می‌شود،
  * اما رمز دقیقاً تطبیق داده می‌شود.
+ *
+ * ── ترتیب بررسی عمدی است ──────────────────────────────────────
+ * نام کاربری و رمز **همیشه اول** بررسی می‌شوند. اگر TOTP اول
+ * می‌آمد، مهاجم می‌توانست بدون دانستن رمز بفهمد کد دومرحله‌ای
+ * درست است یا نه.
  */
-export function matchesAdminCredentials(username: string, password: string): boolean {
+export async function checkAdminCredentials(
+  username: string,
+  password: string,
+  totpCode?: string
+): Promise<CredentialCheck> {
   const normalized = username.trim().toLowerCase()
   const usernameOk = safeCompare(normalized, ADMIN_USERNAME.toLowerCase())
-  const passwordOk = safeCompare(password, ADMIN_PASSWORD)
 
-  // هر دو شرط جداگانه ارزیابی می‌شوند تا خروج زودهنگام نداشته باشیم
-  return usernameOk && passwordOk
+  const passwordOk = IS_PASSWORD_HASHED
+    ? await verifyPassword(password, ADMIN_PASSWORD)
+    : safeCompare(password, ADMIN_PASSWORD)
+
+  // هر دو جداگانه ارزیابی می‌شوند تا خروج زودهنگام نداشته باشیم
+  if (!usernameOk || !passwordOk) {
+    return { ok: false, reason: 'credentials' }
+  }
+
+  if (!IS_TOTP_ENABLED) {
+    return { ok: true }
+  }
+
+  if (!totpCode) {
+    return { ok: false, reason: 'totp-required' }
+  }
+
+  if (!verifyTotpCode(ADMIN_TOTP_SECRET, totpCode)) {
+    return { ok: false, reason: 'totp-invalid' }
+  }
+
+  return { ok: true }
 }
+
+/** بازصادرات برای اسکریپت‌های ابزار — تا مسیر ایمپورت یکی بماند */
+export { hashPassword, isPasswordHash }

@@ -3,14 +3,21 @@ import {
   INVALID_CREDENTIALS_MESSAGE,
   RATE_LIMITED_MESSAGE,
   SERVER_RATE_LIMIT,
+  TOTP_INVALID_MESSAGE,
+  TOTP_REQUIRED_MESSAGE,
   type AdminLoginResponse,
 } from '@/lib/auth/admin-login-contract'
-import { ADMIN_PROFILE, matchesAdminCredentials } from '@/lib/auth/server/admin-secret'
+import {
+  ADMIN_PROFILE,
+  checkAdminCredentials,
+  IS_TOTP_ENABLED,
+} from '@/lib/auth/server/admin-secret'
 import {
   createAdminSession,
   destroyAdminSession,
   getAdminSession,
 } from '@/lib/auth/server/admin-session'
+import { getUserAgent, recordAuditEvent } from '@/lib/auth/server/audit-log'
 import {
   consumeRateLimit,
   getClientKey,
@@ -55,26 +62,36 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-function failure(message: string, status: number): NextResponse<AdminLoginResponse> {
-  return NextResponse.json<AdminLoginResponse>({ ok: false, message }, { status })
+function failure(
+  message: string,
+  status: number,
+  extra?: { totpRequired?: boolean }
+): NextResponse<AdminLoginResponse> {
+  return NextResponse.json<AdminLoginResponse>(
+    { ok: false, message, ...extra },
+    { status }
+  )
 }
 
 /**
  * `POST /admin/api/session` — ورود.
  *
- * بدنه: `{ username, password }`
+ * بدنه: `{ username, password, totpCode? }`
  * پاسخ: `200 { ok: true }` + کوکی، یا `401` / `429`
  */
 export async function POST(request: Request): Promise<NextResponse<AdminLoginResponse>> {
   const clientKey = getClientKey(request.headers)
+  const userAgent = getUserAgent(request.headers)
+  const rateLimitKey = `admin-login:${clientKey}`
 
   const limit = consumeRateLimit(
-    `admin-login:${clientKey}`,
+    rateLimitKey,
     SERVER_RATE_LIMIT.maxAttempts,
     SERVER_RATE_LIMIT.windowMs
   )
 
   if (!limit.allowed) {
+    recordAuditEvent({ event: 'login-rate-limited', ip: clientKey, userAgent })
     const response = failure(RATE_LIMITED_MESSAGE, 429)
     response.headers.set('Retry-After', String(limit.retryAfterSeconds))
     return response
@@ -101,16 +118,36 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
     return failure(INVALID_CREDENTIALS_MESSAGE, 400)
   }
 
-  const { username, password } = parsed.data
+  const { username, password, totpCode } = parsed.data
+  const result = await checkAdminCredentials(username, password, totpCode || undefined)
 
-  if (!matchesAdminCredentials(username, password)) {
+  if (!result.ok) {
     await delay(FAILURE_DELAY_MS)
+
+    /*
+      «کد لازم است» شکست حساب نمی‌شود.
+
+      کاربر رمز درست داده و فقط هنوز مرحلهٔ دوم را ندیده. اگر
+      اینجا لاگ شکست می‌زدیم، فهرست لاگ پر از رکوردهای بی‌معنا
+      می‌شد و حملهٔ واقعی در میانشان گم می‌شد.
+    */
+    if (result.reason === 'totp-required') {
+      return failure(TOTP_REQUIRED_MESSAGE, 401, { totpRequired: true })
+    }
+
+    if (result.reason === 'totp-invalid') {
+      recordAuditEvent({ event: 'totp-failed', ip: clientKey, username, userAgent })
+      return failure(TOTP_INVALID_MESSAGE, 401, { totpRequired: true })
+    }
+
+    recordAuditEvent({ event: 'login-failed', ip: clientKey, username, userAgent })
     return failure(INVALID_CREDENTIALS_MESSAGE, 401)
   }
 
   // ورود موفق: شمارندهٔ این IP آزاد می‌شود
-  resetRateLimit(`admin-login:${clientKey}`)
+  resetRateLimit(rateLimitKey)
   await createAdminSession(ADMIN_PROFILE.id)
+  recordAuditEvent({ event: 'login-success', ip: clientKey, username, userAgent })
 
   return NextResponse.json<AdminLoginResponse>({ ok: true })
 }
@@ -121,8 +158,13 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
  * چرا لازم است؟ پاک‌کردن state کلاینت کوکی سرور را باطل نمی‌کند.
  * بدون این، کاربر «خارج شده» ولی کوکی‌اش هنوز معتبر است.
  */
-export async function DELETE(): Promise<NextResponse<AdminLoginResponse>> {
+export async function DELETE(request: Request): Promise<NextResponse<AdminLoginResponse>> {
   await destroyAdminSession()
+  recordAuditEvent({
+    event: 'logout',
+    ip: getClientKey(request.headers),
+    userAgent: getUserAgent(request.headers),
+  })
   return NextResponse.json<AdminLoginResponse>({ ok: true })
 }
 
@@ -130,11 +172,15 @@ export async function DELETE(): Promise<NextResponse<AdminLoginResponse>> {
  * `GET /admin/api/session` — وضعیت نشست فعلی.
  *
  * فقط پروفایل عمومی برمی‌گرداند؛ هیچ بخشی از توکن یا رمز.
+ * `totpEnabled` برای فرم ورود است تا بداند فیلد کد را نشان دهد.
  */
 export async function GET(): Promise<NextResponse> {
   const admin = await getAdminSession()
   if (!admin) {
-    return NextResponse.json({ authenticated: false }, { status: 401 })
+    return NextResponse.json(
+      { authenticated: false, totpEnabled: IS_TOTP_ENABLED },
+      { status: 401 }
+    )
   }
-  return NextResponse.json({ authenticated: true, admin })
+  return NextResponse.json({ authenticated: true, admin, totpEnabled: IS_TOTP_ENABLED })
 }
