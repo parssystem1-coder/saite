@@ -10,6 +10,7 @@ import {
   ProductGrid,
   type CatalogViewMode,
 } from '@/components/products/product-grid'
+import { ProductSubCategoryStrip } from '@/components/products/product-subcategory-strip'
 import { ProductToolbar } from '@/components/products/product-toolbar'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -37,6 +38,7 @@ export function ProductsClient() {
         'product-list',
         filters.q ?? '',
         filters.category ?? 'all',
+        filters.subCategory ?? 'all',
         filters.brand ?? 'all',
         filters.technology ?? 'all',
         filters.usage ?? 'all',
@@ -55,6 +57,7 @@ export function ProductsClient() {
     () => ({
       q: filters.q,
       category: filters.category,
+      subCategory: filters.subCategory,
       brand: filters.brand,
       technology: filters.technology,
       usage: filters.usage,
@@ -105,6 +108,12 @@ export function ProductsClient() {
         </aside>
 
         <main className="min-w-0 flex-1">
+          <ProductSubCategoryStrip
+            category={filters.category}
+            activeSubCategory={filters.subCategory}
+            onSelect={(sub) => setParam('subCategory', sub)}
+          />
+
           <ProductToolbar
             resultCount={total}
             isLoading={showSkeleton || (isFetching && !data)}

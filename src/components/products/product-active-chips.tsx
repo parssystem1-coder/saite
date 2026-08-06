@@ -52,6 +52,14 @@ export function ProductActiveChips({ filters, onRemove }: ProductActiveChipsProp
       clear: () => onRemove('category', null),
     })
   }
+  if (activeCategory && filters.subCategory && filters.subCategory !== 'all') {
+    const subObj = activeCategory.subCategories?.find((s) => s.slug === filters.subCategory)
+    chips.push({
+      key: 'subCategory',
+      label: subObj?.name ?? filters.subCategory,
+      clear: () => onRemove('subCategory', null),
+    })
+  }
   if (filters.brand && filters.brand !== 'all') {
     chips.push({
       key: 'brand',
