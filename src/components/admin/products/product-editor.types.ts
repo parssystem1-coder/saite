@@ -47,6 +47,7 @@ export type ProductDraft = {
   gtin: string;
   iranCode: string;
   category: string;
+  subCategory: string;
   brand: string;
   series: string;
   model: string;

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FolderTree, Plus, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
-import type { Brand, Category } from '@/types/product'
+import type { Brand, Category, SubCategory } from '@/types/product'
 
 /**
  * صفحهٔ مدیریت دسته‌بندی‌ها و برندهای فروشگاه.
@@ -28,8 +28,43 @@ export function AdminCategoriesClient() {
       name: name.trim(),
       description: `دسته‌بندی تخصصی ${name.trim()} در کاتالوگ ماشین‌های اداری`,
       icon: 'Printer',
+      subCategories: [],
     }
     setCategories((prev) => [...prev, newCategory])
+  }
+
+  const handleAddSubCategory = (categorySlug: string) => {
+    const name = window.prompt('نام فارسی زیردستهٔ جدید (مثال: پرینتر سوزنی):')
+    if (!name?.trim()) return
+    const slug = window.prompt('نامک انگلیسی زیردسته (مثال: dot-matrix):', 'dot-matrix')
+    if (!slug?.trim()) return
+
+    const newSub: SubCategory = {
+      slug: slug.trim().toLowerCase(),
+      name: name.trim(),
+    }
+
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.slug !== categorySlug) return cat
+        return {
+          ...cat,
+          subCategories: [...(cat.subCategories ?? []), newSub],
+        }
+      })
+    )
+  }
+
+  const handleRemoveSubCategory = (categorySlug: string, subSlug: string) => {
+    setCategories((prev) =>
+      prev.map((cat) => {
+        if (cat.slug !== categorySlug) return cat
+        return {
+          ...cat,
+          subCategories: (cat.subCategories ?? []).filter((s) => s.slug !== subSlug),
+        }
+      })
+    )
   }
 
   const handleAddBrand = () => {
@@ -55,7 +90,7 @@ export function AdminCategoriesClient() {
             همگام‌سازی با فرم افزودن محصول
           </h3>
           <p className="text-xs text-muted-foreground">
-            تمامی دسته‌بندی‌ها و برندهای این صفحه مستقیماً در فیلدهای «دسته اصلی» و «برند» در
+            تمامی دسته‌بندی‌ها، زیردسته‌ها و برندهای این صفحه مستقیماً در فیلدهای «دسته اصلی» و «زیردسته» در
             ویرایشگر افزودن محصول (<code>/admin/products/new</code>) بارگذاری می‌شوند.
           </p>
         </div>
@@ -120,6 +155,50 @@ export function AdminCategoriesClient() {
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {cat.description}
                 </p>
+
+                {/* بخش زیردسته‌ها (Subcategories) */}
+                <div className="mt-3 border-t border-border/60 pt-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground">
+                      زیردسته‌ها ({cat.subCategories?.length ?? 0})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddSubCategory(cat.slug)}
+                      className="flex items-center gap-1 rounded-lg border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary transition hover:bg-primary/20"
+                    >
+                      <Plus className="size-3" />
+                      افزودن زیردسته
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(cat.subCategories ?? []).length > 0 ? (
+                      cat.subCategories?.map((sub) => (
+                        <span
+                          key={sub.slug}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-foreground"
+                        >
+                          <span>{sub.name}</span>
+                          <span dir="ltr" className="font-mono text-[10px] text-muted-foreground">
+                            ({sub.slug})
+                          </span>
+                          <button
+                            type="button"
+                            title={`حذف ${sub.name}`}
+                            onClick={() => handleRemoveSubCategory(cat.slug, sub.slug)}
+                            className="text-muted-foreground transition hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        بدون زیردسته (قابل افزودن)
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
               <div className="flex items-center justify-between border-t border-border/50 pt-3 text-[11px] text-muted-foreground">
                 <span>وضعیت: فعال در کاتالوگ</span>

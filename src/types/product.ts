@@ -44,12 +44,19 @@ export interface Spec {
   isTechnical?: boolean
 }
 
+export interface SubCategory {
+  slug: string
+  name: string
+  description?: string
+}
+
 export interface Category {
-  slug: CategorySlug
+  slug: CategorySlug | string
   name: string
   description: string
   /** نام آیکون از lucide-react */
   icon: string
+  subCategories?: SubCategory[]
 }
 
 export interface Brand {

@@ -15,12 +15,37 @@ export function BasePanel({ draft, set }: { draft: ProductDraft; set: <K extends
     </div></EditorSection>
     <EditorSection title="دسته، برند و وضعیت"><div className={`${editorSurfaceClass} grid gap-4 p-4 md:grid-cols-2`}>
       <EditorField label="دسته اصلی" required>
-        <select className={editorInputClass} value={draft.category} onChange={e => set('category', e.target.value)}>
-          <option value="">انتخاب دسته‌بندی...</option>
-          {CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name} ({c.slug})</option>)}
-          <option value="printer-laser-hp">پرینتر ← لیزری ← اچ پی</option>
-          <option value="printer-inkjet">پرینتر ← جوهرافشان</option>
-          <option value="toner">کارتریج و تونر</option>
+        <select
+          className={editorInputClass}
+          value={draft.category}
+          onChange={(e) => {
+            const newCat = e.target.value
+            set('category', newCat)
+            const catObj = CATEGORIES.find((c) => c.slug === newCat)
+            const firstSub = catObj?.subCategories?.[0]?.slug ?? ''
+            set('subCategory', firstSub)
+          }}
+        >
+          <option value="">انتخاب دسته‌بندی اصلی...</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {c.name} ({c.slug})
+            </option>
+          ))}
+        </select>
+      </EditorField>
+      <EditorField label="زیردسته (تخصصی)" hint="مرتبط با دسته اصلی انتخاب‌شده">
+        <select
+          className={editorInputClass}
+          value={draft.subCategory || ''}
+          onChange={(e) => set('subCategory', e.target.value)}
+        >
+          <option value="">بدون زیردسته / عمومی</option>
+          {CATEGORIES.find((c) => c.slug === draft.category)?.subCategories?.map((sub) => (
+            <option key={sub.slug} value={sub.slug}>
+              {sub.name} ({sub.slug})
+            </option>
+          ))}
         </select>
       </EditorField>
       <EditorField label="برند" required>
@@ -30,7 +55,7 @@ export function BasePanel({ draft, set }: { draft: ProductDraft; set: <K extends
         </select>
       </EditorField>
       <EditorField label="سری محصول"><input className={editorInputClass} value={draft.series} onChange={e => set('series', e.target.value)} /></EditorField>
-      <EditorField label="مدل"><input dir="ltr" className={editorInputClass} value={draft.model} onChange={e => set('model', e.target.value)} /></EditorField>
+      <EditorField label="مدل" className="md:col-span-2"><input dir="ltr" className={editorInputClass} value={draft.model} onChange={e => set('model', e.target.value)} /></EditorField>
     </div></EditorSection>
   </>;
 }
