@@ -41,24 +41,24 @@ export function ProductListRow({
   return (
     <article
       className={cn(
-        'surface-3d flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:gap-5',
+        'surface-3d flex flex-row items-center gap-3 sm:gap-5 rounded-2xl p-3 sm:p-4',
         className
       )}
     >
       <Link
         href={href}
-        className="relative mx-auto size-24 shrink-0 overflow-hidden rounded-xl bg-surface-0/60 sm:mx-0"
+        className="relative size-20 sm:size-24 shrink-0 overflow-hidden rounded-xl bg-surface-0/60"
       >
         <Image
           src={product.images[0]}
           alt={product.name}
           fill
-          sizes="96px"
+          sizes="(max-width: 640px) 80px, 96px"
           className="object-contain p-1.5"
         />
       </Link>
 
-      <div className="min-w-0 flex-1 space-y-1.5 text-center sm:text-right">
+      <div className="min-w-0 flex-1 space-y-1 text-right">
         <TechText className="text-[10px] font-bold tracking-widest text-primary uppercase">
           {brand?.displayName ?? product.brand}
         </TechText>
@@ -71,7 +71,7 @@ export function ProductListRow({
           </h3>
         </Link>
         {product.keyFeatures.length > 0 && (
-          <ul className="mt-2 flex flex-wrap justify-center gap-1.5 sm:justify-start">
+          <ul className="mt-2 hidden sm:flex flex-wrap justify-start gap-1.5">
             {product.keyFeatures.slice(0, 4).map((f) => (
               <li
                 key={f}
@@ -84,16 +84,16 @@ export function ProductListRow({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-col items-center gap-3 sm:items-end sm:ps-2">
+      <div className="flex shrink-0 flex-col items-end gap-2.5 sm:ps-2">
         <StockBadge status={product.stockStatus} size="sm" />
         <PriceDisplay
           priceType={product.priceType}
           price={product.price}
           compareAtPrice={product.compareAtPrice}
           size="sm"
-          className="items-center sm:items-end"
+          className="items-end"
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {isBuyable ? (
             <Button
               type="button"

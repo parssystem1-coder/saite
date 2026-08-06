@@ -38,7 +38,7 @@ export function CompareBar() {
           animate={prefersReduced ? { opacity: 1 } : { y: 0, opacity: 1 }}
           exit={prefersReduced ? { opacity: 0 } : { y: 100, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface-1/95 shadow-depth-4 backdrop-blur-xl"
+          className="fixed inset-x-0 bottom-16 lg:bottom-0 z-50 border-t border-border bg-surface-1/95 shadow-depth-4 backdrop-blur-xl"
         >
           <div className="container mx-auto flex flex-wrap items-center gap-4 px-4 py-3">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">

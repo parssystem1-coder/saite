@@ -37,11 +37,11 @@ export function SpecTable({ specs, className }: SpecTableProps) {
               <div
                 key={spec.key}
                 className={cn(
-                  'grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 px-4 py-2.5 text-sm',
+                  'grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-1 sm:gap-4 px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm transition-colors hover:bg-surface-2/60',
                   i % 2 === 0 ? 'bg-surface-1' : 'bg-surface-0/40'
                 )}
               >
-                <dt className="text-muted-foreground">{spec.key}</dt>
+                <dt className="text-muted-foreground font-bold sm:font-normal">{spec.key}</dt>
                 <dd className="font-medium text-foreground">
                   {spec.isTechnical ? <TechText>{spec.value}</TechText> : spec.value}
                 </dd>

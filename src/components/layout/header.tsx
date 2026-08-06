@@ -67,7 +67,7 @@ export function Header() {
             query={query}
             onQueryChange={setQuery}
             onSubmit={submitSearch}
-            className="hidden max-w-sm flex-1 md:block"
+            className="hidden max-w-sm flex-1 sm:block"
             inputClassName="h-10"
           />
 

@@ -100,9 +100,11 @@ export function ContactFab() {
     <nav
       aria-label="راه‌های تماس سریع"
       className={cn(
-        'pointer-events-none fixed z-40 flex flex-col items-center gap-3',
+        'pointer-events-none fixed z-40 flex flex-col items-center gap-3 transition-all duration-300',
         'left-4 md:left-6',
-        compareOpen ? 'bottom-24 md:bottom-28' : 'bottom-5 md:bottom-8'
+        compareOpen
+          ? 'bottom-[9.5rem] lg:bottom-24 md:bottom-28'
+          : 'bottom-20 lg:bottom-5 md:bottom-8'
       )}
     >
       {/* پوستهٔ شیشه‌ای حرفه‌ای */}
