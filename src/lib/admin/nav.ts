@@ -96,6 +96,18 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         ],
       },
       {
+        id: 'categories',
+        label: 'دسته‌بندی و برند',
+        href: '/admin/categories',
+        icon: 'articleCategories',
+        description: 'مدیریت دسته‌بندی‌های کاتالوگ و برندها برای فیلدهای فرم افزودن محصول',
+        planned: [
+          'افزودن و ویرایش دسته‌بندی اصلی و زیردسته',
+          'مدیریت برندها و لوگوی برند',
+          'اتصال مستقیم به فیلدهای انتخاب دسته و برند در افزودن محصول',
+        ],
+      },
+      {
         id: 'products',
         label: 'محصولات',
         href: '/admin/products',

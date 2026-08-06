@@ -1,6 +1,7 @@
 import type { ProductDraft } from '../product-editor.types';
 import { EditorField, editorInputClass } from '../components/EditorField';
 import { EditorSection, editorSurfaceClass } from '../components/EditorSection';
+import { BRANDS, CATEGORIES } from '@/lib/constants';
 
 export function BasePanel({ draft, set }: { draft: ProductDraft; set: <K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) => void }) {
   return <>
@@ -13,8 +14,21 @@ export function BasePanel({ draft, set }: { draft: ProductDraft; set: <K extends
       <EditorField label="GTIN-13"><input dir="ltr" className={editorInputClass} value={draft.gtin} onChange={e => set('gtin', e.target.value)} /></EditorField>
     </div></EditorSection>
     <EditorSection title="دسته، برند و وضعیت"><div className={`${editorSurfaceClass} grid gap-4 p-4 md:grid-cols-2`}>
-      <EditorField label="دسته اصلی" required><select className={editorInputClass} value={draft.category} onChange={e => set('category', e.target.value)}><option value="printer-laser-hp">پرینتر ← لیزری ← اچ پی</option><option value="printer-inkjet">پرینتر ← جوهرافشان</option><option value="toner">کارتریج و تونر</option></select></EditorField>
-      <EditorField label="برند" required><select className={editorInputClass} value={draft.brand} onChange={e => set('brand', e.target.value)}><option value="HP">HP / اچ پی</option><option value="Canon">Canon / کانن</option><option value="Brother">Brother / برادر</option></select></EditorField>
+      <EditorField label="دسته اصلی" required>
+        <select className={editorInputClass} value={draft.category} onChange={e => set('category', e.target.value)}>
+          <option value="">انتخاب دسته‌بندی...</option>
+          {CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.name} ({c.slug})</option>)}
+          <option value="printer-laser-hp">پرینتر ← لیزری ← اچ پی</option>
+          <option value="printer-inkjet">پرینتر ← جوهرافشان</option>
+          <option value="toner">کارتریج و تونر</option>
+        </select>
+      </EditorField>
+      <EditorField label="برند" required>
+        <select className={editorInputClass} value={draft.brand} onChange={e => set('brand', e.target.value)}>
+          <option value="">انتخاب برند...</option>
+          {BRANDS.map(b => <option key={b.slug} value={b.displayName}>{b.displayName} / {b.name}</option>)}
+        </select>
+      </EditorField>
       <EditorField label="سری محصول"><input className={editorInputClass} value={draft.series} onChange={e => set('series', e.target.value)} /></EditorField>
       <EditorField label="مدل"><input dir="ltr" className={editorInputClass} value={draft.model} onChange={e => set('model', e.target.value)} /></EditorField>
     </div></EditorSection>
