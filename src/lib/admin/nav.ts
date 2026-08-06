@@ -103,6 +103,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         description: 'مدیریت کاتالوگ، موجودی و قیمت',
         planned: ['فهرست و جستجو', 'ویرایش موجودی و قیمت', 'سازگاری مصرفی با دستگاه'],
       },
+      {
+        id: 'products-new',
+        label: 'افزودن محصول',
+        href: '/admin/products/new',
+        icon: 'products',
+        description: 'ویرایشگر حرفه‌ای و ماژولار محصول (۷ تب تخصصی)',
+        planned: ['تب پایه، مالی، فنی، گالری، محتوا، سئو و ارسال'],
+      },
     ],
   },
   {
