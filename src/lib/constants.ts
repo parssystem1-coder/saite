@@ -13,36 +13,69 @@ export const CATEGORIES: Category[] = [
     name: 'پرینتر',
     description: 'چاپگرهای لیزری و جوهرافشان برای مصارف خانگی، اداری و سازمانی',
     icon: 'Printer',
+    subCategories: [
+      { slug: 'laser-mono', name: 'پرینتر لیزری تک‌رنگ' },
+      { slug: 'laser-color', name: 'پرینتر لیزری رنگی' },
+      { slug: 'inkjet', name: 'پرینتر جوهرافشان' },
+      { slug: 'multifunction', name: 'چاپگر چندکاره' },
+      { slug: 'plotter', name: 'پلاتر و چاپ عریض' },
+    ],
   },
   {
     slug: 'scanner',
     name: 'اسکنر',
     description: 'اسکنرهای رومیزی، اسناد و پرسرعت برای دیجیتال‌سازی بایگانی',
     icon: 'ScanLine',
+    subCategories: [
+      { slug: 'flatbed', name: 'اسکنر رومیزی (تخت)' },
+      { slug: 'sheetfed', name: 'اسکنر اسناد (بایگانی)' },
+      { slug: 'portable', name: 'اسکنر قابل حمل' },
+    ],
   },
   {
     slug: 'copier',
     name: 'دستگاه کپی',
     description: 'دستگاه‌های کپی و کپی‌پرینتر چندکاره برای حجم بالای کاری',
     icon: 'Copy',
+    subCategories: [
+      { slug: 'copier-mono', name: 'کپی تک‌رنگ ایستاده' },
+      { slug: 'copier-color', name: 'کپی رنگی چندکاره' },
+      { slug: 'duplicator', name: 'کپی‌پرینتر (ریزوگراف)' },
+    ],
   },
   {
     slug: 'fax',
     name: 'فکس',
     description: 'دستگاه‌های فکس لیزری و حرارتی برای مکاتبات اداری',
     icon: 'Send',
+    subCategories: [
+      { slug: 'fax-laser', name: 'فکس لیزری' },
+      { slug: 'fax-thermal', name: 'فکس حرارتی و کاربنی' },
+    ],
   },
   {
     slug: 'consumables',
     name: 'مواد مصرفی',
     description: 'تونر، کارتریج، درام و جوهر اورجینال و باکیفیت',
     icon: 'Droplets',
+    subCategories: [
+      { slug: 'toner-cartridge', name: 'کارتریج تونر لیزری' },
+      { slug: 'ink-bottle', name: 'جوهر و بطری جوهرافشان' },
+      { slug: 'drum-unit', name: 'یونیت درام و بلت' },
+      { slug: 'ribbon', name: 'ریبون و فیلم فکس' },
+    ],
   },
   {
     slug: 'spare-parts',
     name: 'قطعات یدکی',
     description: 'قطعات یدکی اصلی برای تعمیر و نگهداری ماشین‌های اداری',
     icon: 'Wrench',
+    subCategories: [
+      { slug: 'fuser-unit', name: 'فیوزر و هیتر' },
+      { slug: 'pickup-roller', name: 'کاغذکش (پیکاپ و پد)' },
+      { slug: 'main-board', name: 'برد اصلی و پاور' },
+      { slug: 'laser-scanner-unit', name: 'یونیت لیزر و اپتیک' },
+    ],
   },
 ]
 

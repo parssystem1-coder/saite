@@ -60,6 +60,29 @@ export function ProductFiltersPanel({
         </div>
       </fieldset>
 
+      {filters.category && filters.category !== 'all' && (
+        <fieldset className="border-t border-border pt-4">
+          <legend className="mb-2 text-xs font-bold text-primary">
+            زیردسته‌های {CATEGORIES.find((c) => c.slug === filters.category)?.name}
+          </legend>
+          <div className="space-y-1">
+            <FilterChip
+              active={!filters.subCategory || filters.subCategory === 'all'}
+              onClick={() => setParam('subCategory', null)}
+              label="همهٔ زیردسته‌ها"
+            />
+            {CATEGORIES.find((c) => c.slug === filters.category)?.subCategories?.map((sub) => (
+              <FilterChip
+                key={sub.slug}
+                active={filters.subCategory === sub.slug}
+                onClick={() => setParam('subCategory', sub.slug)}
+                label={sub.name}
+              />
+            ))}
+          </div>
+        </fieldset>
+      )}
+
       <SelectFilter
         id="brand"
         label="برند"

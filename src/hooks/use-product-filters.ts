@@ -34,6 +34,7 @@ export function useProductFilters() {
     return {
       q: searchParams.get('q') ?? undefined,
       category: (searchParams.get('category') as CategorySlug | null) ?? 'all',
+      subCategory: searchParams.get('subCategory') ?? 'all',
       brand: searchParams.get('brand') ?? 'all',
       technology: searchParams.get('technology') ?? 'all',
       usage: searchParams.get('usage') ?? 'all',
@@ -50,6 +51,8 @@ export function useProductFilters() {
       const params = new URLSearchParams(searchParams.toString())
       const isEmpty =
         value === null || value === '' || value === false || value === 'all' || value === 'newest'
+
+      if (key === 'category') params.delete('subCategory')
 
       if (isEmpty) params.delete(key)
       else params.set(key, String(value === true ? 1 : value))

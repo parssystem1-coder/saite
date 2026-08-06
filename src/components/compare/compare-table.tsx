@@ -20,26 +20,35 @@ interface CompareTableProps {
 /** جدول مقایسهٔ مشخصات — ستون‌ها و ردیف‌های هم‌تراز */
 export function CompareTable({ products, specKeys, onRemove, onAdd }: CompareTableProps) {
   return (
-    <div className="scrollbar-neon overflow-x-auto rounded-2xl border border-border">
-      <table className="w-full min-w-3xl border-collapse text-sm">
-        <caption className="sr-only">جدول مقایسهٔ مشخصات فنی محصولات انتخاب‌شده</caption>
+    <div className="space-y-3">
+      {/* راهنمای اسکرول افقی برای موبایل و تبلت */}
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-center text-xs font-medium text-primary lg:hidden">
+        <span>« برای مشاهده مقایسهٔ همهٔ محصولات، جدول را به چپ و راست بکشید »</span>
+      </div>
 
-        <thead>
-          <tr>
-            <th scope="col" className="w-40 bg-surface-2 p-4 text-right align-top">
-              <span className="text-xs text-muted-foreground">مشخصه</span>
-            </th>
-            {products.map((p) => (
-              <th key={p.id} scope="col" className="min-w-56 bg-surface-1 p-4 align-top">
-                <CompareProductColumn
-                  product={p}
-                  onRemove={() => onRemove(p.id)}
-                  onAdd={() => onAdd(p)}
-                />
+      <div className="scrollbar-neon overflow-x-auto rounded-2xl border border-border">
+        <table className="w-full min-w-3xl border-collapse text-sm">
+          <caption className="sr-only">جدول مقایسهٔ مشخصات فنی محصولات انتخاب‌شده</caption>
+
+          <thead>
+            <tr>
+              <th
+                scope="col"
+                className="sticky start-0 z-20 w-36 sm:w-40 bg-surface-2 p-3 sm:p-4 text-right align-top shadow-[-4px_0_12px_rgba(0,0,0,0.35)]"
+              >
+                <span className="text-xs font-bold text-muted-foreground">مشخصه</span>
               </th>
-            ))}
-          </tr>
-        </thead>
+              {products.map((p) => (
+                <th key={p.id} scope="col" className="min-w-56 bg-surface-1 p-3 sm:p-4 align-top">
+                  <CompareProductColumn
+                    product={p}
+                    onRemove={() => onRemove(p.id)}
+                    onAdd={() => onAdd(p)}
+                  />
+                </th>
+              ))}
+            </tr>
+          </thead>
 
         <tbody>
           <CompareRow label="برند" surface>
@@ -115,6 +124,7 @@ export function CompareTable({ products, specKeys, onRemove, onAdd }: CompareTab
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   )
 }

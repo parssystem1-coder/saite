@@ -11,8 +11,8 @@ import { useWishlistStore } from '@/store/wishlist-store'
 import type { ProductCardData } from '@/types/product'
 
 const COLS = {
-  3: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3',
-  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+  3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
 } as const
 
 export type CatalogViewMode = 'grid' | 'list'
@@ -66,7 +66,7 @@ export function ProductGrid({
       )
     }
     return (
-      <div className={cn('grid gap-6', COLS[columns], className)} aria-busy="true">
+      <div className={cn('grid gap-3 sm:gap-4 md:gap-6', COLS[columns], className)} aria-busy="true">
         {Array.from({ length: skeletonCount }).map((_, i) => (
           <ProductCardSkeleton key={i} />
         ))}
@@ -102,7 +102,7 @@ export function ProductGrid({
   }
 
   return (
-    <div className={cn('grid gap-6', COLS[columns], className)}>
+    <div className={cn('grid gap-3 sm:gap-4 md:gap-6', COLS[columns], className)}>
       {products.map((product) => {
         const inCompare = compareReady && compareItems.some((i) => i.id === product.id)
         const inWishlist = wishlistReady && wishlistItems.some((i) => i.id === product.id)

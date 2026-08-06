@@ -12,6 +12,7 @@ import type { CategorySlug, Product } from '@/types/product'
 export interface ProductFilters {
   q?: string
   category?: CategorySlug | 'all'
+  subCategory?: string | 'all'
   brand?: string | 'all'
   technology?: string | 'all'
   usage?: string | 'all'
@@ -34,6 +35,7 @@ export function filterProducts(products: Product[], f: ProductFilters): Product[
       if (!haystack.includes(q)) return false
     }
     if (f.category && f.category !== 'all' && p.category !== f.category) return false
+    if (f.subCategory && f.subCategory !== 'all' && p.subCategory !== f.subCategory) return false
     if (f.brand && f.brand !== 'all' && p.brand !== f.brand) return false
     if (f.technology && f.technology !== 'all' && p.technology !== f.technology) return false
     if (f.usage && f.usage !== 'all' && p.usageClass !== f.usage) return false
@@ -73,6 +75,7 @@ export function countActiveFilters(f: ProductFilters): number {
   let n = 0
   if (f.q?.trim()) n++
   if (f.category && f.category !== 'all') n++
+  if (f.subCategory && f.subCategory !== 'all') n++
   if (f.brand && f.brand !== 'all') n++
   if (f.technology && f.technology !== 'all') n++
   if (f.usage && f.usage !== 'all') n++

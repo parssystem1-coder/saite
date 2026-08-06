@@ -5,8 +5,10 @@ import { CompareBar } from '@/components/compare/compare-bar'
 import { ContactFab } from '@/components/layout/contact-fab'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { SkipLink } from '@/components/layout/skip-link'
 import { isFloatingChromeHidden } from '@/lib/layout/floating-chrome'
+import { cn } from '@/lib/utils'
 
 /**
  * پوستهٔ فروشگاه — هدر، فوتر و المان‌های شناور.
@@ -41,12 +43,17 @@ export function StorefrontChrome({ children }: { children: React.ReactNode }) {
       <SkipLink />
       <Header />
       {/* tabIndex={-1} تا پس از پرش، فوکوس واقعاً روی main بنشیند */}
-      <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={cn('flex-1 outline-none pb-16 lg:pb-0')}
+      >
         {children}
       </main>
       <Footer />
       <CompareBar />
       <ContactFab />
+      <MobileBottomNav />
     </>
   )
 }
