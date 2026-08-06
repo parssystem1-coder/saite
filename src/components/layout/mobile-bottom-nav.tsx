@@ -91,7 +91,7 @@ export function MobileBottomNav() {
     <nav
       aria-label="ناوبری سریع موبایل"
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface-1/95 shadow-depth-4 backdrop-blur-xl lg:hidden',
+        'fixed inset-x-0 bottom-0 z-[90] border-t border-border bg-surface-1/95 shadow-depth-4 backdrop-blur-xl lg:hidden',
         'supports-[backdrop-filter]:bg-surface-1/85'
       )}
     >

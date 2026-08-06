@@ -32,7 +32,7 @@ export function Header() {
   )
 
   return (
-    <header className="sticky top-0 z-50">
+    <header className="sticky top-0 z-[85]">
       <HeaderTopbar />
 
       <div className="border-b border-border bg-surface-0/85 shadow-depth-2 backdrop-blur-xl">
