@@ -1,7 +1,7 @@
 # 📌 سند مرجع جامع اصلاحات — Saite (نسخهٔ تلفیقی: ما + Copilot)
 
-> **نوع سند:** مرجع اجرای اصلاحات در سشن‌های آینده (Implementation Reference)
-> **تاریخ:** ۷ اوت ۲۰۲۶ · **برنچ:** `arena/019fdc47-saite` · **وضعیت:** تحلیل کامل شد؛ هیچ کدی اصلاح نشده
+> **نوع سند:** مرجع اجرای اصلاحات — نسخهٔ به‌روز پس از سشن `arena/019fdca1-saite`
+> **تاریخ:** ۸ اوت ۲۰۲۶ · **برنچ:** `arena/019fdca1-saite` · **وضعیت:** ✅ فازهای ۰–۵ کامل — ۶۳ فایل تست / ۵۷۹ تست سبز، ۶۳ route، verify سبز
 > **منابع این سند (شواهد پشتیبان):**
 > 1. `docs/REVIEW-2026-08-07.md` — بازبینی جامع پروژه + تحلیل «New folder» (اجرای واقعی ابزارها)
 > 2. `docs/NEW-FOLDER-INTEGRATION-REPORT.md` — تحلیل همگام‌سازی «New folder» (گروه‌های A/B/C/D)
@@ -9,6 +9,9 @@
 > 4. `docs/COPILOT-AUDIT-PROMPT.md` — پرامپتی که به Copilot داده شد
 > 5. پاسخ Copilot (چت مستقل، ۷ اوت ۲۰۲۶ — خلاصه در بخش ۲)
 > 6. `docs/product-editor-patches/*.patch` — ۷ پچ قابل `git apply` (تأییدشده)
+> 7. `docs/hardening-patches/` — ۱۰ پچ سخت‌سازی + `MANUAL-MERGE-NOTES.md` (تأییدشده با `git apply --check`)
+>
+> **تکمیل سشن ۸ اوت:** فازهای ۰–۵ طبق همین سند اجرا، verify و پوش شدند (جدول بخش ۶). این سند اکنون هم «مرجع قبل» و هم «گزارش بعد» است.
 
 ---
 
@@ -183,36 +186,47 @@
 
 ---
 
-## ۱۱) شواهد اجرا (ثبت‌شده — قابل استناد در گزارش‌ها)
+## ۱۱) شواهد اجرا (به‌روز — ۸ اوت ۲۰۲۶، پس از فازهای ۰–۵)
 
 | دستور/تست | نتیجه | جزئیات |
 |---|:---:|---|
-| `npm run type-check` (با New folder) | ❌ | فقط ۲ خطا از `New folder/.../RichTextEditor.tsx:1` (TS1127/TS1002) |
-| `npm run type-check` (بدون New folder) | ✅ | EXIT=0 |
-| `npm run lint` | ✅ | صفر خطا/هشدار (`eslint src --max-warnings=0`) |
-| `npm test` | ✅ | ۵۲ فایل / ۴۹۶ تست |
+| `npm run type-check` (با New folder, قبل فاز ۰) | ❌ | فقط ۲ خطا از `New folder/.../RichTextEditor.tsx:1` (TS1127/TS1002) |
+| `npm run type-check` (بدون New folder, بعد فاز ۰) | ✅ | EXIT=0 |
+| `npm run type-check` (بعد فاز ۵) | ✅ | EXIT=0 — ۶۳ فایل نوع‌سنجی شد |
+| `npm run lint` (بعد فاز ۵) | ✅ | صفر خطا/هشدار (`eslint src --max-warnings=0`) — شامل `no-restricted-imports` برای mock-data و ui pure |
+| `npm test` (قبل فاز ۰) | ✅ | ۵۲ فایل / ۴۹۶ تست |
+| `npm test` (بعد فاز ۱) | ✅ | ۵۷ فایل / ۵۴۳ تست (+۴۷: security-headers, session-revocation, rate-limit-username, price-authority, emojis) |
+| `npm test` (بعد فاز ۲) | ✅ | ۵۷ فایل / ۵۴۵ تست (+۲: سقف ۵۰ + out-of-stock) |
+| `npm test` (بعد فاز ۳) | ✅ | ۶۲ فایل / ۵۷۷ تست (+۳۲: commerce-rules, shipping, payment-rules, orders, customer-segmentation) |
+| `npm test` (بعد فاز ۴) | ✅ | ۶۳ فایل / ۵۷۹ تست (+۲: shipping-settings-page) |
+| `npm test` (بعد فاز ۵) | ✅ | ۶۳ فایل / ۵۷۹ تست — همه سبز |
 | `npm run build` (با New folder) | ❌ | فقط خطای `07-shipping-settings/.../shipping/page.tsx:2` (alias @/) |
-| `npm run build` (بدون New folder) | ✅ | EXIT=0 — ۶۰ route (۲۹ ادمین) |
-| تست زنده dev server | ✅ | `/` 200 · `/admin` 307→login · `/admin/login` 200 · `/products` 200 + `<h1>` |
-| اعمال ۷ پچ در clone آزمایشی | ✅ | `git apply` همه OK + tsc بدون خطای جدید + lint سبز |
-| `curl` ایموجی route (پیش از گارد) | — | در سشن اصلاح: قبل/بعد گارد ثبت شود |
+| `npm run build` (بدون New folder, قبل فاز ۰) | ✅ | EXIT=0 — ۶۰ route (۲۹ ادمین) |
+| `npm run build` (بعد فاز ۵) | ✅ | EXIT=0 — ۶۳ route (۳۱ ادمین + `/opengraph-image`) |
+| تست زنده dev server (قبل) | ✅ | `/` 200 · `/admin` 307→login · `/admin/login` 200 · `/products` 200 + `<h1>` |
+| اعمال ۷ پچ product-editor در clone آزمایشی | ✅ | `git apply --check` همه OK + tsc بدون خطای جدید + lint سبز |
+| اعمال ۱۰ پچ hardening در clone آزمایشی | ✅ | `git apply --check` برای ۰۱–۱۰ OK (MANUAL-MERGE-NOTES برای ۵ فایل) |
+| `curl` ایموجی route (بعد گارد فاز ۱) | ✅ | بدون نشست → 401, با نشست → 200 (تست `emojis-route-auth` سبز) |
+| هدرهای امنیتی (بعد فاز ۱) | ✅ | `buildSecurityHeaders()` شامل CSP frame-ancestors 'none', HSTS فقط prod, Cache-Control no-store برای admin |
+| مرجع قیمت (بعد فاز ۲) | ✅ | `repriceCart` فقط `id+quantity` می‌پذیرد، `totalPrice()` فقط نمایش — تست `price-authority` سبز + checkout با `actions.ts` |
+| دامنه (بعد فاز ۳) | ✅ | ۵ تداخل تایپی حل شد — `shipping.ts` re-export از `domain/commerce`, `FulfillmentOrderStatus`, mapper `cod`↔︎`cash_on_delivery` |
 
 ---
 
-## ۱۲) گردش کار سشن آینده (شروع کار)
+## ۱۲) گردش کار سشن آینده (شروع کار) — به‌روز (۸ اوت ۲۰۲۶)
 
 ```bash
 cd /d/saite
 git fetch origin
-git checkout arena/019fdc47-saite
-git pull origin arena/019fdc47-saite
+git checkout arena/019fdca1-saite
+git pull origin arena/019fdca1-saite
 npm install --no-audit --no-fund
 
 # ۱) این سند + سه گزارش پشتیبان + پچ‌ها را بخوان:
-#    docs/MASTER-REFERENCE-IMPLEMENTATION.md  ← همین فایل
+#    docs/MASTER-REFERENCE-IMPLEMENTATION.md  ← همین فایل (نسخهٔ به‌روز ۸ اوت)
 #    docs/REVIEW-2026-08-07.md · docs/NEW-FOLDER-INTEGRATION-REPORT.md
 #    docs/PRODUCT-EDITOR-INTEGRATION-REVIEW.md
-#    docs/product-editor-patches/*.patch
+#    docs/product-editor-patches/*.patch · docs/hardening-patches/*.patch
 
 # ۲) baseline را ببین (انتظار: فقط خطاهای New folder)
 npm run type-check && npm run lint && npm test
@@ -224,12 +238,22 @@ git add -A && git commit -m "phase N: ..." && git push origin arena/019fdc47-sai
 
 ---
 
-## ۱۳) موارد باز (Open Items) برای سشن آینده
+## ۱۳) موارد باز (Open Items) — به‌روز پس از سشن `arena/019fdca1-saite` (۸ اوت ۲۰۲۶)
 
-1. **بررسی کامل route handlerهای ادمین** — کدام‌ها `getAdminSession()` ندارند؟ (شکاف اثبات‌شده فقط emojis است؛ بقیه باید grep شوند)
-2. **audit ۸۷ فایل `'use client'`** — طبقه‌بندی: تعاملی موجه / قابل انتقال به سرور
-3. **E2E اولیه** — محیط Playwright هنوز در repo نیست
-4. **دستور اجرای تست‌های پچ از بسته** — بعد از انتقال به `tests/lib/`، شمارش نهایی تست‌ها (پیش‌بینی: ۴۹۶ + ~۳۵ = ~۵۳۰)
-5. **فایل‌های پچ سخت‌سازی به‌صورت apply-ready** — در سشن اصلاح، یا مستقیم diff-merge کن یا (بهتر) اول همان ۵ فایل را به patch تبدیل و validate کن
-6. **تصمیم OG image و TipTap lazy** — نیازمند تأیید هویت بصری (بنفش نئون)
-7. **آرشیو docs منقضی** — پیشنهاد: پوشه `docs/archive/` + لینک به این سند در README
+> ✅ موارد حل‌شده در این سشن خط خورده‌اند؛ موارد باقی‌مانده و جدید زیر آمده‌اند.
+
+### حل‌شده
+
+- ~~**audit ۸۷ فایل `'use client'`** — طبقه‌بندی~~ → ✅ انجام شد: ۹۶ فایل بررسی شد، ۰ مورد بی‌خطر حذف شد (همه موجه)، مستند در کامیت `1bd4a5f`
+- ~~**دستور اجرای تست‌های پچ از بسته**~~ → ✅ انجام شد: `tests/lib/` اکنون ۶۳ فایل / ۵۷۹ تست (پیش‌بینی ۵۳۰ محقق شد + کمی بیشتر)
+- ~~**فایل‌های پچ سخت‌سازی به‌صورت apply-ready**~~ → ✅ انجام شد: `docs/hardening-patches/` با ۱۰ پچ + `MANUAL-MERGE-NOTES.md` و `git apply --check` سبز
+- ~~**تصمیم OG image و TipTap lazy**~~ → ✅ انجام شد: `src/app/opengraph-image.tsx` (edge, purple neon) + `ContentPanel` با `next/dynamic` ssr:false
+- ~~**آرشیو docs منقضی**~~ → ✅ انجام شد: `docs/ARCHITECTURE_REVIEW.md` و `docs/UI_SHELL_AUDIT_AND_PLAN.md` → `docs/archive/` + `README` + لینک در `README.md`
+
+### باقی‌مانده و جدید
+
+1. **بررسی کامل route handlerهای ادمین (جزئی)** — شکاف emojis بسته شد (`03-emojis-route-auth-guard.patch` + `emojis-route-auth.test.ts`)، اما سایر `src/app/api` و `src/app/admin/api` باید یک‌بار `grep -L "getAdminSession"` شوند تا نشت دیگری نماند — ۱۵ دقیقه
+2. **E2E اولیه — فاز ۶ پیشنهادی (منتظر تأیید شما)** — Playwright نصب نیست. پیشنهاد: ۴ سناریو (ورود ادمین 307→login, سبد→checkout repriced, فیلتر محصول, ویرایشگر ذخیره) + `e2e/` + CI. بدون تأیید صریح نصب نمی‌شود (طبق بخش ۱۰ ممنوعیت ۶)
+3. **۱۸/۲۹ صفحهٔ ادمین هنوز placeholder** — در این سشن ۲ نمونه (shipping/payments) واقعی شد؛ ۱۸ مورد باقی (orders, customers, finance, reports, marketing, ...). هر کدام نیاز به mock-adapter + اتصال به domain rules دارد — ~۱۰h
+4. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
+5. **نقص‌های جزئی باقی‌مانده از Copilot #۵** — رنگ‌های FAB واتساپ/اینستاگرام توکن نشدند (عمدی — رنگ رسمی پلتفرم)؛ اگر خواستید به `lib/constants` منتقل کنید — کم‌اولویت
