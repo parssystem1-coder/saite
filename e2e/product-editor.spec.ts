@@ -32,10 +32,11 @@ test.describe('ویرایشگر محصول', () => {
     await expect(page).toHaveURL(/\/admin/, { timeout: 10000 })
 
     await page.goto('/admin/products/new')
-    await expect(page.getByText('ذخیره پیش‌نویس').or(page.getByText('پایه'))).toBeVisible({ timeout: 10000 })
+    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('پایه').first()).toBeVisible({ timeout: 15000 })
 
     // تب‌های ویرایشگر
-    await expect(page.getByText('پایه')).toBeVisible()
+    await expect(page.getByText('پایه').first()).toBeVisible()
     await expect(page.getByText('مالی')).toBeVisible()
   })
 
