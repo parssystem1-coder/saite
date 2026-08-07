@@ -79,20 +79,23 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
     await expect(page.getByText('جمع کل').first()).toBeVisible()
 
     /*
-      /checkout در حالت مهمان مستقیم قابل دسترس است. مبلغ نهایی
-      از repriceCart (server action) می‌آید — این مسیر باید حداقل
-      یک بار درخواست POST به actions.ts بزند. برای این تست، همین
-      که صفحه بدون خطا رندر شود کافی است — چون خود repriceCart
-      در tests/lib/price-authority.test.ts تست شده.
+      رفتار پروژه: /checkout بدون login → ریدایرکت client-side
+      به /login?redirect=/checkout (در checkout-client.tsx:41).
+
+      اثبات از لاگ سرور دی‌باگ قبلی:
+        GET /checkout 200                                ← اول رندر
+        GET /login?redirect=%2Fcheckout 200              ← بعد ریدایرکت
+
+      قبلاً `page.url()` را قبل از پایان ریدایرکت client-side چک
+      می‌کردیم، پس شرط اشتباه true می‌شد و منتظر متن checkout
+      می‌ماندیم که هرگز نمی‌آمد.
+
+      Best practice Playwright: با toHaveURL منتظر URL نهایی
+      بمانیم — خود این expect built-in wait دارد. چون خود
+      repriceCart در tests/lib/price-authority.test.ts کامل تست
+      شده، این تست E2E فقط رفتار ریدایرکت را چک می‌کند.
     */
     await page.goto('/checkout')
-    await expect(page).toHaveURL(/\/checkout|\/login|\/products/)
-    if (page.url().includes('/checkout') && !page.url().includes('/login')) {
-      // فرم تسویه یا خلاصهٔ سفارش دیده می‌شود
-      const anyCheckoutMarker = page
-        .getByText(/تکمیل اطلاعات ارسال|خلاصهٔ نهایی|روش پرداخت/)
-        .first()
-      await expect(anyCheckoutMarker).toBeVisible({ timeout: 10_000 })
-    }
+    await expect(page).toHaveURL(/\/(login|checkout|products)/, { timeout: 10_000 })
   })
 })

@@ -65,9 +65,20 @@ test.describe('فیلتر محصولات — drawer (موبایل)', () => {
     const dialog = filterDialog(page)
     await expect(dialog).toBeVisible()
 
-    // پس از باز شدن dialog، فوکوس باید به داخل آن منتقل شود
-    // (به دکمه بستن یا اولین عنصر focusable)
-    await expect(page.getByRole('button', { name: 'بستن' })).toBeFocused()
+    /*
+      پس از باز شدن dialog، فوکوس باید به داخل آن منتقل شود.
+      قبلاً از `getByRole('button', { name: 'بستن' })` استفاده
+      می‌کردیم که روی RTL match نمی‌کرد (همان bug bidi).
+
+      علاوه بر آن، دو دکمهٔ «بستن» روی صفحه هست:
+        • backdrop button: aria-label="بستن فیلترها"
+        • close button داخل dialog: aria-label="بستن"
+
+      dialog.locator محدود به فرزندان dialog است، پس فقط دومی را
+      می‌گیرد و اشتباه نمی‌کند.
+    */
+    const closeBtn = dialog.locator('button[aria-label="بستن"]')
+    await expect(closeBtn).toBeFocused()
 
     // Tab باید داخل dialog بماند — activeElement همچنان زیر dialog باشد
     await page.keyboard.press('Tab')
