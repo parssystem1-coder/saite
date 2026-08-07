@@ -70,10 +70,13 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
     })
 
     await page.goto('/cart')
-    await expect(page.getByRole('heading', { name: /سبد خرید/ })).toBeVisible()
+    // heading با CSS selector مستقیم — RTL-agnostic، اجتناب از
+    // مشکلات bidi character در ARIA computed name
+    await expect(page.locator('h1', { hasText: 'سبد خرید' }).first()).toBeVisible()
 
     // مبلغ نمایش زنده (از localStorage) در صفحه سبد دیده می‌شود
-    await expect(page.getByText(/قابل پرداخت|جمع کل/).first()).toBeVisible()
+    // در صفحهٔ /cart متن "جمع کل" هست؛ در /checkout متن "قابل پرداخت"
+    await expect(page.getByText('جمع کل').first()).toBeVisible()
 
     /*
       /checkout در حالت مهمان مستقیم قابل دسترس است. مبلغ نهایی
