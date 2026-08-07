@@ -9,23 +9,40 @@ import { dirname, join } from 'node:path'
  * ══════════════════════════════════════════════════════════════
  *  مشکلی که حل می‌شود
  * ══════════════════════════════════════════════════════════════
- * نسخهٔ قبلی فقط `Map` در حافظهٔ process بود. یعنی:
+ * نسخهٔ اول فقط `Map` در حافظهٔ process بود. یعنی:
  *
  *   مهاجم ۱۰ بار تلاش می‌کند → قفل می‌شود
  *   سرور ری‌استارت می‌شود (deploy، crash، nodemon)
  *   → شمارنده صفر · قفل از بین می‌رود
  *
- * روی سروری که خودکار ری‌استارت می‌شود، این عملاً یعنی قفل هرگز
- * پایدار نیست.
+ * ══════════════════════════════════════════════════════════════
+ *  🆕 چرا مسیر پیش‌فرض از `.next/cache` بیرون آمد
+ * ══════════════════════════════════════════════════════════════
+ * نسخهٔ قبلی فایل را در `.next/cache/` می‌گذاشت با این استدلال که
+ * «gitignore شده و معمولاً نوشتنی است». هر دو درست بود، اما یک
+ * چیز از قلم افتاده بود:
+ *
+ *   `.next/` با **هر بیلد از نو ساخته می‌شود.**
+ *
+ * یعنی همان مشکلی که این ماژول قرار بود حل کند، هنوز پابرجا بود —
+ * فقط جای «ری‌استارت» را «deploy» گرفته بود. مهاجم کافی بود منتظر
+ * انتشار بعدی بماند. راهنمای خود Next هم می‌گوید `.next` را
+ * artifact بیلد بدانید، نه محل دادهٔ ماندگار.
+ *
+ * حالا پیش‌فرض `.data/` در ریشهٔ پروژه است: بیرون از چرخهٔ بیلد،
+ * ولی هنوز داخل دایرکتوری کاری.
+ *
+ * ⚠️ **`.data/` را به `.gitignore` اضافه کنید** — این فایل شامل
+ *    IP کاربران است و نباید کامیت شود.
+ *
+ * روی هاست‌هایی که فایل‌سیستم فقط-خواندنی دارند (Vercel و مشابه)
+ * با `RATE_LIMIT_STORE_PATH` مسیر یک volume نوشتنی را بدهید، یا
+ * اگر ندارید، ماژول بی‌صدا به حالت حافظه‌ای برمی‌گردد.
  *
  * ── چرا فایل و نه Redis؟ ──────────────────────────────────────
  * Redis یک سرویس جداگانه است که باید نصب، پیکربندی و نگهداری
  * شود. برای فروشگاهی که روی یک سرور اجرا می‌شود و یک مدیر دارد،
  * این هزینهٔ عملیاتی توجیه ندارد.
- *
- * فایل JSON روی دیسک همان کار را می‌کند: با ری‌استارت می‌ماند،
- * وابستگی صفر، و اگر روزی افقی مقیاس دادید فقط همین یک فایل
- * عوض می‌شود (رابط `RateLimitStore` ثابت می‌ماند).
  *
  * ── چرا نوشتن اتمیک؟ ──────────────────────────────────────────
  * اگر وسط نوشتن برق برود یا process کشته شود، فایل نیمه‌نوشته
@@ -35,7 +52,7 @@ import { dirname, join } from 'node:path'
  * ── محدودیت صادقانه ───────────────────────────────────────────
  * روی چند instance هم‌زمان (serverless، چند container) هنوز
  * مشترک نیست. اگر به آن رسیدید، `createFileStore` را با یک
- * پیاده‌سازی Redis عوض کنید.
+ * پیاده‌سازی Redis عوض کنید — رابط `RateLimitStore` ثابت می‌ماند.
  */
 
 export interface Bucket {
@@ -117,14 +134,15 @@ export function createFileStore(filePath: string): RateLimitStore {
     if (!writable) return
 
     try {
-      mkdirSync(dirname(filePath), { recursive: true })
+      // 0o700: فقط کاربر اجراکننده. این پوشه IP کاربران را دارد.
+      mkdirSync(dirname(filePath), { recursive: true, mode: 0o700 })
 
       const snapshot: Record<string, Bucket> = {}
       for (const [key, bucket] of buckets) snapshot[key] = bucket
 
       // نوشتن اتمیک: فایل موقت، سپس rename
       const tempPath = `${filePath}.${process.pid}.tmp`
-      writeFileSync(tempPath, JSON.stringify(snapshot), 'utf8')
+      writeFileSync(tempPath, JSON.stringify(snapshot), { encoding: 'utf8', mode: 0o600 })
       renameSync(tempPath, filePath)
     } catch {
       /*
@@ -173,14 +191,17 @@ export function createFileStore(filePath: string): RateLimitStore {
 /**
  * مسیر پیش‌فرض فایل.
  *
- * زیر `.next/cache` است چون:
- *   • در `.gitignore` هست — داده‌های IP روی گیت نمی‌روند
- *   • همراه بیلد پاک می‌شود، که برای دادهٔ موقتی درست است
- *   • در محیط‌های میزبانی معمولاً نوشتنی است
+ * ترتیب اولویت:
+ *   ۱. `RATE_LIMIT_STORE_PATH` — برای هاست‌هایی با volume جداگانه
+ *   ۲. `<cwd>/.data/saite-rate-limit.json`
+ *
+ * چرا `.data` و نه `.next/cache`؟ چون `.next` با هر بیلد پاک
+ * می‌شود و قفل‌ها را آزاد می‌کند. جزئیات در بالای همین فایل.
  */
-export const DEFAULT_RATE_LIMIT_PATH = join(
-  process.cwd(),
-  '.next',
-  'cache',
-  'saite-rate-limit.json'
-)
+export function resolveRateLimitPath(): string {
+  const fromEnv = process.env.RATE_LIMIT_STORE_PATH?.trim()
+  if (fromEnv) return fromEnv
+  return join(process.cwd(), '.data', 'saite-rate-limit.json')
+}
+
+export const DEFAULT_RATE_LIMIT_PATH = resolveRateLimitPath()

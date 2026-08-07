@@ -1,0 +1,11 @@
+# نادیده‌گرفتن .data/
+# اعمال:  git apply docs/product-editor-patches/07-gitignore-data.patch
+--- a/.gitignore
++++ b/.gitignore
+@@ -69,3 +69,6 @@
+ 
+ # کش دانلود دستی بسته‌ها
+ .tarball-cache/
++
++# دادهٔ فایل‌محور routeها (مثل ایموجی‌های سفارشی ادمین)
++.data/

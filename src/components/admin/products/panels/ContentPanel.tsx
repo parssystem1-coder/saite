@@ -1,8 +1,18 @@
-import type { ProductDraft } from '../product-editor.types';
-import { EditorField, editorInputClass } from '../components/EditorField';
-import { EditorSection, editorSurfaceClass } from '../components/EditorSection';
-import { RichTextEditor } from '../components/RichTextEditor';
-import { wordCount } from '../product-editor.utils';
+'use client'
+
+import dynamic from 'next/dynamic'
+import type { ProductDraft } from '../product-editor.types'
+import { EditorField, editorInputClass } from '../components/EditorField'
+import { EditorSection, editorSurfaceClass } from '../components/EditorSection'
+import { wordCount } from '../product-editor.utils'
+
+const RichTextEditor = dynamic(
+  () => import('../components/RichTextEditor').then((m) => m.RichTextEditor),
+  {
+    ssr: false,
+    loading: () => <div className="min-h-[220px] animate-pulse rounded-xl bg-surface-2" aria-busy="true" aria-label="در حال بارگذاری ویرایشگر" />,
+  }
+)
 
 type ContentPanelProps = {
   draft: ProductDraft;

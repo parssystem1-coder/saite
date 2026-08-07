@@ -1,0 +1,14 @@
+# فیلتر blob: از تصاویر JSON-LD (buildProductSchema)
+# اعمال:  git apply docs/product-editor-patches/01-jsonld-blob-filter.patch
+--- a/src/components/admin/products/product-editor.utils.ts
++++ b/src/components/admin/products/product-editor.utils.ts
+@@ -42,7 +42,8 @@
+   mpn: draft.mpn || undefined,
+   gtin13: draft.gtin || undefined,
+   brand: { '@type': 'Brand', name: draft.brand },
+-  image: images.map(image => image.preview),
++  image: images.map(image => image.preview).filter(url => !url.startsWith('blob:')),
++  // blob: URLs فقط پیش‌نمایش جلسه هستند — نباید وارد JSON-LD منتشرشده شوند
+   description: draft.shortDescription || undefined,
+   additionalProperty: attributes
+     .filter(attribute => attribute.inSchema && attribute.name.trim())

@@ -1,0 +1,161 @@
+--- a/src/lib/security-headers.ts
++++ b/src/lib/security-headers.ts
+@@ -0,0 +1,158 @@
++/**
++ * هدرهای امنیتی HTTP — تنها منبع حقیقت.
++ *
++ * ══════════════════════════════════════════════════════════════
++ *  چرا این فایل جدا از next.config.ts است
++ * ══════════════════════════════════════════════════════════════
++ * `next.config.ts` قابل تست واحد نیست: Next آن را در زمان بیلد
++ * می‌خواند، نه در زمان اجرا. اگر یک روز کسی `frame-ancestors` را
++ * حذف کند، هیچ تستی قرمز نمی‌شود.
++ *
++ * با بیرون کشیدن منطق به یک ماژول خالص، `tests/lib/security-headers.test.ts`
++ * می‌تواند تک‌تک دستورها را بررسی کند و حذف تصادفی، بیلد را قرمز
++ * می‌کند.
++ *
++ * ══════════════════════════════════════════════════════════════
++ *  چرا 'unsafe-inline' در script-src هست
++ * ══════════════════════════════════════════════════════════════
++ * صادقانه: این ضعف CSP است، نه انتخاب ایده‌آل.
++ *
++ * Next.js در App Router دادهٔ hydration را داخل تگ inline
++ * می‌گذارد. حذف `'unsafe-inline'` یعنی باید nonce بدهیم، و nonce
++ * یعنی هر صفحه **دینامیک** می‌شود و رندر استاتیک از دست می‌رود —
++ * برای یک فروشگاه که کاتالوگش باید کش شود، هزینهٔ سنگینی است.
++ *
++ * معاملهٔ آگاهانه: `'unsafe-inline'` می‌ماند، اما `object-src`،
++ * `base-uri`، `frame-ancestors` و `form-action` بسته‌اند — یعنی
++ * حتی اگر XSS رخ دهد، مهاجم نمی‌تواند صفحه را iframe کند، فرم را
++ * به دامنهٔ خودش بفرستد، یا با تزریق <base> مسیر اسکریپت‌ها را
++ * بدزدد.
++ *
++ * وقتی nonce خواستید: در `proxy.ts` یک nonce بسازید، روی هدر
++ * `x-nonce` بگذارید و اینجا `'nonce-${nonce}'` را جای
++ * `'unsafe-inline'` بنشانید.
++ */
++
++export interface HttpHeader {
++  key: string
++  value: string
++}
++
++/** میزبان‌هایی که تصویر از آن‌ها مجاز است — با next.config هم‌راستا بماند */
++const IMAGE_HOSTS = ['https://images.unsplash.com']
++
++/**
++ * پایهٔ API خارجی، اگر تعریف شده باشد.
++ *
++ * بدون این، وقتی `NEXT_PUBLIC_USE_MOCK=false` شود و بک‌اند روی
++ * دامنهٔ دیگری باشد، CSP همهٔ fetchها را بی‌صدا مسدود می‌کند و
++ * دیباگش کابوس است.
++ */
++function externalApiOrigin(): string[] {
++  const raw = process.env.NEXT_PUBLIC_API_BASE_URL?.trim()
++  if (!raw) return []
++  try {
++    return [new URL(raw).origin]
++  } catch {
++    return []
++  }
++}
++
++/** ساخت رشتهٔ Content-Security-Policy */
++export function buildContentSecurityPolicy(isDev = process.env.NODE_ENV !== 'production'): string {
++  const directives: Record<string, string[]> = {
++    'default-src': ["'self'"],
++    // جلوگیری از تزریق <base href> که مسیر همهٔ اسکریپت‌ها را عوض می‌کند
++    'base-uri': ["'self'"],
++    // Flash/applet — هیچ کاربردی ندارند و سطح حمله‌اند
++    'object-src': ["'none'"],
++    // معادل مدرن X-Frame-Options: هیچ سایتی نمی‌تواند ما را iframe کند
++    'frame-ancestors': ["'none'"],
++    // فرم فقط به خودمان post می‌شود — جلوی سرقت اطلاعات فرم لاگین
++    'form-action': ["'self'"],
++    'frame-src': ["'none'"],
++    'script-src': isDev
++      ? // eval فقط برای Fast Refresh در توسعه لازم است
++        ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
++      : ["'self'", "'unsafe-inline'"],
++    // Tailwind و framer-motion استایل inline تولید می‌کنند
++    'style-src': ["'self'", "'unsafe-inline'"],
++    'img-src': ["'self'", 'data:', 'blob:', ...IMAGE_HOSTS],
++    'font-src': ["'self'", 'data:'],
++    'connect-src': isDev
++      ? // websocket برای hot reload
++        ["'self'", 'ws:', 'wss:', ...externalApiOrigin()]
++      : ["'self'", ...externalApiOrigin()],
++    'manifest-src': ["'self'"],
++    'media-src': ["'self'"],
++    'worker-src': ["'self'", 'blob:'],
++  }
++
++  const parts = Object.entries(directives).map(([name, values]) =>
++    values.length > 0 ? `${name} ${values.join(' ')}` : name
++  )
++
++  // در توسعه روی http کار می‌کنیم؛ این دستور همه‌چیز را می‌شکند
++  if (!isDev) parts.push('upgrade-insecure-requests')
++
++  return parts.join('; ')
++}
++
++/**
++ * هدرهای امنیتی برای همهٔ مسیرها.
++ *
++ * ── چرا HSTS فقط در production؟ ───────────────────────────────
++ * HSTS به مرورگر می‌گوید «دو سال آینده این دامنه را فقط با HTTPS
++ * باز کن». روی `localhost` این یعنی محیط توسعهٔ شما تا دو سال
++ * خراب می‌شود و پاک کردنش از کش مرورگر دردسر دارد.
++ */
++export function buildSecurityHeaders(
++  isDev = process.env.NODE_ENV !== 'production'
++): HttpHeader[] {
++  const headers: HttpHeader[] = [
++    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy(isDev) },
++    // پشتیبان CSP برای مرورگرهای قدیمی که frame-ancestors را نمی‌فهمند
++    { key: 'X-Frame-Options', value: 'DENY' },
++    // جلوگیری از حدس نوع فایل — پایهٔ حملهٔ آپلود تصویرِ حاوی اسکریپت
++    { key: 'X-Content-Type-Options', value: 'nosniff' },
++    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
++    {
++      key: 'Permissions-Policy',
++      value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
++    },
++    { key: 'X-DNS-Prefetch-Control', value: 'off' },
++    // جداسازی context مرورگر — جلوی حملات cross-window
++    { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
++    { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
++  ]
++
++  if (!isDev) {
++    headers.push({
++      key: 'Strict-Transport-Security',
++      value: 'max-age=63072000; includeSubDomains; preload',
++    })
++  }
++
++  return headers
++}
++
++/**
++ * هدرهای اضافی مخصوص ناحیهٔ `/admin`.
++ *
++ * ── چرا no-store؟ ─────────────────────────────────────────────
++ * پنل مدیریت دادهٔ مشتری و سفارش نشان می‌دهد. بدون این، پراکسی
++ * شرکت یا کش مرورگر ممکن است صفحهٔ یک مدیر را به دیگری بدهد.
++ *
++ * ── چرا noindex؟ ──────────────────────────────────────────────
++ * `/admin/login` نباید در گوگل ایندکس شود. ایندکس‌شدنش عملاً
++ * تبلیغ آدرس پنل برای اسکنرهای خودکار است.
++ */
++export function buildAdminHeaders(
++  isDev = process.env.NODE_ENV !== 'production'
++): HttpHeader[] {
++  return [
++    ...buildSecurityHeaders(isDev),
++    { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
++    { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
++  ]
++}

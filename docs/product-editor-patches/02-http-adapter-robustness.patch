@@ -1,0 +1,36 @@
+# مقاوم‌سازی json helper: AbortController + timeout + جزئیات خطا
+# اعمال:  git apply docs/product-editor-patches/02-http-adapter-robustness.patch
+--- a/src/lib/product-editor/http-adapter.ts
++++ b/src/lib/product-editor/http-adapter.ts
+@@ -1,7 +1,29 @@
+ import type { ProductEditorAdapter } from './adapter.types';
+ 
+-export function createHttpProductEditorAdapter(baseUrl = ''): ProductEditorAdapter {
+-  const json = async <T,>(url: string, init?: RequestInit): Promise<T> => { const response = await fetch(`${baseUrl}${url}`, init); if (!response.ok) throw new Error(`Request failed: ${response.status}`); return response.json() as Promise<T>; };
++export function createHttpProductEditorAdapter(baseUrl = '', timeoutMs = 15_000): ProductEditorAdapter {
++  const json = async <T,>(url: string, init?: RequestInit): Promise<T> => {
++    const controller = new AbortController()
++    const timer = setTimeout(() => controller.abort(), timeoutMs)
++    try {
++      const response = await fetch(`${baseUrl}${url}`, { ...init, signal: controller.signal })
++      if (!response.ok) {
++        let detail: unknown
++        try { detail = await response.json() } catch { detail = await response.text().catch(() => undefined) }
++        const error = new Error(`Request failed: ${response.status}`) as Error & { status?: number; detail?: unknown }
++        error.status = response.status
++        error.detail = detail
++        throw error
++      }
++      return (await response.json()) as T
++    } catch (cause) {
++      if (cause instanceof Error && cause.name === 'AbortError') {
++        throw new Error(`Request timeout after ${timeoutMs}ms: ${url}`)
++      }
++      throw cause
++    } finally {
++      clearTimeout(timer)
++    }
++  }
+   return {
+     saveDraft: state => json('/api/admin/products/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...state, publish: false }) }),
+     publish: state => json('/api/admin/products/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...state, publish: true }) }),

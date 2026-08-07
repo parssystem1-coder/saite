@@ -8,6 +8,7 @@ import {
   type AdminLoginResponse,
 } from '@/lib/auth/admin-login-contract'
 import {
+  AdminConfigError,
   ADMIN_PROFILE,
   checkAdminCredentials,
   IS_TOTP_ENABLED,
@@ -21,7 +22,9 @@ import { getUserAgent, recordAuditEvent } from '@/lib/auth/server/audit-log'
 import {
   consumeRateLimit,
   getClientKey,
+  getUsernameKey,
   resetRateLimit,
+  USERNAME_RATE_LIMIT,
 } from '@/lib/auth/server/rate-limit'
 import { adminLoginSchema } from '@/lib/schemas'
 
@@ -43,6 +46,19 @@ import { adminLoginSchema } from '@/lib/schemas'
  * پاسخ شکست عمداً کند است. این هم حدس خودکار را کند می‌کند و هم
  * تفاوت زمانی بین «نام کاربری وجود ندارد» و «رمز غلط است» را
  * می‌پوشاند.
+ *
+ * ══════════════════════════════════════════════════════════════
+ *  🆕 دو تغییر امنیتی
+ * ══════════════════════════════════════════════════════════════
+ * ۱. **سطل دوم بر اساس نام کاربری.** سقف per-IP جلوی حملهٔ
+ *    توزیع‌شده را نمی‌گیرد؛ مهاجم با ۵۰۰ پروکسی، ۵۰۰ سطل جدا
+ *    می‌گیرد. جزئیات در `rate-limit.ts`.
+ *
+ * ۲. **بررسی Origin.** کوکی `sameSite=strict` تقریباً همهٔ CSRF
+ *    را می‌بندد، اما این مسیر یک endpoint حالت‌دار است و لایهٔ
+ *    دوم ارزان است. فقط وقتی هدر **وجود دارد** و نامتجانس است رد
+ *    می‌کنیم — درخواست‌های بدون Origin (curl، تست، health check)
+ *    دست‌نخورده می‌مانند.
  */
 
 export const dynamic = 'force-dynamic'
@@ -62,28 +78,60 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** هیچ پاسخ نشستی نباید در کش پراکسی یا مرورگر بنشیند */
+function noStore<T extends NextResponse>(response: T): T {
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, private')
+  return response
+}
+
 function failure(
   message: string,
   status: number,
   extra?: { totpRequired?: boolean }
 ): NextResponse<AdminLoginResponse> {
-  return NextResponse.json<AdminLoginResponse>(
-    { ok: false, message, ...extra },
-    { status }
+  return noStore(
+    NextResponse.json<AdminLoginResponse>({ ok: false, message, ...extra }, { status })
   )
+}
+
+/**
+ * آیا درخواست از خود سایت آمده؟
+ *
+ * `null` یعنی «نمی‌دانم» و اجازه می‌دهیم. فقط عدم تطابق صریح رد
+ * می‌شود، وگرنه هر کلاینت غیرمرورگری را می‌شکستیم.
+ */
+function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin')
+  if (!origin) return true
+
+  try {
+    return new URL(origin).origin === new URL(request.url).origin
+  } catch {
+    return false
+  }
 }
 
 /**
  * `POST /admin/api/session` — ورود.
  *
  * بدنه: `{ username, password, totpCode? }`
- * پاسخ: `200 { ok: true }` + کوکی، یا `401` / `429`
+ * پاسخ: `200 { ok: true }` + کوکی، یا `401` / `429` / `503`
  */
 export async function POST(request: Request): Promise<NextResponse<AdminLoginResponse>> {
   const clientKey = getClientKey(request.headers)
   const userAgent = getUserAgent(request.headers)
   const rateLimitKey = `admin-login:${clientKey}`
 
+  if (!isSameOrigin(request)) {
+    recordAuditEvent({ event: 'login-failed', ip: clientKey, userAgent })
+    return failure(INVALID_CREDENTIALS_MESSAGE, 403)
+  }
+
+  /*
+    سطل IP قبل از خواندن بدنه مصرف می‌شود: اگر بعد از parse بود،
+    مهاجم می‌توانست با بدنه‌های غول‌پیکر سرور را مشغول کند بدون
+    اینکه شمارنده‌ای بالا برود.
+  */
   const limit = consumeRateLimit(
     rateLimitKey,
     SERVER_RATE_LIMIT.maxAttempts,
@@ -119,7 +167,51 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
   }
 
   const { username, password, totpCode } = parsed.data
-  const result = await checkAdminCredentials(username, password, totpCode || undefined)
+  const usernameKey = getUsernameKey(username)
+
+  /*
+    سطل دوم: این حساب، از هر جای دنیا. مهاجم با botnet سطل IP را
+    دور می‌زند اما این یکی مشترک است.
+  */
+  const accountLimit = consumeRateLimit(
+    usernameKey,
+    USERNAME_RATE_LIMIT.maxAttempts,
+    USERNAME_RATE_LIMIT.windowMs
+  )
+
+  if (!accountLimit.allowed) {
+    recordAuditEvent({
+      event: 'login-rate-limited',
+      ip: clientKey,
+      username,
+      userAgent,
+    })
+    await delay(FAILURE_DELAY_MS)
+    const response = failure(RATE_LIMITED_MESSAGE, 429)
+    response.headers.set('Retry-After', String(accountLimit.retryAfterSeconds))
+    return response
+  }
+
+  let result
+  try {
+    result = await checkAdminCredentials(username, password, totpCode || undefined)
+  } catch (error) {
+    /*
+      پیکربندی ناامن در production (رمز پیش‌فرض، نشت NEXT_PUBLIC).
+      این «رمز اشتباه» نیست و نباید این‌طور گزارش شود، وگرنه مدیر
+      ساعت‌ها دنبال رمزی می‌گردد که درست است.
+    */
+    if (error instanceof AdminConfigError) {
+      recordAuditEvent({ event: 'login-failed', ip: clientKey, username, userAgent })
+      // پیام کامل فقط در لاگ سرور؛ به کلاینت جزئیات پیکربندی نمی‌دهیم
+      console.error('[admin-auth] پیکربندی ناامن:', error.message)
+      return failure(
+        'ورود به پنل موقتاً غیرفعال است: پیکربندی امنیتی سرور کامل نیست.',
+        503
+      )
+    }
+    throw error
+  }
 
   if (!result.ok) {
     await delay(FAILURE_DELAY_MS)
@@ -144,12 +236,13 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
     return failure(INVALID_CREDENTIALS_MESSAGE, 401)
   }
 
-  // ورود موفق: شمارندهٔ این IP آزاد می‌شود
+  // ورود موفق: هر دو شمارنده آزاد می‌شوند
   resetRateLimit(rateLimitKey)
+  resetRateLimit(usernameKey)
   await createAdminSession(ADMIN_PROFILE.id)
   recordAuditEvent({ event: 'login-success', ip: clientKey, username, userAgent })
 
-  return NextResponse.json<AdminLoginResponse>({ ok: true })
+  return noStore(NextResponse.json<AdminLoginResponse>({ ok: true }))
 }
 
 /**
@@ -159,13 +252,17 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
  * بدون این، کاربر «خارج شده» ولی کوکی‌اش هنوز معتبر است.
  */
 export async function DELETE(request: Request): Promise<NextResponse<AdminLoginResponse>> {
+  if (!isSameOrigin(request)) {
+    return failure(INVALID_CREDENTIALS_MESSAGE, 403)
+  }
+
   await destroyAdminSession()
   recordAuditEvent({
     event: 'logout',
     ip: getClientKey(request.headers),
     userAgent: getUserAgent(request.headers),
   })
-  return NextResponse.json<AdminLoginResponse>({ ok: true })
+  return noStore(NextResponse.json<AdminLoginResponse>({ ok: true }))
 }
 
 /**
@@ -177,10 +274,14 @@ export async function DELETE(request: Request): Promise<NextResponse<AdminLoginR
 export async function GET(): Promise<NextResponse> {
   const admin = await getAdminSession()
   if (!admin) {
-    return NextResponse.json(
-      { authenticated: false, totpEnabled: IS_TOTP_ENABLED },
-      { status: 401 }
+    return noStore(
+      NextResponse.json(
+        { authenticated: false, totpEnabled: IS_TOTP_ENABLED },
+        { status: 401 }
+      )
     )
   }
-  return NextResponse.json({ authenticated: true, admin, totpEnabled: IS_TOTP_ENABLED })
+  return noStore(
+    NextResponse.json({ authenticated: true, admin, totpEnabled: IS_TOTP_ENABLED })
+  )
 }

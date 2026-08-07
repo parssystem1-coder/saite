@@ -16,7 +16,11 @@
     "admin:check": "node scripts/admin-setup.mjs check",
     "admin:hash-password": "node scripts/admin-setup.mjs hash-password",
     "admin:totp": "node scripts/admin-setup.mjs totp",
-    "admin:secret": "node scripts/admin-setup.mjs secret"
+    "admin:secret": "node scripts/admin-setup.mjs secret",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:report": "playwright show-report",
+    "e2e:list": "playwright test --list"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.3.0",
@@ -50,6 +54,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
