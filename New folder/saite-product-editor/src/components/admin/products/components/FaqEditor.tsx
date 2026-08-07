@@ -1,8 +1,0 @@
-import { Plus, Trash2 } from 'lucide-react';
-import type { ProductFaq } from '../product-editor.types';
-import { editorInputClass } from './EditorField';
-
-export function FaqEditor({ faqs, onChange }: { faqs: ProductFaq[]; onChange: (faqs: ProductFaq[]) => void }) {
-  const update = (id: string, patch: Partial<ProductFaq>) => onChange(faqs.map(faq => faq.id === id ? { ...faq, ...patch } : faq));
-  return <div className="grid gap-3">{faqs.map(faq => <div key={faq.id} className="rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-4"><div className="grid gap-3"><input className={editorInputClass} value={faq.question} onChange={e => update(faq.id, { question: e.target.value })} placeholder="سوال متداول" /><textarea className={`${editorInputClass} min-h-24`} value={faq.answer} onChange={e => update(faq.id, { answer: e.target.value })} placeholder="پاسخ ساده و دقیق" /><div className="flex items-center justify-between gap-3"><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={faq.visible} onChange={e => update(faq.id, { visible: e.target.checked, inSchema: e.target.checked })} />نمایش در صفحه و اسکیما</label><button type="button" className="text-[hsl(var(--destructive))]" onClick={() => onChange(faqs.filter(item => item.id !== faq.id))}><Trash2 size={15} /></button></div></div></div>)}<button type="button" onClick={() => onChange([...faqs, { id: crypto.randomUUID(), question: '', answer: '', visible: true, inSchema: true }])} className="flex items-center justify-center gap-2 rounded-md border border-dashed border-[hsl(var(--border))] py-2 text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--primary))]"><Plus size={14} />افزودن سوال</button></div>;
-}

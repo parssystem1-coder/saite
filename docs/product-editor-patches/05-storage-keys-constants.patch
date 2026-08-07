@@ -1,0 +1,19 @@
+# فایل جدید: منبع واحد کلیدهای localStorage
+# اعمال:  git apply docs/product-editor-patches/05-storage-keys-constants.patch
+--- /dev/null
++++ b/src/lib/product-editor/constants.ts
+@@ -0,0 +1,14 @@
++/**
++ * کلیدهای localStorage ویرایشگر محصول — منبع واحد.
++ *
++ * الگوی نهایی کلید: `saite.product-editor.<name>` (پیشوند در mock-adapter).
++ * هر کلید جدید ابتدا اینجا تعریف شود تا تداخل نام و migration ساده بماند.
++ */
++export const PRODUCT_EDITOR_STORAGE = {
++  /** شناسهٔ محصولِ در حال ویرایش (متعلق به draft فعلی) */
++  productId: 'product-id',
++  /** آخرین پیش‌نویس ذخیره‌شده (storageKey پیش‌فرض) */
++  draft: 'draft',
++  /** آخرین نسخهٔ منتشرشده */
++  published: 'published',
++} as const

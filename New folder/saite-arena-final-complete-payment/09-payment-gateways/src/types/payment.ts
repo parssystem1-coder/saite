@@ -1,9 +1,0 @@
-export type PaymentProviderCode = 'zarinpal' | 'idpay' | 'nextpay' | 'stripe' | 'custom'
-export type PaymentEnvironment = 'sandbox' | 'production'
-export type PaymentMethodCode = 'online' | 'cash_on_delivery'
-export type PaymentIntentStatus = 'created' | 'redirect_required' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired' | 'refunded' | 'partially_refunded' | 'chargeback'
-export type RefundStatus = 'requested' | 'processing' | 'succeeded' | 'failed' | 'cancelled'
-export interface PaymentProvider { id:string; name:string; code:PaymentProviderCode; environment:PaymentEnvironment; active:boolean; priority:number; merchantId?:string; apiKeySecretRef?:string; terminalIdSecretRef?:string; callbackUrl:string; supportsRefund:boolean; supportsPartialRefund:boolean; supportsVerify:boolean; currency:'IRR'|'IRT'; minAmount:number; maxAmount?:number; timeoutSeconds:number; feePercent?:number; feeFixed?:number; healthStatus:'unknown'|'healthy'|'degraded'|'down'; lastHealthCheckAt?:string; createdAt:string; updatedAt:string }
-export interface PaymentIntent { id:string; orderId:string; providerId:string; amount:number; currency:'IRR'|'IRT'; status:PaymentIntentStatus; idempotencyKey:string; authority?:string; transactionId?:string; redirectUrl?:string; failureCode?:string; failureMessage?:string; createdAt:string; expiresAt:string; verifiedAt?:string }
-export interface PaymentEvent { id:string; paymentIntentId:string; type:'created'|'redirected'|'callback_received'|'verified'|'failed'|'refund_requested'|'refunded'|'chargeback'; providerEventId?:string; rawSafeMetadata:Record<string,string|number|boolean>; createdAt:string }
-export interface Refund { id:string; orderId:string; paymentIntentId:string; amount:number; reason:string; status:RefundStatus; providerRefundId?:string; requestedBy:string; createdAt:string; completedAt?:string }
