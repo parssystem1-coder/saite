@@ -32,8 +32,7 @@ test.describe('ویرایشگر محصول', () => {
     await expect(page).toHaveURL(/\/admin/, { timeout: 10000 })
 
     await page.goto('/admin/products/new')
-    await page.waitForURL('**/admin/products/new**', { timeout: 10000 })
-    await page.waitForTimeout(1500)
+    await page.waitForLoadState('networkidle')
     // تب پایه یا هدر ادمین — هر کدام که زودتر بیاید
     await expect(page.getByRole('tab', { name: 'پایه' }).or(page.getByText('Saite Admin').first())).toBeVisible({ timeout: 20000 })
 
