@@ -1,12 +1,21 @@
-import {
-  AdminModulePage,
-  createAdminModuleMetadata,
-} from '@/components/admin/admin-module-page'
+import type { Metadata } from 'next'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import SmsClient from '@/components/admin/communications/sms-client'
 
-const HREF = '/admin/communications/sms'
+export const metadata: Metadata = {
+  title: 'پیامک‌ها — ارتباطات',
+  description: 'صندوق پیامک‌های سیستمی، الگوها و گزارش تحویل',
+  robots: { index: false, follow: false, nocache: true },
+}
 
-export const metadata = createAdminModuleMetadata(HREF)
-
-export default function Page() {
-  return <AdminModulePage href={HREF} />
+export default function SmsPage() {
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="پیامک‌ها"
+        description="لاگ ارسال‌ها و مدیریت قالب‌های پیامکی — با استخراج خودکار متغیرها"
+      />
+      <SmsClient />
+    </div>
+  )
 }

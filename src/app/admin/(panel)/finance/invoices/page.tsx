@@ -1,12 +1,21 @@
-import {
-  AdminModulePage,
-  createAdminModuleMetadata,
-} from '@/components/admin/admin-module-page'
+import type { Metadata } from 'next'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import InvoicesClient from '@/components/admin/finance/invoices-client'
 
-const HREF = '/admin/finance/invoices'
+export const metadata: Metadata = {
+  title: 'صورت‌حساب‌ها — مالی',
+  description: 'صدور و پیگیری صورت‌حساب مشتریان با فیلتر وضعیت، جستجو و علامت‌گذاری پرداخت',
+  robots: { index: false, follow: false, nocache: true },
+}
 
-export const metadata = createAdminModuleMetadata(HREF)
-
-export default function Page() {
-  return <AdminModulePage href={HREF} />
+export default function InvoicesPage() {
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="صورت‌حساب‌ها"
+        description="لیست، فیلتر، جستجو و مدیریت وضعیت پرداخت — با محاسبهٔ سازگار مالیات و تخفیف در یک منبع حقیقت"
+      />
+      <InvoicesClient />
+    </div>
+  )
 }
