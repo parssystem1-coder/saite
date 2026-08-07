@@ -89,7 +89,7 @@ describe('🔑 مقاومت در برابر کوکی جعلی', () => {
   })
 
   it('توکن با امضای دستکاری‌شده رد می‌شود', async () => {
-    const valid = await createAdminSessionToken('admin-1')
+    const valid = await createAdminSessionToken('admin-1', 'admin')
     const [payload] = valid.split('.')
 
     const response = await proxy(request('/admin', `${payload}.forged-signature`))
@@ -99,7 +99,7 @@ describe('🔑 مقاومت در برابر کوکی جعلی', () => {
 
 describe('نشست معتبر', () => {
   it('🔑 مدیر با نشست درست عبور می‌کند', async () => {
-    const token = await createAdminSessionToken('admin-1')
+    const token = await createAdminSessionToken('admin-1', 'admin')
     const response = await proxy(request('/admin', token))
 
     // NextResponse.next() بدون ریدایرکت
@@ -108,7 +108,7 @@ describe('نشست معتبر', () => {
   })
 
   it('نشست معتبر در زیرمسیرها هم کار می‌کند', async () => {
-    const token = await createAdminSessionToken('admin-1')
+    const token = await createAdminSessionToken('admin-1', 'admin')
     const response = await proxy(request('/admin/settings', token))
 
     expect(response.headers.get('location')).toBeNull()
@@ -116,7 +116,7 @@ describe('نشست معتبر', () => {
 
   it('توکن منقضی‌شده رد می‌شود', async () => {
     // توکنی که در گذشته منقضی شده
-    const token = await createAdminSessionToken('admin-1', -10)
+    const token = await createAdminSessionToken('admin-1', 'admin', -10)
     const response = await proxy(request('/admin', token))
 
     expect(response.headers.get('location') ?? '').toContain('/admin/login')

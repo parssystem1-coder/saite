@@ -13,24 +13,36 @@
  * می‌کند.
  *
  * ══════════════════════════════════════════════════════════════
- *  چرا 'unsafe-inline' در script-src هست
+ *  🆕 فاز D — CSP با nonce و strict-dynamic
  * ══════════════════════════════════════════════════════════════
- * صادقانه: این ضعف CSP است، نه انتخاب ایده‌آل.
+ * تا پیش از این، `script-src 'unsafe-inline'` بود که یعنی هر
+ * <script>ی که XSS تزریق کند اجرا می‌شود. حالا:
  *
- * Next.js در App Router دادهٔ hydration را داخل تگ inline
- * می‌گذارد. حذف `'unsafe-inline'` یعنی باید nonce بدهیم، و nonce
- * یعنی هر صفحه **دینامیک** می‌شود و رندر استاتیک از دست می‌رود —
- * برای یک فروشگاه که کاتالوگش باید کش شود، هزینهٔ سنگینی است.
+ *   ۱. `proxy.ts` روی هر درخواست یک nonce تصادفی می‌سازد
+ *   ۲. آن را در هدر داخلی `x-nonce` می‌گذارد تا Server Componentها
+ *      بتوانند بخوانند و روی <script>های inline خودشان بگذارند
+ *   ۳. `Content-Security-Policy` با `'nonce-{value}' 'strict-dynamic'`
+ *      ساخته می‌شود
  *
- * معاملهٔ آگاهانه: `'unsafe-inline'` می‌ماند، اما `object-src`،
- * `base-uri`، `frame-ancestors` و `form-action` بسته‌اند — یعنی
- * حتی اگر XSS رخ دهد، مهاجم نمی‌تواند صفحه را iframe کند، فرم را
- * به دامنهٔ خودش بفرستد، یا با تزریق <base> مسیر اسکریپت‌ها را
- * بدزدد.
+ * ── چرا `'strict-dynamic'`؟ ──────────────────────────────────
+ * Next.js چند اسکریپت مجاز (chunks/hydration) را با inline
+ * loader صدا می‌زند. با nonce روی اسکریپت اولیه و `'strict-dynamic'`،
+ * اسکریپت‌های load شده توسط آن هم مجاز می‌شوند بدون آنکه لازم
+ * باشد کل مسیرها را در `script-src` لیست کنیم.
  *
- * وقتی nonce خواستید: در `proxy.ts` یک nonce بسازید، روی هدر
- * `x-nonce` بگذارید و اینجا `'nonce-${nonce}'` را جای
- * `'unsafe-inline'` بنشانید.
+ * ── چرا `'unsafe-inline'` هنوز به‌عنوان fallback هست؟ ────────
+ * مرورگرهای مدرن با دیدن `'strict-dynamic'` این را نادیده
+ * می‌گیرند. اما مرورگرهای قدیمی (Safari <15.4) که
+ * `'strict-dynamic'` را نمی‌فهمند، از `'unsafe-inline'` استفاده
+ * می‌کنند تا سایت نشکند. این توصیهٔ رسمی MDN و Google است.
+ *
+ * ── هزینهٔ عملکردی ─────────────────────────────────────────────
+ * nonce یعنی هر پاسخ یکتا می‌شود، پس نمی‌تواند static باشد.
+ * چون proxy روی همهٔ مسیرها اجرا می‌شود، صفحات کاتالوگ و مقاله
+ * که قبلاً استاتیک بودند حالا داینامیک می‌شوند. برای این پروژه
+ * مشکل نیست — کاتالوگ کوچک است و CDN جلوی سرور می‌تواند
+ * `Vary: Cookie` را کش کند. اگر یک روز مسئله شد، `next.config`
+ * می‌تواند مسیرهای عمومی را از proxy مستثنی کند (matcher).
  */
 
 export interface HttpHeader {
@@ -58,8 +70,43 @@ function externalApiOrigin(): string[] {
   }
 }
 
-/** ساخت رشتهٔ Content-Security-Policy */
-export function buildContentSecurityPolicy(isDev = process.env.NODE_ENV !== 'production'): string {
+/**
+ * ساخت رشتهٔ Content-Security-Policy.
+ *
+ * @param isDev — در توسعه، unsafe-eval برای Fast Refresh لازم است
+ * @param nonce — اگر تعریف شود، script-src از nonce+strict-dynamic
+ *                استفاده می‌کند (فاز D). اگر undefined باشد،
+ *                فقط 'unsafe-inline' — همان رفتار قبل از فاز D.
+ */
+export function buildContentSecurityPolicy(
+  isDev = process.env.NODE_ENV !== 'production',
+  nonce?: string
+): string {
+  /*
+    ── script-src ────────────────────────────────────────────────
+    اگر nonce داریم: nonce + strict-dynamic + unsafe-inline (fallback)
+    اگر نداریم: نسخهٔ سنتی — unsafe-inline
+
+    مرورگر مدرن با strict-dynamic، unsafe-inline را نادیده می‌گیرد
+    و فقط اسکریپت‌هایی با nonce (یا loaded توسط آن‌ها) را اجرا می‌کند.
+    مرورگر قدیمی هر دو را نادیده می‌گیرد و روی unsafe-inline fallback
+    می‌کند — که رفتار قبل از فاز D بود.
+  */
+  const scriptSrc: string[] = ["'self'"]
+  if (nonce) {
+    scriptSrc.push(`'nonce-${nonce}'`)
+    scriptSrc.push("'strict-dynamic'")
+    // fallback برای مرورگرهایی که strict-dynamic را نمی‌فهمند
+    scriptSrc.push("'unsafe-inline'")
+  } else {
+    // مسیر بدون nonce (مثلاً وقتی proxy اجرا نشده) — همان قدیمی
+    scriptSrc.push("'unsafe-inline'")
+  }
+  if (isDev) {
+    // eval فقط برای Fast Refresh در توسعه لازم است
+    scriptSrc.push("'unsafe-eval'")
+  }
+
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
     // جلوگیری از تزریق <base href> که مسیر همهٔ اسکریپت‌ها را عوض می‌کند
@@ -71,10 +118,7 @@ export function buildContentSecurityPolicy(isDev = process.env.NODE_ENV !== 'pro
     // فرم فقط به خودمان post می‌شود — جلوی سرقت اطلاعات فرم لاگین
     'form-action': ["'self'"],
     'frame-src': ["'none'"],
-    'script-src': isDev
-      ? // eval فقط برای Fast Refresh در توسعه لازم است
-        ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
-      : ["'self'", "'unsafe-inline'"],
+    'script-src': scriptSrc,
     // Tailwind و framer-motion استایل inline تولید می‌کنند
     'style-src': ["'self'", "'unsafe-inline'"],
     'img-src': ["'self'", 'data:', 'blob:', ...IMAGE_HOSTS],
@@ -105,12 +149,15 @@ export function buildContentSecurityPolicy(isDev = process.env.NODE_ENV !== 'pro
  * HSTS به مرورگر می‌گوید «دو سال آینده این دامنه را فقط با HTTPS
  * باز کن». روی `localhost` این یعنی محیط توسعهٔ شما تا دو سال
  * خراب می‌شود و پاک کردنش از کش مرورگر دردسر دارد.
+ *
+ * @param nonce — 🆕 فاز D: اگر تعریف شود، در CSP هم اعمال می‌شود
  */
 export function buildSecurityHeaders(
-  isDev = process.env.NODE_ENV !== 'production'
+  isDev = process.env.NODE_ENV !== 'production',
+  nonce?: string
 ): HttpHeader[] {
   const headers: HttpHeader[] = [
-    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy(isDev) },
+    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy(isDev, nonce) },
     // پشتیبان CSP برای مرورگرهای قدیمی که frame-ancestors را نمی‌فهمند
     { key: 'X-Frame-Options', value: 'DENY' },
     // جلوگیری از حدس نوع فایل — پایهٔ حملهٔ آپلود تصویرِ حاوی اسکریپت
@@ -148,11 +195,47 @@ export function buildSecurityHeaders(
  * تبلیغ آدرس پنل برای اسکنرهای خودکار است.
  */
 export function buildAdminHeaders(
-  isDev = process.env.NODE_ENV !== 'production'
+  isDev = process.env.NODE_ENV !== 'production',
+  nonce?: string
 ): HttpHeader[] {
   return [
-    ...buildSecurityHeaders(isDev),
+    ...buildSecurityHeaders(isDev, nonce),
     { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, private' },
     { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
   ]
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  🆕 nonce helpers — فاز D
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * نام هدر داخلی که proxy روی درخواست می‌گذارد.
+ *
+ * از این هدر Server Componentها با `headers().get(NONCE_HEADER)`
+ * nonce را می‌خوانند و روی هر <script> inline که تولید می‌کنند
+ * می‌گذارند. Next.js خودش هم اگر این هدر روی درخواست باشد و در
+ * پاسخ CSP باشد، nonce را روی scriptهای hydration اعمال می‌کند.
+ */
+export const NONCE_HEADER = 'x-nonce'
+
+/**
+ * تولید nonce تصادفی و امن.
+ *
+ * ۱۶ بایت random (۱۲۸ بیت آنتروپی) → base64 با طول ~۲۲ کاراکتر.
+ * این طول توصیه‌شدهٔ MDN است — کوتاه‌تر آنتروپی کافی ندارد و
+ * پیش‌بینی‌پذیر می‌شود، بلندتر بی‌دلیل هدر را چاق می‌کند.
+ *
+ * چرا `crypto.getRandomValues` و نه `crypto.randomUUID`:
+ * UUIDv4 چند بیت را برای version/variant قربانی می‌کند، پس آنتروپی
+ * مؤثرش ~۱۲۲ بیت است. برای nonce یک ثانیه‌ای فرقی نمی‌کند اما این
+ * الگو انعطاف بیشتری برای هر طول دلخواه دارد.
+ */
+export function generateNonce(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  // base64url بدون padding — امن برای هدر HTTP
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }

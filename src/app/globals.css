@@ -167,7 +167,15 @@
     border-color: hsl(var(--border));
   }
 
-  html {
+  /*
+    اسکرول نرم روی <html> با data-scroll-behavior="smooth" در
+    layout.tsx تنظیم می‌شود — نه با CSS مستقیم. تفاوت:
+    Next.js با data attribute هنگام route transition آن را
+    موقتاً به `auto` عوض می‌کند تا پرش به بالای صفحه سریع باشد،
+    و سپس برای anchor click دستی به `smooth` برمی‌گرداند.
+    منبع: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+  */
+  html[data-scroll-behavior='smooth'] {
     scroll-behavior: smooth;
   }
 

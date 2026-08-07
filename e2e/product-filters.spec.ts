@@ -1,64 +1,112 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 /**
  * سناریو ۳: فیلتر محصولات — drawer با focus-trap و scroll-lock
- * - باز کردن کشوی فیلتر در موبایل
- * - Escape می‌بندد
- * - Tab trap داخل dialog
+ *
+ * ── چرا فقط viewport override و نه devices['iPhone 13'] ──────
+ * spread کردن کل device (`...devices['iPhone 13']`) شامل
+ * `defaultBrowserType: 'webkit'` است. این با `channel: 'msedge'`
+ * یا `channel: 'chrome'` که کاربران بدون chromium-bundled
+ * استفاده می‌کنند تضاد می‌سازد:
+ *   Error: browserType.launch: Unsupported webkit channel "msedge"
+ *
+ * راه‌حل درست: فقط viewport را کوچک کنیم تا Tailwind breakpoint
+ * `lg` (1024px) فعال شود و drawer به‌جای sidebar رندر شود.
+ * browser type دست‌نخورده می‌ماند.
+ *
+ * ── چرا CSS selector به‌جای getByRole برای dialog ────────────
+ * `getByRole('dialog', { name: /فیلتر محصولات/ })` روی متن فارسی
+ * RTL گاهی fail می‌شود چون ARIA accessible name توسط مرورگر
+ * محاسبه می‌شود و ممکن است شامل کاراکترهای bidi (U+200E/U+200F)
+ * یا نرمال‌سازی متفاوت باشد که با regex ما match نکند.
+ *
+ * اثبات: در تست 'اسکرول قفل' که سبز شد، از
+ * `document.querySelector('[role="dialog"][aria-label*="فیلتر"]')`
+ * مستقیم روی DOM استفاده کردیم و کار کرد. `page.locator` با CSS
+ * attribute selector همان کار را می‌کند و RTL-agnostic است.
  */
-test.describe('فیلتر محصولات — drawer', () => {
+
+// همه تست‌های این describe در viewport موبایل اجرا می‌شوند
+test.use({
+  viewport: { width: 390, height: 844 },
+})
+
+test.describe('فیلتر محصولات — drawer (موبایل)', () => {
+  /** locator یکتای دکمهٔ toolbar که drawer را باز می‌کند */
+  const openFilterButton = (page: Page) =>
+    page.locator('button[aria-haspopup="dialog"]', { hasText: 'فیلترها' })
+
+  /** locator dialog بر پایهٔ DOM attribute (نه ARIA computed name) */
+  const filterDialog = (page: Page) =>
+    page.locator('[role="dialog"][aria-label*="فیلتر"]')
+
   test('کشوی فیلتر باز و بسته می‌شود', async ({ page }) => {
     await page.goto('/products')
     await expect(page.getByRole('heading', { name: /کاتالوگ محصولات/ })).toBeVisible()
 
-    // دکمه فیلتر در موبایل (یا دسکتاپ)
-    const filterBtn = page.getByRole('button', { name: /فیلتر/ }).first()
-    if (!(await filterBtn.isVisible())) {
-      // در دسکتاپ، پنل فیلتر مستقیم دیده می‌شود
-      await expect(page.getByRole('heading', { name: 'دسته‌بندی‌ها' })).toBeVisible()
-      return
-    }
+    const filterBtn = openFilterButton(page)
+    await expect(filterBtn).toBeVisible()
     await filterBtn.click()
-    await expect(page.getByRole('dialog', { name: /فیلتر محصولات/ })).toBeVisible()
+
+    await expect(filterDialog(page)).toBeVisible()
 
     // Escape باید ببندد
     await page.keyboard.press('Escape')
-    await expect(page.getByRole('dialog', { name: /فیلتر محصولات/ })).toBeHidden()
+    await expect(filterDialog(page)).toBeHidden()
   })
 
   test('focus-trap داخل drawer', async ({ page }) => {
     await page.goto('/products')
-    const filterBtn = page.getByRole('button', { name: /فیلتر/ }).first()
-    if (!(await filterBtn.isVisible())) {
-      test.skip()
-      return
-    }
+
+    const filterBtn = openFilterButton(page)
+    await expect(filterBtn).toBeVisible()
     await filterBtn.click()
-    const dialog = page.getByRole('dialog', { name: /فیلتر محصولات/ })
+
+    const dialog = filterDialog(page)
     await expect(dialog).toBeVisible()
 
-    // فوکوس باید داخل dialog باشد (دکمه بستن)
-    await expect(page.getByRole('button', { name: 'بستن' })).toBeFocused()
+    /*
+      پس از باز شدن dialog، فوکوس باید به داخل آن منتقل شود.
+      قبلاً از `getByRole('button', { name: 'بستن' })` استفاده
+      می‌کردیم که روی RTL match نمی‌کرد (همان bug bidi).
 
-    // Tab باید داخل dialog بماند
+      علاوه بر آن، دو دکمهٔ «بستن» روی صفحه هست:
+        • backdrop button: aria-label="بستن فیلترها"
+        • close button داخل dialog: aria-label="بستن"
+
+      dialog.locator محدود به فرزندان dialog است، پس فقط دومی را
+      می‌گیرد و اشتباه نمی‌کند.
+    */
+    const closeBtn = dialog.locator('button[aria-label="بستن"]')
+    await expect(closeBtn).toBeFocused()
+
+    // Tab باید داخل dialog بماند — activeElement همچنان زیر dialog باشد
     await page.keyboard.press('Tab')
-    await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || document.activeElement?.textContent)
-    // لااقل فوکوس از dialog خارج نشده
-    expect(dialog).toBeVisible()
+    const stillInsideDialog = await page.evaluate(() => {
+      const active = document.activeElement
+      const dialog = document.querySelector('[role="dialog"][aria-label*="فیلتر"]')
+      return dialog?.contains(active) ?? false
+    })
+    expect(stillInsideDialog).toBe(true)
   })
 
   test('اسکرول قفل می‌شود هنگام باز بودن', async ({ page }) => {
     await page.goto('/products')
-    const filterBtn = page.getByRole('button', { name: /فیلتر/ }).first()
-    if (!(await filterBtn.isVisible())) {
-      test.skip()
-      return
-    }
+
+    const filterBtn = openFilterButton(page)
+    await expect(filterBtn).toBeVisible()
     await filterBtn.click()
-    const overflow = await page.evaluate(() => document.body.style.overflow)
-    expect(overflow).toBe('hidden')
+
+    // پس از باز شدن، body.overflow باید hidden شود
+    await expect
+      .poll(() => page.evaluate(() => document.body.style.overflow))
+      .toBe('hidden')
+
+    // بستن → قفل باید برداشته شود
     await page.keyboard.press('Escape')
-    const after = await page.evaluate(() => document.body.style.overflow)
-    expect(after).not.toBe('hidden')
+    await expect
+      .poll(() => page.evaluate(() => document.body.style.overflow))
+      .not.toBe('hidden')
   })
 })
+

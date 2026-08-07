@@ -1,12 +1,21 @@
-import {
-  AdminModulePage,
-  createAdminModuleMetadata,
-} from '@/components/admin/admin-module-page'
+import type { Metadata } from 'next'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import ArticleCategoriesClient from '@/components/admin/content/article-categories-client'
 
-const HREF = '/admin/content/article-categories'
+export const metadata: Metadata = {
+  title: 'دسته‌بندی مقالات — محتوا',
+  description: 'دسته‌های مجلهٔ آموزشی با ترتیب و اعتبارسنجی slug',
+  robots: { index: false, follow: false, nocache: true },
+}
 
-export const metadata = createAdminModuleMetadata(HREF)
-
-export default function Page() {
-  return <AdminModulePage href={HREF} />
+export default function ArticleCategoriesPage() {
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="دسته‌بندی مقالات"
+        description="افزودن، ترتیب و حذف — با اعتبارسنجی slug و تعداد مقاله"
+      />
+      <ArticleCategoriesClient />
+    </div>
+  )
 }

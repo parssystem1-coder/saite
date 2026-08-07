@@ -1,0 +1,87 @@
+name: E2E
+
+# ══════════════════════════════════════════════════════════════
+#  E2E با Playwright — روی هر PR و push به main/arena/**
+# ══════════════════════════════════════════════════════════════
+# چرا این workflow جدا از ci.yml است:
+#   • E2E ~۵ برابر کندتر از verify است (نصب مرورگر + dev server)
+#   • اگر با ci.yml مخلوط شود، هر تغییر کوچک هم منتظر E2E می‌ماند
+#   • رانر image مخصوص (mcr.microsoft.com/playwright) دارد تا
+#     `npx playwright install` هر بار مرورگر را دانلود نکند
+#
+# چرا از image رسمی Microsoft استفاده می‌کنیم:
+#   نصب Chromium روی ubuntu-latest ~۹۰ ثانیه است. تصویر رسمی
+#   مرورگر و dependencies را از قبل دارد، پس فقط `npm ci` می‌ماند
+#   که ~۳۰ ثانیه است.
+
+on:
+  push:
+    branches: [main, 'arena/**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # تصویر رسمی Playwright — با نسخهٔ فعلی @playwright/test در package.json هماهنگ نگه دارید
+    container:
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      # چرا این options: تصویر Playwright به‌طور پیش‌فرض user root
+      # ندارد، اما cache actions/setup-node به دسترسی root نیاز دارد
+      options: --user root
+
+    env:
+      # dev server در محیط test بدون rate-limit delay اجرا شود
+      NODE_ENV: test
+      # nonce امن حتی در تست
+      ADMIN_SESSION_SECRET: 'test-only-secret-16-chars-min-do-not-use-anywhere'
+      # نقش پیش‌فرض برای همهٔ تست‌ها
+      ADMIN_ROLE: admin
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # تست کن که پکیج Playwright روی این تصویر همان نسخه است.
+      # اگر تفاوت داشت، دوباره نصب مرورگر لازم است.
+      - name: Verify Playwright version match
+        run: npx playwright --version
+
+      # webServer در playwright.config.ts خودش dev server را
+      # بالا می‌آورد؛ نیازی به job جدا نیست.
+      - name: Run E2E tests
+        run: npm run e2e
+
+      # آرتیفکت‌های گزارش برای دیباگ رگرشن‌های نادر
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore

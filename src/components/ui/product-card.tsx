@@ -22,6 +22,15 @@ export interface ProductCardProps {
   onCompare?: (product: ProductCardData) => void
   onWishlist?: (product: ProductCardData) => void
   className?: string
+  /**
+   * 🆕 اگر true، تصویر با priority لود می‌شود (بدون lazy).
+   *
+   * روی تصاویر بالای fold صفحه اول بگذارید — معمولاً چهار کارت
+   * اول grid. این باعث می‌شود Next.js آن‌ها را در HTML اولیه
+   * preload کند و LCP بهبود یابد. Next خودش هشدار می‌دهد اگر
+   * LCP یک تصویر بدون priority باشد.
+   */
+  priority?: boolean
 }
 
 /**
@@ -38,6 +47,7 @@ export function ProductCard({
   onCompare,
   onWishlist,
   className,
+  priority = false,
 }: ProductCardProps) {
   const brand = BRANDS.find((b) => b.slug === product.brand)
   const isBuyable = product.priceType === 'fixed' && product.stockStatus !== 'out_of_stock'
@@ -57,6 +67,8 @@ export function ProductCard({
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
               className="object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+              // priority فقط روی چند کارت اول grid — کاهش LCP
+              priority={priority}
             />
           </Link>
 
