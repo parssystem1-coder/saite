@@ -1,21 +1,24 @@
-import { test, expect, devices } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 
 /**
  * سناریو ۳: فیلتر محصولات — drawer با focus-trap و scroll-lock
  *
- * ── چرا viewport موبایل ──────────────────────────────────────
- * Drawer فیلتر فقط در viewport موبایل (lg breakpoint به پایین)
- * دیده می‌شود. در desktop، پنل فیلتر به‌عنوان sidebar در کنار
- * ثابت است و drawer وجود ندارد.
+ * ── چرا فقط viewport override و نه devices['iPhone 13'] ──────
+ * spread کردن کل device (`...devices['iPhone 13']`) شامل
+ * `defaultBrowserType: 'webkit'` است. این با `channel: 'msedge'`
+ * یا `channel: 'chrome'` که کاربران بدون chromium-bundled
+ * استفاده می‌کنند تضاد می‌سازد:
+ *   Error: browserType.launch: Unsupported webkit channel "msedge"
  *
- * قبلاً این تست‌ها با desktop viewport اجرا می‌شدند و به‌درستی
- * skip می‌کردند (چون دکمه فیلتر مخفی بود) — اما این یعنی هیچ‌وقت
- * واقعاً چیزی چک نمی‌کردیم. حالا با `test.use({ ...devices })`،
- * viewport برای این describe موبایل می‌شود.
+ * راه‌حل درست: فقط viewport را کوچک کنیم تا Tailwind breakpoint
+ * `lg` (1024px) فعال شود و drawer به‌جای sidebar رندر شود.
+ * browser type دست‌نخورده می‌ماند.
  */
 
 // همه تست‌های این describe در viewport موبایل اجرا می‌شوند
-test.use({ ...devices['iPhone 13'] })
+test.use({
+  viewport: { width: 390, height: 844 },
+})
 
 test.describe('فیلتر محصولات — drawer (موبایل)', () => {
   test('کشوی فیلتر باز و بسته می‌شود', async ({ page }) => {
