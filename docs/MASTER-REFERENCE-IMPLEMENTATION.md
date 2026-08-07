@@ -253,6 +253,20 @@ git add -A && git commit -m "phase N: ..." && git push origin arena/019fdc47-sai
 ### باقی‌مانده و جدید
 
 1. **بررسی کامل route handlerهای ادمین — تکمیل شد (فاز ۶)** — هر دو handler موجود (`/admin/api/session` و `/api/admin/emojis`) اکنون دارای `getAdminSession` هستند؛ `grep -L` دیگر موردی بدون گارد ندارد — با این حال هنگام افزودن route جدید، چک‌لیست بخش ۹ را اجرا کنید
+
+**🆕 فاز B (RBAC) در سشن `arena/019fdd7f-saite` — کامیت `a4cea2f`:**
+- سه نقش سرور: `viewer` / `operator` / `admin` (پیش‌فرض `admin` برای سازگاری عقب)
+- `src/lib/auth/rbac.ts` — منبع واحد مجوزها (`resource:action`)
+- `src/lib/auth/server/require-role.ts` — گارد Route Handler (401 nosession / 403 forbidden)
+- `src/lib/auth/server/page-guard.ts` — `requirePagePermission` برای Server Component (redirect)
+- توکن نشست شامل claim `role` + ADMIN_ROLE در fingerprint (تغییرش نشست‌های قدیمی را ابطال می‌کند)
+- Layoutهای گروه: `finance/` گارد `finance:read`، `settings/` گارد `settings:write`
+- `invoice-settings` گارد اضافه `finance:write`
+- منوی سایدبار خودکار فیلتر می‌شود (`filterAdminNavByRole` در `admin-sidebar.tsx`)
+- `/admin/forbidden` صفحه ۴۰۳ داخلی پنل
+- تست: +2 فایل (`rbac.test.ts`, `admin-nav-rbac.test.ts`) + بازنویسی `emojis-route-auth`
+- verify: 71 file / 622 test ✓ · type-check ✓ · lint ✓ · build ✓
+- env جدید: `ADMIN_ROLE=viewer|operator|admin` در `.env.example`
 2. ~~**۱۸/۲۹ صفحهٔ ادمین هنوز placeholder**~~ → ✅ **فاز A در سشن `arena/019fdd7f-saite` (۷ اوت ۲۰۲۶) کامل شد** — هر ۱۸ صفحه به `mock-adapter` واقعی متصل و از `AdminModulePage` جدا شدند. کامیت `7220e3b`. گروه‌ها: finance (۵) · reports (۴) · marketing (۲) · communications (۲) · content (۳ + `pages/new`) · help. تست‌ها: +۴ فایل / +۱۸ تست (finance/marketing/content/communications adapters). `grep AdminModulePage src/app/admin | wc -l = 0`. verify سبز: ۶۹ فایل / ۶۰۱ تست، ۶۳ route
 3. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
 4. **اجرای E2E در CI — نیاز به نصب مرورگر** — فاز ۶ با ۱۳ تست در ۴ فایل و `playwright.config.ts` آماده شد و `npx playwright test --list` سبز است؛ اما `npx playwright install chromium` در این سندباکس به دلیل محدودیت شبکه ناموفق بود. روی سیستم شما (Windows + Git Bash) با اینترنت باز، یک‌بار `npx playwright install` را اجرا کنید، سپس `npm run e2e` — در CI نیز `mcr.microsoft.com/playwright` image را استفاده کنید
