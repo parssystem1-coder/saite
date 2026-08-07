@@ -17,6 +17,8 @@
 > بخش [آماده‌سازی برای انتشار](#-آماده‌سازی-برای-انتشار) را
 > بخوانید.
 
+> 📌 **سند مرجع اصلاحات:** نقشهٔ راه ۶ فاز، ۲۰ مشکل تلفیقی و چک‌لیست امنیتی در [`docs/MASTER-REFERENCE-IMPLEMENTATION.md`](./docs/MASTER-REFERENCE-IMPLEMENTATION.md) نگهداری می‌شود. مستندات منقضی (`ARCHITECTURE_REVIEW.md`, `UI_SHELL_AUDIT_AND_PLAN.md`) به [`docs/archive/`](./docs/archive/) منتقل شده‌اند.
+
 ---
 
 ## 🏗 استک تکنولوژی
@@ -152,9 +154,11 @@ saite/
 │   ├── ISSUE_TEMPLATE/
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/                        # مستندات فنی
+│   ├── MASTER-REFERENCE-IMPLEMENTATION.md  # سند مرجع — ۶ فاز، ۲۰ مشکل، چک‌لیست امنیتی
 │   ├── ADMIN_AUTH_SERVER_SIDE.md    # معماری امنیت پنل
 │   ├── API_CONTRACT.md              # قرارداد بک‌اند آینده
 │   ├── TROUBLESHOOTING.md           # عیب‌یابی
+│   ├── archive/                     # مستندات منقضی (ARCHITECTURE_REVIEW, UI_SHELL)
 │   └── FRONTEND_ARCHITECTURE_AUDIT_2026-08.md
 ├── public/                      # فایل‌های استاتیک
 ├── scripts/
@@ -182,7 +186,7 @@ saite/
 │   ├── store/                   # Zustand
 │   ├── types/
 │   └── proxy.ts                 # گارد ناحیهٔ /admin
-├── tests/                       # ۴۸ فایل، ۴۹۱ تست
+├── tests/                       # ۶۳ فایل، ۵۷۹ تست
 ├── .env.example
 ├── next.config.ts
 ├── postcss.config.mjs
@@ -190,7 +194,7 @@ saite/
 └── vitest.config.ts
 ```
 
-**۲۳۹ فایل TypeScript · حدود ۱۹٬۰۰۰ خط · ۴۹۱ تست**
+**~۲۶۰ فایل TypeScript · حدود ۲۲٬۰۰۰ خط · ۵۷۹ تست**
 
 ### قواعد معماری
 
