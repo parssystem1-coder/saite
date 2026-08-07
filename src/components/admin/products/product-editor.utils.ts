@@ -42,7 +42,8 @@ export const buildProductSchema = (
   mpn: draft.mpn || undefined,
   gtin13: draft.gtin || undefined,
   brand: { '@type': 'Brand', name: draft.brand },
-  image: images.map(image => image.preview),
+  image: images.map(image => image.preview).filter(url => !url.startsWith('blob:')),
+  // blob: URLs فقط پیش‌نمایش جلسه هستند — نباید وارد JSON-LD منتشرشده شوند
   description: draft.shortDescription || undefined,
   additionalProperty: attributes
     .filter(attribute => attribute.inSchema && attribute.name.trim())

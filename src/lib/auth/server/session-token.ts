@@ -17,7 +17,8 @@ import 'server-only'
  *
  * ── چرا JWT نه؟ ───────────────────────────────────────────────
  * JWT برای این کار بیش از حد است و یک وابستگی جدید می‌آورد. ما
- * فقط دو چیز لازم داریم: شناسه و زمان انقضا. فرمت زیر کافی است:
+ * فقط سه چیز لازم داریم: شناسه، زمان انقضا و نسخهٔ ابطال. فرمت
+ * زیر کافی است:
  *
  *   base64url(payload) + "." + base64url(hmac)
  *
@@ -28,6 +29,33 @@ import 'server-only'
  * همین ماژول باید در `proxy.ts` هم قابل استفاده باشد. Web Crypto
  * (`globalThis.crypto.subtle`) در هر دو محیط Node و Edge کار
  * می‌کند، پس منطق تأیید یک نسخه بیشتر ندارد.
+ *
+ * ══════════════════════════════════════════════════════════════
+ *  🆕 ابطال نشست — چرا claim جدید `ver` اضافه شد
+ * ══════════════════════════════════════════════════════════════
+ * تا پیش از این، توکن فقط `sub` و `exp` داشت. یعنی:
+ *
+ *   مدیر می‌فهمد رمزش لو رفته → رمز را عوض می‌کند
+ *   → کوکی دزدیده‌شده **تا ۸ ساعت هنوز معتبر است**
+ *
+ * هیچ راهی برای «همهٔ نشست‌ها را باطل کن» وجود نداشت. حالا یک
+ * اثر انگشت از پیکربندی حساب داخل توکن است و موقع تأیید مقایسه
+ * می‌شود. هر تغییری در رمز، کلید امضا، کلید TOTP یا نام کاربری،
+ * همهٔ توکن‌های قبلی را **فوراً** بی‌اعتبار می‌کند.
+ *
+ * ── چرا هش غیررمزنگاری (FNV-1a) کافی است؟ ────────────────────
+ * این مقدار **راز نیست** — کل payload با HMAC امضا می‌شود، پس
+ * مهاجم نمی‌تواند `ver` را دستکاری کند. تنها کاری که می‌کند
+ * تشخیص «پیکربندی عوض شده» است. برای آن، هش سریع و همگام کافی
+ * است و ما را از async و node:crypto داخل proxy بی‌نیاز می‌کند.
+ *
+ * ── ابطال دستی ────────────────────────────────────────────────
+ * بدون عوض کردن رمز هم می‌شود همه را بیرون انداخت:
+ *   ADMIN_SESSION_VERSION=2   (هر مقدار جدیدی)
+ *
+ * ⚠️ اثر جانبی مورد انتظار: با اولین deploy این تغییر، هر مدیری
+ *    که الان وارد است یک‌بار به صفحهٔ ورود برمی‌گردد. توکن‌های
+ *    قدیمی `ver` ندارند، پس نامعتبر شمرده می‌شوند. این درست است.
  */
 
 /** طول عمر نشست مدیر — کوتاه‌تر از نشست مشتری، عمداً */
@@ -68,6 +96,62 @@ export interface AdminSessionPayload {
   iat: number
   /** زمان انقضا (ثانیه) */
   exp: number
+  /** اثر انگشت پیکربندی حساب — مبنای ابطال گروهی */
+  ver: string
+}
+
+/* ── نسخهٔ نشست (ابطال گروهی) ─────────────────────────────────── */
+
+/**
+ * هش FNV-1a ۳۲ بیتی.
+ *
+ * چرا این و نه SHA؟ چون همگام است و هیچ وابستگی ندارد؛ در
+ * `proxy.ts` که باید سبک بماند هم اجرا می‌شود. امنیت از HMAC
+ * می‌آید، نه از این.
+ */
+function fnv1a(input: string): string {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return hash.toString(36)
+}
+
+/*
+  کش در سطح ماژول: مقادیر env در طول عمر process عوض نمی‌شوند و
+  این تابع در هر درخواست صدا زده می‌شود.
+
+  ⚠️ در تست باید بشود آن را پاک کرد، وگرنه تستی که env را عوض
+     می‌کند مقدار بیات می‌گیرد.
+*/
+let cachedVersion: string | null = null
+
+/**
+ * اثر انگشت پیکربندی فعلی حساب مدیر.
+ *
+ * ⚠️ خودِ رمز اینجا **ذخیره نمی‌شود** — فقط هش کوتاه‌شدهٔ آن، و
+ * آن هم فقط برای مقایسه. حتی اگر کسی توکن را decode کند، از این
+ * ۷ کاراکتر چیزی درنمی‌آورد.
+ */
+export function getSessionVersion(): string {
+  if (cachedVersion !== null) return cachedVersion
+
+  const fingerprint = [
+    process.env.ADMIN_SESSION_VERSION?.trim() ?? '1',
+    process.env.ADMIN_USERNAME?.trim() ?? '',
+    process.env.ADMIN_PASSWORD?.trim() ?? '',
+    process.env.ADMIN_TOTP_SECRET?.trim() ?? '',
+    process.env.ADMIN_SESSION_SECRET?.trim() ?? '',
+  ].join('')
+
+  cachedVersion = fnv1a(fingerprint)
+  return cachedVersion
+}
+
+/** فقط برای تست — پاک‌کردن کش پس از تغییر متغیرهای محیطی */
+export function __resetSessionVersionCache(): void {
+  cachedVersion = null
 }
 
 /* ── کدگذاری base64url بدون وابستگی ──────────────────────────── */
@@ -124,6 +208,7 @@ export async function createAdminSessionToken(
     sub: adminId,
     iat: now,
     exp: now + maxAgeSeconds,
+    ver: getSessionVersion(),
   }
 
   const encoded = toBase64Url(new TextEncoder().encode(JSON.stringify(payload)))
@@ -134,7 +219,8 @@ export async function createAdminSessionToken(
 /**
  * تأیید توکن.
  *
- * `null` یعنی نامعتبر — چه امضا غلط باشد، چه منقضی، چه بدشکل.
+ * `null` یعنی نامعتبر — چه امضا غلط باشد، چه منقضی، چه بدشکل،
+ * چه از نسخهٔ پیکربندی قبلی.
  * عمداً تفکیک نمی‌کند تا پیام خطا اطلاعاتی ندهد.
  */
 export async function verifyAdminSessionToken(
@@ -166,6 +252,13 @@ export async function verifyAdminSessionToken(
 
   if (typeof payload?.sub !== 'string' || typeof payload?.exp !== 'number') return null
   if (payload.exp * 1000 <= Date.now()) return null
+
+  /*
+    بررسی ابطال. توکن‌های صادرشده پیش از این تغییر `ver` ندارند و
+    اینجا رد می‌شوند — یعنی یک‌بار ورود مجدد پس از deploy.
+  */
+  if (typeof payload.ver !== 'string') return null
+  if (!timingSafeEqual(payload.ver, getSessionVersion())) return null
 
   return payload
 }

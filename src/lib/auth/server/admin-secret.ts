@@ -23,20 +23,29 @@ import 'server-only'
  * ══════════════════════════════════════════════════════════════
  * `ADMIN_PASSWORD` می‌تواند یکی از این دو باشد:
  *
- *  ۱. **متن ساده** — راحت برای توسعهٔ محلی. اگر کسی به فایل
- *     `.env.local` دسترسی پیدا کند، رمز را می‌بیند.
- *
- *  ۲. **هش scrypt** — با `npm run admin:hash-password` ساخته
- *     می‌شود. رشته با `scrypt.` شروع می‌شود و از رویش نمی‌توان
- *     رمز را بازیابی کرد.
+ *  ۱. **متن ساده** — راحت برای توسعهٔ محلی.
+ *  ۲. **هش scrypt** — با `npm run admin:hash-password`.
  *
  * تشخیص خودکار است: اگر مقدار با `scrypt.` شروع شود، به‌عنوان هش
  * تأیید می‌شود؛ وگرنه مقایسهٔ مستقیم.
  *
- * چرا هر دو پشتیبانی می‌شوند؟ چون اجبار به هش کردن در فاز توسعه،
- * راه‌اندازی را کند می‌کند بدون آنکه چیزی اضافه کند — رمز نمایشی
- * که در مستندات هم نوشته شده، هش کردنش معنا ندارد. اما برای
- * انتشار، `npm run admin:check` هشدار می‌دهد.
+ * ══════════════════════════════════════════════════════════════
+ *  🆕 چرا رمز پیش‌فرض حالا در production **خطا** می‌دهد
+ * ══════════════════════════════════════════════════════════════
+ * `saite-demo-1404` در README، در `.env.example` و در تاریخچهٔ
+ * گیت یک مخزن عمومی نوشته شده. یعنی برای هر کسی که ۳۰ ثانیه وقت
+ * بگذارد، رمز پنل معلوم است.
+ *
+ * نسخهٔ قبلی فقط با `npm run admin:check` **هشدار** می‌داد. هشدار
+ * اختیاری است، و چیزی که اختیاری باشد در شب انتشار فراموش
+ * می‌شود. `ADMIN_SESSION_SECRET` از همان اول درست عمل می‌کرد
+ * (پرتاب خطا)؛ حالا رمز هم همان رفتار را دارد.
+ *
+ * ── چرا لحظهٔ بررسی اعتبارنامه و نه لحظهٔ بارگذاری ماژول؟ ──────
+ * چون `next build` هم با `NODE_ENV=production` اجرا می‌شود. خطای
+ * سطح ماژول یعنی بیلد در CI می‌شکند، حتی وقتی هیچ رازی لازم
+ * نیست. بررسی تنبل، بیلد را سالم نگه می‌دارد و در اولین تلاش
+ * ورود واقعی جلو را می‌گیرد.
  */
 
 import {
@@ -49,6 +58,9 @@ import type { AdminUser } from '@/types/user'
 
 const DEFAULT_ADMIN_USERNAME = 'admin'
 const DEFAULT_ADMIN_PASSWORD = 'saite-demo-1404'
+
+/** حداقل طول رمز قابل قبول در production */
+const MIN_PRODUCTION_PASSWORD_LENGTH = 12
 
 /** نام کاربری مدیر — فقط از محیط سرور */
 export const ADMIN_USERNAME =
@@ -86,6 +98,57 @@ export const IS_TOTP_ENABLED = ADMIN_TOTP_SECRET.length > 0
  */
 export const IS_USING_DEFAULT_CREDENTIALS =
   ADMIN_USERNAME === DEFAULT_ADMIN_USERNAME && ADMIN_PASSWORD === DEFAULT_ADMIN_PASSWORD
+
+/**
+ * خطای پیکربندی — از خطای اعتبارنامه جداست.
+ *
+ * Route Handler با دیدن این، به‌جای «رمز اشتباه است» پاسخ ۵۰۳
+ * می‌دهد. مدیر باید بفهمد مشکل از سرور است، نه از رمزی که زده.
+ */
+export class AdminConfigError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AdminConfigError'
+  }
+}
+
+/**
+ * دروازهٔ ایمنی production.
+ *
+ * در توسعه و تست هیچ کاری نمی‌کند. در production، اگر پیکربندی
+ * ناامن باشد ورود را **کاملاً** می‌بندد.
+ */
+export function assertSafeProductionCredentials(): void {
+  if (process.env.NODE_ENV !== 'production') return
+
+  /*
+    ابتدا نشت آشکار: اگر کسی نسخهٔ قدیمی متغیر را برگردانده باشد،
+    رمز دوباره داخل باندل مرورگر است. این بدترین حالت ممکن است و
+    باید بلندتر از بقیه فریاد بزند.
+  */
+  if (process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+    throw new AdminConfigError(
+      'NEXT_PUBLIC_ADMIN_PASSWORD تعریف شده است. پیشوند NEXT_PUBLIC یعنی این ' +
+        'مقدار داخل جاوااسکریپت مرورگر قرار می‌گیرد و برای هر بازدیدکننده ' +
+        'قابل خواندن است. آن را حذف کنید و از ADMIN_PASSWORD استفاده کنید.'
+    )
+  }
+
+  if (IS_USING_DEFAULT_CREDENTIALS) {
+    throw new AdminConfigError(
+      'اعتبارنامهٔ پیش‌فرض مدیر هنوز فعال است. این مقدار در مخزن عمومی نوشته ' +
+        'شده، پس عملاً پنل بدون رمز است. ADMIN_USERNAME و ADMIN_PASSWORD را ' +
+        'در .env.local تعریف کنید:  npm run admin:hash-password'
+    )
+  }
+
+  if (!IS_PASSWORD_HASHED && ADMIN_PASSWORD.length < MIN_PRODUCTION_PASSWORD_LENGTH) {
+    throw new AdminConfigError(
+      `رمز مدیر کوتاه‌تر از ${MIN_PRODUCTION_PASSWORD_LENGTH} کاراکتر است. ` +
+        'یک عبارت عبور بلندتر بگذارید یا آن را هش کنید: npm run admin:hash-password'
+    )
+  }
+}
 
 /**
  * مقایسهٔ زمان‌ثابت رشته‌ها.
@@ -128,12 +191,17 @@ export type CredentialCheck =
  * نام کاربری و رمز **همیشه اول** بررسی می‌شوند. اگر TOTP اول
  * می‌آمد، مهاجم می‌توانست بدون دانستن رمز بفهمد کد دومرحله‌ای
  * درست است یا نه.
+ *
+ * @throws {AdminConfigError} در production با پیکربندی ناامن
  */
 export async function checkAdminCredentials(
   username: string,
   password: string,
   totpCode?: string
 ): Promise<CredentialCheck> {
+  // پیش از هر چیز: اگر پیکربندی ناامن است، اصلاً وارد منطق نشو
+  assertSafeProductionCredentials()
+
   const normalized = username.trim().toLowerCase()
   const usernameOk = safeCompare(normalized, ADMIN_USERNAME.toLowerCase())
 
