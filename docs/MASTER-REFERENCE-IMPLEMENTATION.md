@@ -267,6 +267,18 @@ git add -A && git commit -m "phase N: ..." && git push origin arena/019fdc47-sai
 - تست: +2 فایل (`rbac.test.ts`, `admin-nav-rbac.test.ts`) + بازنویسی `emojis-route-auth`
 - verify: 71 file / 622 test ✓ · type-check ✓ · lint ✓ · build ✓
 - env جدید: `ADMIN_ROLE=viewer|operator|admin` در `.env.example`
+
+**🆕 فاز D (CSP nonce + strict-dynamic) در سشن `arena/019fdd7f-saite` — کامیت `6a65c7f`:**
+- حذف `'unsafe-inline'` مؤثر روی مسیرهای `/admin/*`
+- معماری دو-لایه:
+  - `src/proxy.ts` روی `/admin/*` → CSP سختگیرانه با `'nonce-{value}' 'strict-dynamic'` (nonce تصادفی هر request)
+  - `next.config.headers()` روی صفحات public → CSP قدیمی (بدون nonce، تا static بمانند)
+- `generateNonce()` — 16 بایت random → base64url ~22 char + `NONCE_HEADER='x-nonce'`
+- `buildContentSecurityPolicy(isDev, nonce?)` — با یا بدون nonce
+- Next.js خودش nonce را روی scriptهای hydration اعمال می‌کند (اثبات با `curl /admin/login | grep nonce=`)
+- fallback `'unsafe-inline'` برای مرورگرهای قدیمی (Safari <15.4) — مرورگر مدرن با دیدن `strict-dynamic` آن را نادیده می‌گیرد
+- تست: +2 فایل (`security-headers-nonce.test.ts` 12t, `admin-proxy-csp.test.ts` 6t)
+- verify: 73 file / 640 test ✓ · type-check ✓ · lint ✓ · build ✓
 2. ~~**۱۸/۲۹ صفحهٔ ادمین هنوز placeholder**~~ → ✅ **فاز A در سشن `arena/019fdd7f-saite` (۷ اوت ۲۰۲۶) کامل شد** — هر ۱۸ صفحه به `mock-adapter` واقعی متصل و از `AdminModulePage` جدا شدند. کامیت `7220e3b`. گروه‌ها: finance (۵) · reports (۴) · marketing (۲) · communications (۲) · content (۳ + `pages/new`) · help. تست‌ها: +۴ فایل / +۱۸ تست (finance/marketing/content/communications adapters). `grep AdminModulePage src/app/admin | wc -l = 0`. verify سبز: ۶۹ فایل / ۶۰۱ تست، ۶۳ route
 3. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
 4. **اجرای E2E در CI — نیاز به نصب مرورگر** — فاز ۶ با ۱۳ تست در ۴ فایل و `playwright.config.ts` آماده شد و `npx playwright test --list` سبز است؛ اما `npx playwright install chromium` در این سندباکس به دلیل محدودیت شبکه ناموفق بود. روی سیستم شما (Windows + Git Bash) با اینترنت باز، یک‌بار `npx playwright install` را اجرا کنید، سپس `npm run e2e` — در CI نیز `mcr.microsoft.com/playwright` image را استفاده کنید
