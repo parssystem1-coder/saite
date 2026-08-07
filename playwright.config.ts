@@ -1,11 +1,33 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright E2E — فاز ۶
- * ۴ سناریو کلیدی: ورود ادمین، سبد→تسویه (reprice)، فیلترها (focus-trap)، ویرایشگر محصول
- * اجرای محلی: npm run e2e
- * CI: npx playwright test --reporter=html
+ * Playwright E2E — پیکربندی چندمحیطی.
+ *
+ * ══════════════════════════════════════════════════════════════
+ *  چرا سه حالت اجرا داریم
+ * ══════════════════════════════════════════════════════════════
+ *   ۱. **CI (Docker image رسمی)** — `chromium` bundled از قبل
+ *      نصب است. پیش‌فرض بدون تنظیم.
+ *
+ *   ۲. **توسعه‌دهندهٔ محلی با دسترسی آزاد** — یک بار
+ *      `npx playwright install chromium` و بعد از bundle استفاده
+ *      می‌شود.
+ *
+ *   ۳. 🆕 **کاربر ایران/مناطق تحریم CDN Playwright** — دانلود
+ *      chromium bundled از cdn.playwright.dev بلاک است (403 از
+ *      GCS). راه‌حل: با `PW_CHANNEL=chrome` یا `PW_CHANNEL=msedge`،
+ *      از مرورگر سیستمی استفاده می‌شود که از قبل نصب است.
+ *
+ *      استفاده:
+ *        PW_CHANNEL=msedge npm run e2e     # روی هر ویندوز کار می‌کند
+ *        PW_CHANNEL=chrome npm run e2e     # اگر Chrome سیستمی دارید
+ *
+ *      Playwright برای channelها دانلودی انجام نمی‌دهد — فقط از
+ *      بایناری سیستمی استفاده می‌کند.
  */
+
+const systemChannel = process.env.PW_CHANNEL as 'chrome' | 'msedge' | undefined
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -24,17 +46,17 @@ export default defineConfig({
   },
   projects: [
     {
-      /*
-        Chromium داخلی خود Playwright — نیاز به Chrome سیستمی ندارد.
-        روی تصویر رسمی mcr.microsoft.com/playwright موجود است و
-        روی سیستم لوکال با یک بار `npx playwright install chromium`
-        نصب می‌شود.
-
-        قبلاً `channel: 'chrome'` بود که یعنی Chrome sistemi باید
-        نصب باشد — روی CI runners و devcontainers کار نمی‌کرد.
-      */
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        /*
+          اگر PW_CHANNEL ست باشد، از مرورگر سیستمی استفاده می‌شود
+          (بدون دانلود). در غیر این صورت، از chromium bundled خود
+          Playwright — که در CI موجود و در محلی با
+          `npx playwright install chromium` دانلود می‌شود.
+        */
+        ...(systemChannel ? { channel: systemChannel } : {}),
+      },
     },
   ],
   webServer: {
