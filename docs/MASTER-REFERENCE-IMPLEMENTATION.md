@@ -279,6 +279,19 @@ git add -A && git commit -m "phase N: ..." && git push origin arena/019fdc47-sai
 - fallback `'unsafe-inline'` برای مرورگرهای قدیمی (Safari <15.4) — مرورگر مدرن با دیدن `strict-dynamic` آن را نادیده می‌گیرد
 - تست: +2 فایل (`security-headers-nonce.test.ts` 12t, `admin-proxy-csp.test.ts` 6t)
 - verify: 73 file / 640 test ✓ · type-check ✓ · lint ✓ · build ✓
+
+**🆕 فاز E (عملکرد + راه‌اندازی E2E در CI) در سشن `arena/019fdd7f-saite` — کامیت `35e4310`:**
+- `preconnect` + `dns-prefetch` به `images.unsplash.com` در layout
+- متادیتای openGraph/twitter کامل (og:url, twitter:title/description)
+- کاهش `'use client'`: ۱۲۲ → ۱۲۰
+  - `src/lib/format-fa.ts` جدید — formatIRR/formatJalaliDate/formatRelative pure
+  - `finance-shared.tsx` / `mini-chart.tsx` / `faq-accordion.tsx` → server component
+- workflow E2E آماده در `docs/ci/e2e.yml.example` + راهنمای `docs/ci/E2E-SETUP.md`
+  - GitHub App نمی‌تواند workflow بنویسد → کاربر یک بار کپی می‌کند
+  - image رسمی `mcr.microsoft.com/playwright:v1.62.1-noble`
+- `playwright.config.ts` → `channel: 'chrome'` حذف شد، `chromium` داخلی استفاده می‌شود
+- تست: +1 فایل / +9 تست (`format-fa.test.ts`)
+- verify: 74 file / 649 test ✓ · type-check ✓ · lint ✓ · build ✓
 2. ~~**۱۸/۲۹ صفحهٔ ادمین هنوز placeholder**~~ → ✅ **فاز A در سشن `arena/019fdd7f-saite` (۷ اوت ۲۰۲۶) کامل شد** — هر ۱۸ صفحه به `mock-adapter` واقعی متصل و از `AdminModulePage` جدا شدند. کامیت `7220e3b`. گروه‌ها: finance (۵) · reports (۴) · marketing (۲) · communications (۲) · content (۳ + `pages/new`) · help. تست‌ها: +۴ فایل / +۱۸ تست (finance/marketing/content/communications adapters). `grep AdminModulePage src/app/admin | wc -l = 0`. verify سبز: ۶۹ فایل / ۶۰۱ تست، ۶۳ route
 3. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
 4. **اجرای E2E در CI — نیاز به نصب مرورگر** — فاز ۶ با ۱۳ تست در ۴ فایل و `playwright.config.ts` آماده شد و `npx playwright test --list` سبز است؛ اما `npx playwright install chromium` در این سندباکس به دلیل محدودیت شبکه ناموفق بود. روی سیستم شما (Windows + Git Bash) با اینترنت باز، یک‌بار `npx playwright install` را اجرا کنید، سپس `npm run e2e` — در CI نیز `mcr.microsoft.com/playwright` image را استفاده کنید
