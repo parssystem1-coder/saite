@@ -37,28 +37,36 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
   })
 
   test('قیمت نمایش زنده vs قیمت سرور', async ({ page }) => {
-    await page.goto('/products')
-
     /*
-      قبلاً `getByRole('button', { name: /افزودن به سبد/ })` روی
-      اولین دکمه می‌افتاد که ممکن بود از یک محصول `quote_only`
-      باشد و نمایان نباشد (چون آن‌ها به‌جای «افزودن به سبد» دکمهٔ
-      «استعلام قیمت» دارند).
-
-      با `.filter({ visible: true })` مطمئن می‌شویم دکمه‌ای پیدا
-      می‌کنیم که واقعاً روی صفحه است و قابل کلیک.
+      برای پایداری تست، به‌جای وابستگی به UI محصولات (که رفتار
+      کلیک ممکن است به z-index یا انیمیشن حساس باشد)، سبد را
+      مستقیم در localStorage می‌سازیم. این با contract cart-store
+      هم‌راستاست:
+        state: { items: [{ id, slug, name, brand, model, price, quantity }] }
     */
-    const addToCartButtons = page
-      .getByRole('button', { name: /افزودن به سبد/ })
-      .filter({ visible: true })
-
-    // منتظر می‌مانیم لیست محصولات رندر شود
-    await expect(addToCartButtons.first()).toBeVisible({ timeout: 10_000 })
-    await addToCartButtons.first().click()
-    // فرصت به store برای persist در localStorage
-    await page.waitForFunction(() => {
-      const raw = localStorage.getItem('cart-storage')
-      return raw && JSON.parse(raw).state?.items?.length > 0
+    await page.goto('/')
+    await page.evaluate(() => {
+      localStorage.setItem(
+        'cart-storage',
+        JSON.stringify({
+          state: {
+            items: [
+              {
+                id: 'p-001',
+                slug: 'canon-i-sensys-lbp-2900',
+                name: 'پرینتر لیزری تک‌رنگ کانن مدل i-SENSYS LBP-2900',
+                brand: 'canon',
+                model: 'i-SENSYS LBP-2900',
+                image: '/products/printer.svg',
+                price: 4850000,
+                quantity: 1,
+                pricedAt: Date.now(),
+              },
+            ],
+          },
+          version: 2,
+        })
+      )
     })
 
     await page.goto('/cart')
