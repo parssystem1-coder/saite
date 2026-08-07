@@ -53,7 +53,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    <html
+      lang="fa"
+      dir="rtl"
+      className={`${vazirmatn.variable} h-full`}
+      /*
+        🆕 اسکرول نرم فقط برای تعامل کاربر (کلیک روی anchor)،
+        نه برای ناوبری route.
+
+        Next.js اگر `scroll-behavior: smooth` روی <html> باشد،
+        هنگام تغییر route اسکرول به‌بالای صفحه هم آرام می‌شود که
+        احساس تأخیر می‌دهد. با این data attribute، Next خودش
+        هنگام route transition آن را موقتاً به `auto` عوض می‌کند
+        و بعد از رندر برمی‌گرداند.
+
+        منبع: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+      */
+      data-scroll-behavior="smooth"
+    >
       <head>
         {/*
           🆕 فاز E — preconnect به میزبان تصاویر خارجی.

@@ -103,7 +103,7 @@ export function ProductGrid({
 
   return (
     <div className={cn('grid gap-3 sm:gap-4 md:gap-6', COLS[columns], className)}>
-      {products.map((product) => {
+      {products.map((product, index) => {
         const inCompare = compareReady && compareItems.some((i) => i.id === product.id)
         const inWishlist = wishlistReady && wishlistItems.some((i) => i.id === product.id)
 
@@ -116,6 +116,14 @@ export function ProductGrid({
             onAddToCart={() => addItem(product)}
             onCompare={showCompare ? () => toggleCompare(product) : undefined}
             onWishlist={showWishlist ? () => toggleWishlist(product) : undefined}
+            /*
+              🆕 چهار کارت اول تقریباً همیشه بالای fold هستند
+              (روی desktop grid 4-ستون، روی موبایل تنها اولی).
+              priority یعنی Next تصویر را preload می‌کند و LCP
+              بهتر می‌شود. برای بقیه کارت‌ها native lazy loading
+              پیش‌فرض حفظ می‌شود.
+            */
+            priority={index < 4}
           />
         )
       })}
