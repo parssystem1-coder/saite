@@ -1,0 +1,11 @@
+import type { ShippingPaymentMode as DomainShippingPaymentMode } from '@/domain/commerce'
+export type ShippingPaymentMode = DomainShippingPaymentMode
+export type ShippingPricingModel = 'free' | 'flat_rate' | 'weight_based' | 'dimensional_weight' | 'carrier_rate' | 'hybrid'
+export type ShippingCarrierCode = 'post' | 'tipax' | 'chapar' | 'courier' | 'custom'
+export type ShippingRuleCondition = 'always' | 'minimum_order_total' | 'minimum_item_count' | 'customer_segment' | 'province' | 'city' | 'weight_limit' | 'product_category'
+
+export interface ShippingCarrier { id:string; name:string; code:ShippingCarrierCode; trackingUrlTemplate?:string; phone?:string; active:boolean; supportsCashOnDelivery:boolean; supportsInsurance:boolean; createdAt:string; updatedAt:string }
+export interface ShippingZone { id:string; name:string; provinces:string[]; cities:string[]; postalCodePrefixes:string[]; active:boolean }
+export interface ShippingMethod { id:string; name:string; carrierId:string; serviceName:string; paymentMode:ShippingPaymentMode; pricingModel:ShippingPricingModel; flatRate?:number; freeOverOrderTotal?:number; baseRate?:number; perKgRate?:number; dimensionalDivisor?:number; insuranceRatePercent?:number; packagingFee?:number; handlingFee?:number; minOrderTotal?:number; maxOrderTotal?:number; maxWeightGrams?:number; maxLengthCm?:number; maxWidthCm?:number; maxHeightCm?:number; zones:string[]; allowedCategories?:string[]; customerSegments?:string[]; estimatedMinDays:number; estimatedMaxDays:number; customerLabel:string; customerDescription:string; adminNote?:string; active:boolean; priority:number; createdAt:string; updatedAt:string }
+export interface ShippingQuote { methodId:string; customerPayable:number; carrierCost:number; storeSubsidy:number; insuranceCost:number; packagingFee:number; paymentMode:ShippingPaymentMode; pricingModel:ShippingPricingModel; label:string; description:string; estimatedMinDays:number; estimatedMaxDays:number }
+export interface ShippingSettings { defaultZoneId?:string; carriers:ShippingCarrier[]; zones:ShippingZone[]; methods:ShippingMethod[]; allowCustomerAddressOverride:boolean; requireShippingMethodConfirmation:boolean; showCarrierCostToAdmin:boolean; updatedAt:string; updatedBy:string }
