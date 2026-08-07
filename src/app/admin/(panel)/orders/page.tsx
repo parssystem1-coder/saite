@@ -1,12 +1,18 @@
-import {
-  AdminModulePage,
-  createAdminModuleMetadata,
-} from '@/components/admin/admin-module-page'
+import type { Metadata } from 'next'
+import { AdminPageHeader } from '@/components/admin/admin-page-header'
+import OrdersClient from '@/components/admin/orders/orders-client'
 
-const HREF = '/admin/orders'
+export const metadata: Metadata = {
+  title: 'سفارش‌ها — عملیات ارسال',
+  description: 'از تایید سفارش تا چاپ برچسب و تحویل به شرکت ارسال — مدیریت چندبسته‌ای و مرجوعی',
+  robots: { index: false, follow: false, nocache: true },
+}
 
-export const metadata = createAdminModuleMetadata(HREF)
-
-export default function Page() {
-  return <AdminModulePage href={HREF} />
+export default function OrdersPage() {
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader title="سفارش‌ها" description="از تایید سفارش تا چاپ برچسب و تحویل به شرکت ارسال — چندبسته‌ای و مرجوعی" />
+      <OrdersClient />
+    </div>
+  )
 }
