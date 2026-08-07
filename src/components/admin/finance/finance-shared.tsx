@@ -1,46 +1,22 @@
 /**
- * اجزاء مشترک ۵ صفحهٔ مالی — Stat، فرمت‌کننده‌های پول/تاریخ، بج وضعیت.
+ * اجزاء مشترک صفحات مالی — Stat و Badge.
  *
- * چرا اینجا: پنج فایل صفحه تقریباً همین چهار المان را می‌سازند؛
- * تکرارش یعنی وقتی رنگ یک بج عوض می‌شود، باید ۵ جا اصلاح کنیم.
+ * ── چرا 'use client' ندارد (فاز E) ────────────────────────────
+ * Stat و Badge کاملاً pure JSX هستند. فرمت‌کننده‌های واقعی
+ * (formatIRR/formatJalaliDate/formatRelative) به `src/lib/format-fa.ts`
+ * منتقل شده‌اند — که این فایل هم re-export می‌کند تا 20 جای
+ * فعلی که import می‌کنند تغییری نکنند.
+ *
+ * چرا این تغییر ارزش داشت: پنج صفحه finance و چهار صفحه reports
+ * از این ماژول استفاده می‌کنند؛ همه در حالت قبل به کلاینت
+ * می‌رفتند حتی اگر خودشان server component بودند. حالا فقط جایی
+ * که Badge/Stat واقعاً استفاده می‌شود client می‌شود.
  */
-'use client'
 
-import * as React from 'react'
 import type { LucideIcon } from 'lucide-react'
 
-/** فرمت پول ریال — همیشه با اعداد فارسی و جداکنندهٔ سه‌رقمی */
-export function formatIRR(amount: number): string {
-  return `${amount.toLocaleString('fa-IR')} ﷼`
-}
-
-/** ISO → «۱۴۰۳/۰۵/۱۶» */
-export function formatJalaliDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('fa-IR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(new Date(iso))
-  } catch {
-    return '—'
-  }
-}
-
-/** ISO → «۳ روز پیش» */
-export function formatRelative(iso: string): string {
-  try {
-    const diff = Date.now() - new Date(iso).getTime()
-    const days = Math.floor(diff / 86400000)
-    if (days === 0) return 'امروز'
-    if (days < 0) return `${(-days).toLocaleString('fa-IR')} روز مانده`
-    if (days < 30) return `${days.toLocaleString('fa-IR')} روز پیش`
-    const months = Math.floor(days / 30)
-    return `${months.toLocaleString('fa-IR')} ماه پیش`
-  } catch {
-    return '—'
-  }
-}
+// re-export توابع pure برای سازگاری با importهای موجود
+export { formatIRR, formatJalaliDate, formatRelative } from '@/lib/format-fa'
 
 export function Stat({
   icon: Icon,

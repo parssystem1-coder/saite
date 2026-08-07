@@ -24,8 +24,17 @@ export default defineConfig({
   },
   projects: [
     {
+      /*
+        Chromium داخلی خود Playwright — نیاز به Chrome سیستمی ندارد.
+        روی تصویر رسمی mcr.microsoft.com/playwright موجود است و
+        روی سیستم لوکال با یک بار `npx playwright install chromium`
+        نصب می‌شود.
+
+        قبلاً `channel: 'chrome'` بود که یعنی Chrome sistemi باید
+        نصب باشد — روی CI runners و devcontainers کار نمی‌کرد.
+      */
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: {

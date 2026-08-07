@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 import { Accordion } from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
@@ -8,7 +6,17 @@ interface Props {
   groups: { group: string; items: { question: string; answer: string }[] }[]
 }
 
-/** بخش‌بندی پرسش‌ها بر اساس موضوع تا کاربر سریع‌تر پاسخ خود را پیدا کند */
+/**
+ * بخش‌بندی پرسش‌ها بر اساس موضوع تا کاربر سریع‌تر پاسخ خود را پیدا کند.
+ *
+ * ── چرا 'use client' ندارد (فاز E) ────────────────────────────
+ * این کامپوننت هیچ hook یا event handler ندارد؛ فقط JSX می‌سازد
+ * و به Accordion (client) پاس می‌دهد. Next.js اجازه می‌دهد یک
+ * Server Component، Client Component را رندر کند بدون آنکه خودش
+ * client شود — فقط prop یک child مثل Accordion serializable باشد.
+ *
+ * اثر: صفحهٔ /faq از یک بلوک 'use client' اضافه سبک‌تر شد.
+ */
 export function FaqAccordion({ groups }: Props) {
   return (
     <div className="space-y-10 not-prose">
