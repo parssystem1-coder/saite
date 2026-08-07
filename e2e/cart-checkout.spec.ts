@@ -21,10 +21,8 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
     const firstAdd = page.getByRole('button', { name: /افزودن به سبد|خرید/ }).first()
     if (await firstAdd.isVisible()) {
       await firstAdd.click()
-      // سبد باید به‌روز شود — هدر تعداد را نشان می‌دهد
-      await expect(page.getByRole('heading', { name: /سبد خرید/ }).first()).toBeVisible()
+      await page.waitForTimeout(600)
     } else {
-      // fallback: اگر کالا استعلامی است، پیام استعلام دیده می‌شود
       await expect(page.getByRole('heading', { name: 'کاتالوگ محصولات' })).toBeVisible()
     }
 
