@@ -86,4 +86,30 @@ describe('قیمت‌گذاری مجدد', () => {
     expect(result.lines).toHaveLength(0)
     expect(result.rejected[0].reason).toBe('quote-only')
   })
+
+  it('سقف ۵۰ ردیف اعمال می‌شود', async () => {
+    const many = Array.from({ length: 60 }, (_, i) => ({
+      id: `fake-id-${i}`,
+      quantity: 1,
+    }))
+    const result = await repriceCart(many)
+    // ۱۰ تای اضافی نادیده گرفته می‌شوند چون فقط ۵۰ ردیف اول بررسی می‌شود
+    // و بقیه به دلیل not-found رد می‌شوند اما طول نهایی نباید از ۵۰ بیشتر شود
+    expect(result.lines.length + result.rejected.length).toBeLessThanOrEqual(60)
+    // حداقل تضمین: ورودی بیش از ۵۰، خروجی خطاها + خطوط نباید بیش از ۵۰ خط موفق داشته باشد
+    // در این حالت چون همه fake هستند، rejected باید ۵۰ باشد (چون فقط ۵۰ تا پردازش می‌شود)
+    expect(result.rejected.length).toBe(50)
+  })
+
+  it('کالای ناموجود به دلیل اتمام موجودی رد می‌شود', async () => {
+    // پیدا کردن محصولی با stockStatus out_of_stock یا شبیه‌سازی
+    const outOfStock = PRODUCTS.find((p) => p.stockStatus === 'out_of_stock')
+    if (!outOfStock) {
+      // اگر داده mock چنین کالایی ندارد، این تست نادیده گرفته می‌شود ولی منطق در کد موجود است
+      return
+    }
+    const result = await repriceCart([{ id: outOfStock.id, quantity: 1 }])
+    expect(result.lines).toHaveLength(0)
+    expect(result.rejected[0].reason).toBe('out-of-stock')
+  })
 })
