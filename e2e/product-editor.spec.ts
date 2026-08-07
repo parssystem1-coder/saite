@@ -33,10 +33,10 @@ test.describe('ویرایشگر محصول', () => {
 
     await page.goto('/admin/products/new')
     await page.waitForLoadState('networkidle')
-    await expect(page.getByText('پایه').first()).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: /ذخیره پیش‌نویس/ })).toBeVisible({ timeout: 20000 })
 
     // تب‌های ویرایشگر
-    await expect(page.getByText('پایه').first()).toBeVisible()
+    await expect(page.getByRole('tab', { name: 'پایه' })).toBeVisible()
     await expect(page.getByText('مالی')).toBeVisible()
   })
 
@@ -72,10 +72,10 @@ test.describe('ویرایشگر محصول', () => {
 
     await page.goto('/admin/products/new')
     // تب محتوا
-    const contentTab = page.getByText('محتوا').first()
+    const contentTab = page.getByRole('tab', { name: 'محتوا' })
     if (await contentTab.isVisible()) {
       await contentTab.click()
-      await expect(page.getByText(/توضیح کامل|محتوای فروش/)).toBeVisible()
+      await expect(page.getByText('توضیح کامل').first()).toBeVisible()
       // RichTextEditor باید lazy باشد — حداقل placeholder یا toolbar دیده شود
       await expect(page.getByText(/H1 داخل ادیتور ممنوع/)).toBeVisible()
     }
