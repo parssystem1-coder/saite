@@ -32,7 +32,14 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  /*
+    یک بار retry حتی در محلی: dev server Next.js با Turbopack گاهی
+    اولین request به یک route را ~۲ ثانیه compile می‌کند. اگر
+    تست موازی همزمان چند مسیر جدید بزند، بعضی timeout می‌خورند.
+    یک تلاش دوم آن‌ها را می‌گیرد بدون آنکه flake را قایم کند —
+    اگر تست واقعاً شکسته باشد، هر دو تلاش fail می‌کنند.
+  */
+  retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? 'html' : 'list',
   timeout: 30_000,
