@@ -15,7 +15,7 @@ test.describe('فیلتر محصولات — drawer', () => {
     const filterBtn = page.getByRole('button', { name: /فیلتر/ }).first()
     if (!(await filterBtn.isVisible())) {
       // در دسکتاپ، پنل فیلتر مستقیم دیده می‌شود
-      await expect(page.getByText(/برند|دسته/)).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'دسته‌بندی‌ها' })).toBeVisible()
       return
     }
     await filterBtn.click()

@@ -32,7 +32,7 @@ test.describe('ویرایشگر محصول', () => {
     await expect(page).toHaveURL(/\/admin/, { timeout: 10000 })
 
     await page.goto('/admin/products/new')
-    await expect(page.getByText(/افزودن محصول|ویرایشگر محصول/)).toBeVisible({ timeout: 8000 })
+    await expect(page.getByRole('heading', { name: /افزودن محصول/ })).toBeVisible({ timeout: 8000 })
 
     // تب‌های ویرایشگر
     await expect(page.getByText('پایه')).toBeVisible()

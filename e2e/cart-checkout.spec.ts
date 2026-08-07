@@ -22,7 +22,7 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
     if (await firstAdd.isVisible()) {
       await firstAdd.click()
       // سبد باید به‌روز شود — هدر تعداد را نشان می‌دهد
-      await expect(page.getByText(/سبد خرید/)).toBeVisible()
+      await expect(page.getByRole('heading', { name: /سبد خرید/ }).first()).toBeVisible()
     } else {
       // fallback: اگر کالا استعلامی است، پیام استعلام دیده می‌شود
       await expect(page.getByText(/استعلام قیمت|کاتالوگ/)).toBeVisible()

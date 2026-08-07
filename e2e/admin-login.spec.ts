@@ -21,7 +21,7 @@ test.describe('پنل ادمین — ورود و گارد', () => {
 
     // پس از ورود موفق، به /admin برمی‌گردد و هدر پنل دیده می‌شود
     await expect(page).toHaveURL(/\/admin(\/)?$/, { timeout: 10000 })
-    await expect(page.getByText('داشبورد')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'داشبورد مدیریت' })).toBeVisible()
   })
 
   test('رمز غلط → پیام خطا و عدم ورود', async ({ page }) => {
