@@ -72,3 +72,7 @@ temp/
 
 # دادهٔ فایل‌محور routeها (مثل ایموجی‌های سفارشی ادمین)
 .data/
+
+# Playwright
+test-results/
+playwright-report/
