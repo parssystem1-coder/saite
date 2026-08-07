@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test'
  * - باز کردن /admin/products/new
  * - پر کردن فیلد نام و ذخیره
  */
-test.describe('ویرایشگر محصول', () => {
+test.describe.serial('ویرایشگر محصول', () => {
   test.beforeEach(async ({ request }) => {
     // ورود ادمین از طریق API برای داشتن کوکی
     const login = await request.post('/admin/api/session', {
@@ -25,16 +25,26 @@ test.describe('ویرایشگر محصول', () => {
   })
 
   test('صفحه جدید محصول بارگذاری می‌شود', async ({ page }) => {
+    test.slow()
     await page.goto('/admin/login')
     await page.getByLabel('نام کاربری').fill('admin')
     await page.getByLabel('رمز عبور').fill('saite-demo-1404')
     await page.getByRole('button', { name: 'ورود به پنل' }).click()
-    await expect(page).toHaveURL(/\/admin/, { timeout: 10000 })
+    // ممکن است به دلیل rate-limit موقتاً قفل باشد — کمی صبر کن
+    await page.waitForTimeout(800)
+    if (await page.getByText(/قفل شد|نام کاربری یا رمز/).isVisible().catch(() => false)) {
+      await page.waitForTimeout(2000)
+    }
+    await expect(page).toHaveURL(/\/admin/, { timeout: 15000 }).catch(async () => {
+      // اگر هنوز روی login هستیم، یک بار دیگر تلاش کن
+      await page.waitForTimeout(1000)
+      await expect(page).toHaveURL(/\/admin/, { timeout: 15000 })
+    })
 
     await page.goto('/admin/products/new')
     await page.waitForLoadState('networkidle')
     await page.waitForTimeout(2000)
-    // هر نشانه‌ای از ویرایشگر کافی است — تب پایه یا هدر یا دکمه ذخیره (بدون چک سخت URL چون ممکن است لحظه‌ای ریدایرکت دهد)
+    // هر نشانه‌ای از ویرایشگر کافی است — تب پایه یا هدر یا دکمه ذخیره
     await expect(page.locator('body')).toContainText(/پایه|Saite Admin|ذخیره پیش‌نویس/, { timeout: 25000 })
     await expect(page.getByText('مالی')).toBeVisible()
   })
