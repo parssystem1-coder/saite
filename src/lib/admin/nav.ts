@@ -1,7 +1,20 @@
 /**
  * منبع واحد حقیقت منوی پنل مدیریت.
  * افزودن آیتم جدید = همین‌جا + یک page.tsx خالی/placeholder.
+ *
+ * ── 🆕 مجوز روی هر آیتم ────────────────────────────────────────
+ * از فاز B هر برگ می‌تواند `requiredPermission` داشته باشد. اگر
+ * ندارد یعنی برای همهٔ ادمین‌ها قابل مشاهده است. اگر دارد،
+ * `filterAdminNavByRole` آیتم را برای نقش‌های بدون آن مجوز حذف
+ * می‌کند.
+ *
+ * ⚠️ این فیلتر فقط UX است؛ سرور در هر Route Handler خودش
+ * `requirePermission` را دوباره چک می‌کند.
  */
+
+import type { Permission } from '@/lib/auth/rbac'
+import { hasPermission } from '@/lib/auth/rbac'
+import type { AdminRole } from '@/types/user'
 
 export type AdminNavIcon =
   | 'dashboard'
@@ -44,6 +57,11 @@ export interface AdminNavLeaf {
   planned: string[]
   /** اگر true در منو نشان داده نمی‌شود ولی route دارد */
   hidden?: boolean
+  /**
+   * 🆕 مجوز لازم برای دیدن این آیتم — اگر تعریف شود، فقط ادمین‌هایی
+   * که این مجوز را دارند این آیتم را در منو می‌بینند.
+   */
+  requiredPermission?: Permission
 }
 
 export interface AdminNavGroup {
@@ -55,6 +73,8 @@ export interface AdminNavGroup {
   children?: AdminNavLeaf[]
   description?: string
   planned?: string[]
+  /** 🆕 مجوز لازم برای دیدن این گروه (مثلاً finance) */
+  requiredPermission?: Permission
 }
 
 export const ADMIN_NAV: AdminNavGroup[] = [
@@ -122,6 +142,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: 'products',
         description: 'ویرایشگر حرفه‌ای و ماژولار محصول (۷ تب تخصصی)',
         planned: ['تب پایه، مالی، فنی، گالری، محتوا، سئو و ارسال'],
+        requiredPermission: 'catalog:write',
       },
     ],
   },
@@ -129,6 +150,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     id: 'finance',
     label: 'مالی',
     icon: 'finance',
+    requiredPermission: 'finance:read',
     children: [
       {
         id: 'invoices',
@@ -169,6 +191,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: 'invoiceSettings',
         description: 'مشخصات حقوقی و الگوی چاپ فاکتور',
         planned: ['شناسهٔ اقتصادی و سریال', 'لوگو و مهر', 'پیش‌نمایش چاپ'],
+        requiredPermission: 'finance:write',
       },
     ],
   },
@@ -323,6 +346,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: 'settings',
         description: 'پیکربندی فروشگاه و کانال‌های تماس',
         planned: ['اطلاعات تماس و ساعات کاری', 'نوار شناور واتساپ/اینستا/تلفن'],
+        requiredPermission: 'settings:write',
       },
       {
         id: 'shipping-settings',
@@ -331,6 +355,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: 'store',
         description: 'مدیریت روش‌های ارسال، شرکت‌ها و مناطق پوشش',
         planned: ['افزودن و ویرایش روش ارسال', 'اعتبارسنجی و پیش‌نمایش هزینه'],
+        requiredPermission: 'settings:write',
       },
       {
         id: 'payment-settings',
@@ -339,6 +364,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: 'finance',
         description: 'مدیریت درگاه‌های پرداخت و سلامت آن‌ها',
         planned: ['افزودن و ویرایش درگاه', 'اعتبارسنجی و انتخاب خودکار'],
+        requiredPermission: 'settings:write',
       },
     ],
   },
@@ -381,4 +407,38 @@ export function isAdminGroupActive(group: AdminNavGroup, pathname: string): bool
 export function isAdminLinkActive(href: string, pathname: string): boolean {
   if (href === '/admin') return pathname === '/admin' || pathname === '/admin/'
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+/**
+ * 🆕 حذف آیتم‌هایی که نقش داده‌شده مجوز آن‌ها را ندارد.
+ *
+ * منطق:
+ *   • اگر گروه `requiredPermission` دارد و نقش آن را ندارد → کل
+ *     گروه (با همهٔ فرزندانش) حذف می‌شود
+ *   • در غیر این صورت، فقط فرزندانی که مجوز خودشان را ندارند حذف
+ *     می‌شوند
+ *   • اگر پس از حذف، گروهی هیچ فرزندی نداشت (و href مستقیم هم
+ *     نداشت)، خود گروه هم حذف می‌شود
+ *
+ * ⚠️ این فقط UX است. سرور جداگانه گارد می‌کند.
+ */
+export function filterAdminNavByRole(
+  nav: AdminNavGroup[],
+  role: AdminRole | null | undefined
+): AdminNavGroup[] {
+  if (!role) return []
+  return nav.reduce<AdminNavGroup[]>((acc, group) => {
+    if (group.requiredPermission && !hasPermission(role, group.requiredPermission)) {
+      return acc
+    }
+    const filteredChildren = (group.children ?? []).filter(
+      (c) => !c.requiredPermission || hasPermission(role, c.requiredPermission)
+    )
+    // گروه بدون فرزند و بدون href مستقیم = بی‌مصرف
+    if (group.children && filteredChildren.length === 0 && !group.href) {
+      return acc
+    }
+    acc.push({ ...group, children: filteredChildren })
+    return acc
+  }, [])
 }

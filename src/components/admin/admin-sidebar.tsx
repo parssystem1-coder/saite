@@ -7,12 +7,14 @@ import * as React from 'react'
 import { AdminNavGroupItem } from '@/components/admin/admin-nav-group'
 import { AdminSignOut } from '@/components/admin/admin-sign-out'
 import { Button } from '@/components/ui/button'
-import { ADMIN_NAV, isAdminGroupActive } from '@/lib/admin/nav'
+import { ADMIN_NAV, filterAdminNavByRole, isAdminGroupActive, type AdminNavGroup } from '@/lib/admin/nav'
+import { roleLabel } from '@/lib/auth/rbac'
+import { useAdminSessionStore } from '@/store/admin-session-store'
 import { cn } from '@/lib/utils'
 
 /** گروه دارای فرزند که مسیر فعلی زیر آن است */
-function activeGroupIdFromPath(pathname: string): string | null {
-  const match = ADMIN_NAV.find(
+function activeGroupIdFromPath(nav: AdminNavGroup[], pathname: string): string | null {
+  const match = nav.find(
     (g) => (g.children?.length ?? 0) > 0 && isAdminGroupActive(g, pathname)
   )
   return match?.id ?? null
@@ -24,10 +26,14 @@ function activeGroupIdFromPath(pathname: string): string | null {
  */
 function AdminNavBody({
   pathname,
+  nav,
+  role,
   initialOpenId,
   onNavigate,
 }: {
   pathname: string
+  nav: AdminNavGroup[]
+  role: string | null
   initialOpenId: string | null
   onNavigate?: () => void
 }) {
@@ -43,12 +49,14 @@ function AdminNavBody({
       <div className="mb-6 px-1">
         <Link href="/admin" className="block" onClick={onNavigate}>
           <h2 className="text-lg font-black tracking-tight text-primary">پنل مدیریت</h2>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">فروشگاه ماشین‌های اداری</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {role ?? 'فروشگاه ماشین‌های اداری'}
+          </p>
         </Link>
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto pe-1" aria-label="منوی مدیریت">
-        {ADMIN_NAV.map((group) => (
+        {nav.map((group) => (
           <AdminNavGroupItem
             key={group.id}
             group={group}
@@ -83,7 +91,19 @@ function AdminNavBody({
 export function AdminSidebar() {
   const pathname = usePathname() ?? '/admin'
   const [mobileOpen, setMobileOpen] = React.useState(false)
-  const initialOpenId = activeGroupIdFromPath(pathname)
+
+  /*
+    نقش از store کلاینت می‌آید که خودش توسط AdminSessionProvider از
+    نشست سرور پر شده. اگر هنوز خالی است (بین دو رندر)، منو خالی
+    نشان داده می‌شود — بهتر از نشان دادن آیتم‌هایی که کاربر بعد
+    از یک لحظه از دست می‌دهد.
+  */
+  const admin = useAdminSessionStore((s) => s.admin)
+  const role = admin?.role ?? null
+
+  const filteredNav = React.useMemo(() => filterAdminNavByRole(ADMIN_NAV, role), [role])
+  const initialOpenId = activeGroupIdFromPath(filteredNav, pathname)
+  const roleText = role ? roleLabel(role) : null
 
   const closeMobile = React.useCallback(() => setMobileOpen(false), [])
 
@@ -109,6 +129,8 @@ export function AdminSidebar() {
           <AdminNavBody
             key={pathname}
             pathname={pathname}
+            nav={filteredNav}
+            role={roleText}
             initialOpenId={initialOpenId}
           />
         </div>
@@ -143,6 +165,8 @@ export function AdminSidebar() {
               <AdminNavBody
                 key={`m-${pathname}`}
                 pathname={pathname}
+                nav={filteredNav}
+                role={roleText}
                 initialOpenId={initialOpenId}
                 onNavigate={closeMobile}
               />

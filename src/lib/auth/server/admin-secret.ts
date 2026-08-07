@@ -54,7 +54,8 @@ import {
   verifyPassword,
 } from '@/lib/auth/server/password-hash'
 import { verifyTotpCode } from '@/lib/auth/server/totp'
-import type { AdminUser } from '@/types/user'
+import { parseAdminRole } from '@/lib/auth/rbac'
+import type { AdminRole, AdminUser } from '@/types/user'
 
 const DEFAULT_ADMIN_USERNAME = 'admin'
 const DEFAULT_ADMIN_PASSWORD = 'saite-demo-1404'
@@ -166,12 +167,36 @@ function safeCompare(a: string, b: string): boolean {
   return diff === 0
 }
 
-/** پروفایل مدیر پس از ورود موفق — بدون هیچ دادهٔ حساسی */
+/**
+ * نقش مدیر — از env `ADMIN_ROLE` خوانده می‌شود.
+ *
+ * ── چرا از env؟ ────────────────────────────────────────────────
+ * تصمیم آگاهانه: در این نسخه هنوز جدول کاربران در دیتابیس نداریم
+ * (بک‌اند واقعی هنوز نیامده). یک متغیر env ساده‌ترین راه است تا
+ * ادمین دقیقاً همان نقشی را داشته باشد که سازمان می‌خواهد، بدون
+ * افزودن وابستگی جدید. وقتی بک‌اند اضافه شد، این ثابت جای خود را
+ * به `SELECT role FROM admins WHERE id = ?` می‌دهد.
+ *
+ * ── مقدار پیش‌فرض چیست؟ ────────────────────────────────────────
+ * پیش‌فرض `admin` است تا فاز B تغییر شکنانه نباشد: هر deployای
+ * که قبلاً کار می‌کرد، همچنان کار می‌کند و کاربر همان دسترسی کامل
+ * را دارد.
+ */
+export const ADMIN_ROLE: AdminRole = parseAdminRole(process.env.ADMIN_ROLE)
+
+/**
+ * پروفایل مدیر پس از ورود موفق — بدون هیچ دادهٔ حساسی.
+ *
+ * ⚠️ نام و ایمیل عمومی‌اند و به کلاینت ارسال می‌شوند؛ نقش هم بخشی
+ * از پروفایل عمومی است چون UI به آن نیاز دارد. توکن نشست هم نقش
+ * را در claim خودش دارد تا route handlerها بدون خواندن env
+ * تصمیم بگیرند.
+ */
 export const ADMIN_PROFILE: AdminUser = {
   id: 'admin-1',
   name: 'مدیر سیستم',
   email: 'admin@saite.local',
-  role: 'admin',
+  role: ADMIN_ROLE,
 }
 
 /** نتیجهٔ تفکیک‌شدهٔ تأیید — تا Route Handler بداند چه پاسخی بدهد */

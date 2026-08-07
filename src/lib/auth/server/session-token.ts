@@ -89,6 +89,9 @@ function getSecret(): string {
   return DEV_FALLBACK_SECRET
 }
 
+import { isAdminRole } from '@/lib/auth/rbac'
+import type { AdminRole } from '@/types/user'
+
 export interface AdminSessionPayload {
   /** شناسهٔ مدیر */
   sub: string
@@ -98,6 +101,24 @@ export interface AdminSessionPayload {
   exp: number
   /** اثر انگشت پیکربندی حساب — مبنای ابطال گروهی */
   ver: string
+  /**
+   * 🆕 نقش مدیر — اضافه‌شده در فاز B (RBAC).
+   *
+   * چرا در توکن و نه در دیتابیس هر بار: چون کل هدف نشست این است
+   * که یک بار سرور بگوید «این کاربر کیست» و بعد بدون رفت‌وبرگشت
+   * تصمیم گرفته شود. اگر route handler هر بار می‌خواست نقش را از
+   * env بخواند، هم کندتر بود و هم اگر روزی چند مدیر داشتیم مجبور
+   * می‌شدیم dbای اضافه کنیم صرفاً برای همین یک مقدار.
+   *
+   * چون HMAC روی کل payload است، مهاجم نمی‌تواند viewer را به
+   * admin تبدیل کند بدون دانستن کلید امضا.
+   *
+   * بازگشت‌پذیری: توکن‌های صادرشدهٔ قبلی این فیلد را ندارند و در
+   * `verifyAdminSessionToken` رد می‌شوند — یعنی همه یک‌بار مجدد
+   * login می‌شوند. این همان رفتار «bumpِ `ver`» است و اثر جانبی
+   * قابل‌قبولی برای فاز امنیتی است.
+   */
+  role: AdminRole
 }
 
 /* ── نسخهٔ نشست (ابطال گروهی) ─────────────────────────────────── */
@@ -143,6 +164,12 @@ export function getSessionVersion(): string {
     process.env.ADMIN_PASSWORD?.trim() ?? '',
     process.env.ADMIN_TOTP_SECRET?.trim() ?? '',
     process.env.ADMIN_SESSION_SECRET?.trim() ?? '',
+    /*
+      🆕 نقش هم بخشی از اثر انگشت است. علت: اگر مدیر تصمیم گرفت
+      نقش یک اپراتور را از admin به viewer پایین بیاورد، نباید
+      نشست‌های قبلی همچنان دسترسی بالا داشته باشند.
+    */
+    process.env.ADMIN_ROLE?.trim() ?? '',
   ].join('')
 
   cachedVersion = fnv1a(fingerprint)
@@ -201,6 +228,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 /** ساخت توکن امضاشده برای یک مدیر */
 export async function createAdminSessionToken(
   adminId: string,
+  role: AdminRole,
   maxAgeSeconds: number = ADMIN_SESSION_MAX_AGE_SECONDS
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
@@ -209,6 +237,7 @@ export async function createAdminSessionToken(
     iat: now,
     exp: now + maxAgeSeconds,
     ver: getSessionVersion(),
+    role,
   }
 
   const encoded = toBase64Url(new TextEncoder().encode(JSON.stringify(payload)))
@@ -259,6 +288,17 @@ export async function verifyAdminSessionToken(
   */
   if (typeof payload.ver !== 'string') return null
   if (!timingSafeEqual(payload.ver, getSessionVersion())) return null
+
+  /*
+    🆕 بررسی نقش. توکن‌های قبل از فاز B این فیلد را ندارند و
+    نامعتبر شمرده می‌شوند — همان اثر جانبی مورد انتظار: یک‌بار
+    ورود مجدد پس از deploy.
+
+    مقدار غیرمعتبر (مثلاً 'superuser') هم رد می‌شود: هرگز اعتماد
+    نکن که چون توکن امضاشده، claimها هم لزوماً از انواع مورد
+    انتظار هستند.
+  */
+  if (!isAdminRole(payload.role)) return null
 
   return payload
 }

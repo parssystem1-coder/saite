@@ -239,7 +239,8 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
   // ورود موفق: هر دو شمارنده آزاد می‌شوند
   resetRateLimit(rateLimitKey)
   resetRateLimit(usernameKey)
-  await createAdminSession(ADMIN_PROFILE.id)
+  // نقش از ADMIN_PROFILE می‌آید که خودش از ADMIN_ROLE env خوانده شده است.
+  await createAdminSession(ADMIN_PROFILE.id, ADMIN_PROFILE.role)
   recordAuditEvent({ event: 'login-success', ip: clientKey, username, userAgent })
 
   return noStore(NextResponse.json<AdminLoginResponse>({ ok: true }))

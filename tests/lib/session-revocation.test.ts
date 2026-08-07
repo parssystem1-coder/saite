@@ -64,7 +64,7 @@ describe('نسخهٔ نشست', () => {
 
 describe('اثر روی توکن', () => {
   it('توکن در همان پیکربندی معتبر می‌ماند', async () => {
-    const token = await createAdminSessionToken('admin-1')
+    const token = await createAdminSessionToken('admin-1', 'admin')
     expect(await verifyAdminSessionToken(token)).not.toBeNull()
   })
 
@@ -72,7 +72,7 @@ describe('اثر روی توکن', () => {
     process.env.ADMIN_PASSWORD = 'old-passphrase'
     __resetSessionVersionCache()
 
-    const token = await createAdminSessionToken('admin-1')
+    const token = await createAdminSessionToken('admin-1', 'admin')
     expect(await verifyAdminSessionToken(token)).not.toBeNull()
 
     // مدیر رمز را عوض می‌کند
@@ -99,7 +99,7 @@ describe('اثر روی توکن', () => {
       .replace(/\//g, '_')
       .replace(/=+$/, '')
 
-    const valid = await createAdminSessionToken('admin-1')
+    const valid = await createAdminSessionToken('admin-1', 'admin')
     const [, signature] = valid.split('.')
 
     expect(await verifyAdminSessionToken(`${legacyPayload}.${signature}`)).toBeNull()

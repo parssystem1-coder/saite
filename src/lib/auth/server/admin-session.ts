@@ -8,7 +8,7 @@ import {
   createAdminSessionToken,
   verifyAdminSessionToken,
 } from '@/lib/auth/server/session-token'
-import type { AdminUser } from '@/types/user'
+import type { AdminRole, AdminUser } from '@/types/user'
 
 /**
  * خواندن و نوشتن نشست مدیر روی کوکی — تنها منبع حقیقت.
@@ -37,9 +37,19 @@ import type { AdminUser } from '@/types/user'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
-/** ثبت نشست پس از ورود موفق */
-export async function createAdminSession(adminId: string): Promise<void> {
-  const token = await createAdminSessionToken(adminId)
+/**
+ * ثبت نشست پس از ورود موفق.
+ *
+ * 🆕 در فاز B، `role` به‌صراحت پاس داده می‌شود تا در claim توکن
+ * قفل شود. هر Route Handlerی که این تابع را صدا می‌زند، باید نقش
+ * را از منبع خودش (فعلاً `ADMIN_ROLE` از env، در آینده از DB)
+ * تعیین کند.
+ */
+export async function createAdminSession(
+  adminId: string,
+  role: AdminRole
+): Promise<void> {
+  const token = await createAdminSessionToken(adminId, role)
   const cookieStore = await cookies()
 
   cookieStore.set(ADMIN_SESSION_COOKIE, token, {
@@ -83,7 +93,14 @@ export async function getAdminSession(): Promise<AdminUser | null> {
   if (!payload) return null
   if (payload.sub !== ADMIN_PROFILE.id) return null
 
-  return ADMIN_PROFILE
+  /*
+    🆕 نقش از توکن می‌آید، نه از env. علت: اگر روزی چند مدیر با
+    نقش‌های متفاوت داشتیم، هر یک نقش خودش را در توکن دارد و
+    ADMIN_ROLE فقط پیش‌فرض حساب پیش‌فرض است. الان که یک حساب
+    داریم، این دو مقدار یکی هستند، ولی این تفکیک مسیر مهاجرت را
+    آماده نگه می‌دارد.
+  */
+  return { ...ADMIN_PROFILE, role: payload.role }
 }
 
 /** آیا نشست مدیر معتبری وجود دارد؟ */
