@@ -1,0 +1,29 @@
+'use client';
+
+import { useRef, useState } from 'react';
+import { GripVertical, ImagePlus, Trash2 } from 'lucide-react';
+import type { ProductImage } from '../product-editor.types';
+import { editorInputClass } from './EditorField';
+import { uid } from '../product-editor.utils';
+
+export function ProductImages({ images, onChange }: { images: ProductImage[]; onChange: (images: ProductImage[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const addFiles = (files: FileList | File[]) => onChange([...images, ...Array.from(files).filter(file => file.type.startsWith('image/')).map((file, index) => ({ id: uid(), file, preview: URL.createObjectURL(file), alt: '', title: '', sortOrder: images.length + index }))]);
+  const update = (id: string, patch: Partial<ProductImage>) => onChange(images.map(image => image.id === id ? { ...image, ...patch } : image));
+  const remove = (id: string) => onChange(images.filter(image => image.id !== id));
+  const reorder = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const fromIndex = images.findIndex(image => image.id === fromId);
+    const toIndex = images.findIndex(image => image.id === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const next = [...images];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    onChange(next.map((image, index) => ({ ...image, sortOrder: index })));
+  };
+  const makePrimary = (id: string) => { const selected = images.find(image => image.id === id); if (selected) onChange([selected, ...images.filter(image => image.id !== id)].map((image, index) => ({ ...image, sortOrder: index }))); };
+
+  return <div><div role="button" tabIndex={0} onClick={() => inputRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={e => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }} className={`cursor-pointer rounded-[var(--radius-lg)] border border-dashed p-10 text-center transition ${dragOver ? 'border-[hsl(var(--primary-bright))] bg-[hsl(var(--primary)/.08)]' : 'border-[hsl(var(--border))] bg-[hsl(var(--surface-1))]'}`}><ImagePlus className="mx-auto mb-3 text-[hsl(var(--primary-bright))]" size={30} /><h3 className="text-sm font-bold">تصویرها را اینجا رها کن</h3><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">JPG، PNG یا WebP، حداکثر ۲MB</p><input ref={inputRef} hidden type="file" accept="image/*" multiple onChange={e => e.target.files && addFiles(e.target.files)} /></div><div className="mt-4 grid gap-2">{images.map((image, index) => <div key={image.id} draggable onDragStart={() => setDraggedId(image.id)} onDragOver={event => event.preventDefault()} onDrop={() => { if (draggedId) reorder(draggedId, image.id); setDraggedId(null); }} onDragEnd={() => setDraggedId(null)} className={`grid grid-cols-[24px_88px_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] p-2 transition max-sm:grid-cols-[22px_64px_minmax(0,1fr)] ${draggedId === image.id ? 'opacity-40' : ''}`}><GripVertical className="cursor-grab text-[hsl(var(--muted-foreground))]" size={16} /><div className="relative"><img src={image.preview} alt={image.alt} className="h-16 w-[88px] rounded-md object-cover max-sm:h-14 max-sm:w-16" />{index === 0 && <span className="absolute right-1 top-1 rounded-full bg-[hsl(var(--primary))] px-1.5 text-[9px] font-bold">شاخص</span>}</div><div className="grid gap-1.5"><input className={editorInputClass} value={image.alt} onChange={e => update(image.id, { alt: e.target.value })} placeholder="Alt الزامی" /><input className={editorInputClass} value={image.title} onChange={e => update(image.id, { title: e.target.value })} placeholder="Title اختیاری" /></div><div className="flex gap-1"><button type="button" onClick={() => makePrimary(image.id)} className="rounded-md p-2 text-xs">★</button><button type="button" onClick={() => remove(image.id)} className="rounded-md p-2 text-[hsl(var(--destructive))]"><Trash2 size={15} /></button></div></div>)}</div>{!images.length && <div className="mt-3 rounded-md border border-dashed border-[hsl(var(--border))] p-6 text-center text-xs text-[hsl(var(--muted-foreground))]">حداقل ۳ تصویر لازم است.</div>}</div>;
+}
