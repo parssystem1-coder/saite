@@ -25,7 +25,7 @@ test.describe('سبد و تسویه — مرجع قیمت سرور', () => {
       await expect(page.getByRole('heading', { name: /سبد خرید/ }).first()).toBeVisible()
     } else {
       // fallback: اگر کالا استعلامی است، پیام استعلام دیده می‌شود
-      await expect(page.getByText(/استعلام قیمت|کاتالوگ/)).toBeVisible()
+      await expect(page.getByRole('heading', { name: 'کاتالوگ محصولات' })).toBeVisible()
     }
 
     await page.goto('/cart')
