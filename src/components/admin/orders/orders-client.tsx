@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Package, Search, AlertTriangle, Printer, Save, X } from 'lucide-react'
+import { Package, Search, AlertTriangle, Printer, Save, X, CreditCard } from 'lucide-react'
 import { buildPostalLabelData } from '@/lib/orders/label'
 import { canTransitionReturn } from '@/lib/orders/return-policy'
 import { createMockOrdersAdapter } from '@/lib/orders/mock-adapter'
-import type { OrderFulfillment, FulfillmentOrderStatus } from '@/types/order-fulfillment'
+import type { OrderFulfillment, FulfillmentOrderStatus, OrderPaymentInfo } from '@/types/order-fulfillment'
 
 const STATUS_LABEL: Record<FulfillmentOrderStatus, string> = {
   pending: 'در انتظار پرداخت',
@@ -37,6 +37,26 @@ const STATUS_TONE: Record<FulfillmentOrderStatus, string> = {
   cancelled: 'bg-red-500/15 text-red-300',
 }
 
+const PAYMENT_METHOD_LABEL: Record<NonNullable<OrderPaymentInfo['method']>, string> = {
+  online: 'آنلاین',
+  cod: 'پرداخت در محل',
+  card: 'کارت به کارت',
+}
+
+const PAYMENT_STATUS_LABEL: Record<NonNullable<OrderPaymentInfo['status']>, string> = {
+  paid: 'پرداخت شده',
+  pending: 'در انتظار',
+  failed: 'ناموفق',
+  refunded: 'بازگشت داده شده',
+}
+
+const PAYMENT_TONE: Record<NonNullable<OrderPaymentInfo['status']>, string> = {
+  paid: 'bg-emerald-500/15 text-emerald-300',
+  pending: 'bg-amber-400/15 text-amber-300',
+  failed: 'bg-red-500/15 text-red-300',
+  refunded: 'bg-violet-500/15 text-violet-300',
+}
+
 export default function OrdersClient() {
   const adapter = React.useMemo(() => createMockOrdersAdapter(), [])
   const [orders, setOrders] = React.useState<OrderFulfillment[]>([])
@@ -53,7 +73,7 @@ export default function OrdersClient() {
     const needle = q.trim().toLowerCase()
     return orders.filter((o) => {
       const matchesStatus = status === 'all' || o.status === status
-      const hay = [o.orderId, o.recipient.fullName, o.recipient.phone, o.packages[0]?.trackingCode ?? ''].join(' ').toLowerCase()
+      const hay = [o.orderId, o.recipient.fullName, o.recipient.phone, o.packages[0]?.trackingCode ?? '', o.payment?.authority ?? ''].join(' ').toLowerCase()
       const matchesQ = !needle || hay.includes(needle)
       return matchesStatus && matchesQ
     })
@@ -65,6 +85,25 @@ export default function OrdersClient() {
 
   const openDrawer = (order: OrderFulfillment) => setSelected(order)
   const closeDrawer = () => setSelected(null)
+
+  const handleStatusChange = (order: OrderFulfillment, nextStatus: FulfillmentOrderStatus) => {
+    const updated: OrderFulfillment = { ...order, status: nextStatus, updatedAt: new Date().toISOString(), updatedBy: 'admin' }
+    const nextList = adapter.save(updated)
+    setOrders(nextList)
+    setSelected(updated)
+  }
+
+  const handlePaymentChange = (order: OrderFulfillment, patch: Partial<OrderPaymentInfo>) => {
+    const updated: OrderFulfillment = {
+      ...order,
+      payment: { ...(order.payment ?? { method: 'online', status: 'pending' }), ...patch } as OrderPaymentInfo,
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'admin',
+    }
+    const nextList = adapter.save(updated)
+    setOrders(nextList)
+    setSelected(updated)
+  }
 
   const handleReturnTransition = (order: OrderFulfillment, next: OrderFulfillment['returns'][number]['status']) => {
     if (!order.returns[0]) return
@@ -123,12 +162,13 @@ export default function OrdersClient() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-right text-sm">
+          <table className="w-full min-w-[1100px] text-right text-sm">
             <thead>
               <tr className="text-xs text-muted-foreground">
                 <th className="p-3">شماره سفارش</th>
                 <th className="p-3">مشتری</th>
                 <th className="p-3">وضعیت عملیات</th>
+                <th className="p-3">پرداخت</th>
                 <th className="p-3">روش ارسال</th>
                 <th className="p-3">ارزش مرسوله</th>
                 <th className="p-3"></th>
@@ -145,6 +185,19 @@ export default function OrdersClient() {
                   <td className="p-3">
                     <span className={`rounded-full px-2 py-1 text-[10px] ${STATUS_TONE[o.status]}`}>{STATUS_LABEL[o.status]}</span>
                   </td>
+                  <td className="p-3">
+                    {o.payment ? (
+                      <div className="flex flex-col gap-1">
+                        <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] ${PAYMENT_TONE[o.payment.status]}`}>{PAYMENT_STATUS_LABEL[o.payment.status]}</span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <CreditCard className="size-3" />
+                          {PAYMENT_METHOD_LABEL[o.payment.method]} {o.payment.authority ? `· ${o.payment.authority}` : ''}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                   <td className="p-3 text-xs text-muted-foreground">{o.packages[0]?.carrier ?? '—'} — {o.packages[0]?.service ?? '—'}</td>
                   <td className="p-3 font-mono text-xs">{o.orderTotal.toLocaleString('fa-IR')} ت</td>
                   <td className="p-3">
@@ -156,7 +209,7 @@ export default function OrdersClient() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="p-10 text-center text-sm text-muted-foreground">
                     سفارشی با این فیلتر پیدا نشد.
                   </td>
                 </tr>
@@ -171,7 +224,7 @@ export default function OrdersClient() {
       </section>
 
       {selected && (
-        <Drawer order={selected} onClose={closeDrawer} onReturnTransition={handleReturnTransition} />
+        <Drawer order={selected} onClose={closeDrawer} onReturnTransition={handleReturnTransition} onStatusChange={handleStatusChange} onPaymentChange={handlePaymentChange} />
       )}
     </div>
   )
@@ -191,10 +244,14 @@ function Drawer({
   order,
   onClose,
   onReturnTransition,
+  onStatusChange,
+  onPaymentChange,
 }: {
   order: OrderFulfillment
   onClose: () => void
   onReturnTransition: (o: OrderFulfillment, s: OrderFulfillment['returns'][number]['status']) => void
+  onStatusChange: (o: OrderFulfillment, s: FulfillmentOrderStatus) => void
+  onPaymentChange: (o: OrderFulfillment, p: Partial<OrderPaymentInfo>) => void
 }) {
   const pkg = order.packages[0]
   const label = pkg ? buildPostalLabelData({ orderId: order.orderId, package: pkg, packageCount: order.packages.length, recipient: order.recipient, senderName: 'سایت — انبار مرکزی' }) : null
@@ -202,7 +259,7 @@ function Drawer({
   return (
     <div className="fixed inset-0 z-50 flex">
       <button aria-label="بستن" onClick={onClose} className="flex-1 bg-black/40 backdrop-blur-sm" />
-      <div className="h-full w-[min(96vw,520px)] overflow-y-auto border-s border-border bg-surface-1 p-0 shadow-2xl">
+      <div className="h-full w-[min(96vw,560px)] overflow-y-auto border-s border-border bg-surface-1 p-0 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
           <div>
             <div className="text-[10px] tracking-widest text-muted-foreground">FULFILLMENT WORKSPACE</div>
@@ -214,6 +271,82 @@ function Drawer({
         </div>
 
         <div className="space-y-6 p-4">
+          {/* وضعیت عملیات */}
+          <section className="space-y-2">
+            <h3 className="text-xs font-black">وضعیت سفارش — STATUS</h3>
+            <p className="text-[11px] text-muted-foreground">تغییر وضعیت عملیات را اینجا انجام بده — هر تغییر با localStorage ذخیره و در جدول هم به‌روز می‌شود.</p>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={order.status}
+                onChange={(e) => onStatusChange(order, e.target.value as FulfillmentOrderStatus)}
+                className="flex-1 rounded-xl border border-border bg-surface-2 px-3 py-2 text-xs"
+              >
+                {Object.entries(STATUS_LABEL).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <span className={`rounded-full px-3 py-2 text-xs ${STATUS_TONE[order.status]}`}>{STATUS_LABEL[order.status]}</span>
+            </div>
+          </section>
+
+          {/* پرداخت */}
+          <section className="space-y-2 rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+            <h3 className="flex items-center gap-1 text-xs font-black">
+              <CreditCard className="size-3" /> پرداخت — PAYMENT
+            </h3>
+            {order.payment ? (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <Field label="روش پرداخت" value={PAYMENT_METHOD_LABEL[order.payment.method]} />
+                <div>
+                  <div className="text-[10px] text-muted-foreground">وضعیت پرداخت</div>
+                  <select
+                    value={order.payment.status}
+                    onChange={(e) => onPaymentChange(order, { status: e.target.value as OrderPaymentInfo['status'] })}
+                    className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-2 py-1.5 text-xs"
+                  >
+                    {Object.entries(PAYMENT_STATUS_LABEL).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Field label="کد پیگیری / Authority" value={order.payment.authority ?? '—'} dir="ltr" />
+                <Field label="شناسه تراکنش" value={order.payment.transactionId ?? '—'} dir="ltr" />
+                <Field label="زمان پرداخت" value={order.payment.paidAt ? new Date(order.payment.paidAt).toLocaleString('fa-IR') : '—'} dir="ltr" />
+                <Field label="مبلغ پرداخت" value={order.payment.amount ? `${order.payment.amount.toLocaleString('fa-IR')} ت` : '—'} />
+                <div className="col-span-2 mt-1 flex gap-2">
+                  <button
+                    onClick={() => onPaymentChange(order, { method: order.payment!.method === 'online' ? 'cod' : 'online' })}
+                    className="flex-1 rounded-lg border border-border px-2 py-1.5 text-xs"
+                  >
+                    تغییر به {order.payment.method === 'online' ? 'پرداخت در محل' : 'آنلاین'}
+                  </button>
+                  <button
+                    onClick={() => onPaymentChange(order, { status: order.payment!.status === 'paid' ? 'pending' : 'paid', paidAt: new Date().toISOString() })}
+                    className="flex-1 rounded-lg bg-primary px-2 py-1.5 text-xs font-bold text-primary-foreground"
+                  >
+                    {order.payment.status === 'paid' ? 'برگرداندن به در انتظار' : 'تایید پرداخت'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">اطلاعات پرداخت ثبت نشده — پرداخت را انتخاب کن:</div>
+            )}
+            {!order.payment && (
+              <div className="flex gap-2">
+                <button onClick={() => onPaymentChange(order, { method: 'online', status: 'pending', amount: order.orderTotal })} className="flex-1 rounded-lg border border-border py-1.5 text-xs">
+                  آنلاین
+                </button>
+                <button onClick={() => onPaymentChange(order, { method: 'cod', status: 'pending', amount: order.orderTotal })} className="flex-1 rounded-lg border border-border py-1.5 text-xs">
+                  پرداخت در محل
+                </button>
+              </div>
+            )}
+          </section>
+
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs">
             <b className="flex items-center gap-1">
               <AlertTriangle className="size-3" /> قبل از تایید ارسال، اطلاعات روی برچسب را بررسی کنید
@@ -301,7 +434,7 @@ function Drawer({
                     <div>بارکد: {label.barcodeValue}</div>
                   </div>
                 </div>
-                <div className="mt-3 h-8 w-full rounded bg-[repeating-linear-gradient(90deg,#000 0 2px,transparent 2px 4px)]" aria-hidden />
+                <div className="mt-3 h-8 w-full rounded bg-[repeating-linear-gradient(90deg,#000_0_2px,transparent_2px_4px)]" aria-hidden />
               </div>
             </section>
           )}
