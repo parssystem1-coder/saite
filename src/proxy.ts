@@ -4,9 +4,14 @@ import {
   ADMIN_SESSION_COOKIE,
   verifyAdminSessionToken,
 } from '@/lib/auth/server/session-token'
+import {
+  buildAdminHeaders,
+  generateNonce,
+  NONCE_HEADER,
+} from '@/lib/security-headers'
 
 /**
- * گارد سمت سرور برای ناحیهٔ `/admin`.
+ * پروکسی (middleware) — گارد ادمین + تزریق nonce برای CSP ادمین.
  *
  * ══════════════════════════════════════════════════════════════
  *  چرا نام فایل `proxy.ts` است و نه `middleware.ts`
@@ -43,6 +48,33 @@ import {
  * طبق راهنمای Next.js، این لایه نباید به دیتابیس بزند یا منطق
  * سنگین اجرا کند. اینجا فقط امضای HMAC و انقضا بررسی می‌شود که
  * محاسبهٔ محلی و سریع است.
+ *
+ * ══════════════════════════════════════════════════════════════
+ *  🆕 فاز D — CSP سختگیرانه برای /admin با nonce+strict-dynamic
+ * ══════════════════════════════════════════════════════════════
+ * قبلاً همهٔ CSP از `next.config.headers()` می‌آمد و برای هر
+ * مسیر یکسان بود — یعنی مجبور بودیم `'unsafe-inline'` نگه داریم
+ * چون صفحات public استاتیک با nonce سازگار نبودند.
+ *
+ * تصمیم فاز D: **دو CSP، هر کدام مناسب مصرف خودش.**
+ *   • صفحات public (کاتالوگ، مقاله، …) → CSP از `next.config`
+ *     بدون nonce ولی با همهٔ محدودیت‌های سختگیرانهٔ دیگر
+ *     (frame-ancestors 'none'، form-action 'self'، …)
+ *   • مسیرهای /admin → این proxy CSP سختگیرتر با
+ *     nonce+strict-dynamic می‌سازد
+ *
+ * چرا این تفکیک: /admin همیشه dynamic است (کوکی، no-store) پس
+ * nonce یکتای هر درخواست هیچ هزینه‌ای اضافه نمی‌کند — و ارزش
+ * دفاعی بالاست چون پنل هدف اصلی حملهٔ XSS است. صفحات public
+ * اسکریپت inline خودمان ندارند (فقط JSON-LD که data-script است
+ * و از CSP script-src مستثنی است)، پس ریسک XSS نسبتاً کم و
+ * هزینهٔ dynamic-سازی بی‌جهت است.
+ *
+ * ── چرا nonce را در هدر داخلی می‌گذاریم؟ ──────────────────────
+ * `NextResponse.next({ request: { headers } })` اجازه می‌دهد یک
+ * هدر جدید به درخواست اضافه کنیم که Server Componentها با
+ * `headers()` بخوانند. این تنها راه پاس دادن مقدار از middleware
+ * به رندر است.
  */
 
 /**
@@ -61,19 +93,44 @@ function isPublicAdminPath(pathname: string): boolean {
   )
 }
 
+/**
+ * اعمال هدرهای امنیتی ادمین (شامل CSP با nonce) روی پاسخ.
+ *
+ * جدا نگه داشتن این تابع تا هم مسیر «عبور موفق» و هم مسیر
+ * «ریدایرکت» بتوانند از آن استفاده کنند — بدون تکرار کد.
+ */
+function applyAdminHeaders(response: NextResponse, nonce: string): NextResponse {
+  const isDev = process.env.NODE_ENV !== 'production'
+  const headers = buildAdminHeaders(isDev, nonce)
+  for (const { key, value } of headers) {
+    response.headers.set(key, value)
+  }
+  return response
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
+  /*
+    nonce فقط برای مسیرهای admin ساخته می‌شود. proxy روی مسیرهای
+    غیرِ admin هم به‌خاطر matcher اجرا نمی‌شود.
+  */
+  const nonce = generateNonce()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set(NONCE_HEADER, nonce)
+
   // صفحات ورود و بازیابی باید بدون نشست هم باز شوند
   if (isPublicAdminPath(pathname)) {
-    return NextResponse.next()
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    return applyAdminHeaders(response, nonce)
   }
 
   const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value
   const session = await verifyAdminSessionToken(token)
 
   if (session) {
-    return NextResponse.next()
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    return applyAdminHeaders(response, nonce)
   }
 
   /*
@@ -89,7 +146,7 @@ export async function proxy(request: NextRequest) {
   // پاسخ ریدایرکت نباید کش شود — وگرنه کاربر واردشده هم آن را می‌گیرد
   response.headers.set('Cache-Control', 'no-store, must-revalidate')
 
-  return response
+  return applyAdminHeaders(response, nonce)
 }
 
 /**
@@ -99,6 +156,9 @@ export async function proxy(request: NextRequest) {
  * نیست، **این matcher را هم به‌روز کنید**. تغییر matcher می‌تواند
  * بی‌صدا پوشش را بردارد؛ به همین دلیل بررسی دوم در
  * `getAdminSession()` هرگز حذف نمی‌شود.
+ *
+ * صفحات public از این matcher خارج‌اند و CSP خود را از
+ * `next.config.headers()` می‌گیرند (سختگیرانه ولی بدون nonce).
  */
 export const config = {
   matcher: ['/admin/:path*'],
