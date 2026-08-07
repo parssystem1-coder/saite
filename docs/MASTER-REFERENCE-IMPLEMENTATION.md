@@ -1,7 +1,7 @@
 # 📌 سند مرجع جامع اصلاحات — Saite (نسخهٔ تلفیقی: ما + Copilot)
 
 > **نوع سند:** مرجع اجرای اصلاحات — نسخهٔ به‌روز پس از سشن `arena/019fdca1-saite`
-> **تاریخ:** ۸ اوت ۲۰۲۶ · **برنچ:** `arena/019fdca1-saite` · **وضعیت:** ✅ فازهای ۰–۵ کامل — ۶۳ فایل تست / ۵۷۹ تست سبز، ۶۳ route، verify سبز
+> **تاریخ:** ۸ اوت ۲۰۲۶ · **برنچ:** `arena/019fdca1-saite` · **وضعیت:** ✅ فازهای ۰–۶ کامل — ۶۳ فایل تست / ۵۷۹ تست سبز، ۶۳ route، verify سبز
 > **منابع این سند (شواهد پشتیبان):**
 > 1. `docs/REVIEW-2026-08-07.md` — بازبینی جامع پروژه + تحلیل «New folder» (اجرای واقعی ابزارها)
 > 2. `docs/NEW-FOLDER-INTEGRATION-REPORT.md` — تحلیل همگام‌سازی «New folder» (گروه‌های A/B/C/D)
@@ -122,7 +122,7 @@
 | **۳ — هسته‌های دامنه** | انتقال گروه A (A1–A6 از گزارش NEW-FOLDER) + حل **۵ تداخل تایپی** (جدول بخش ۷) + تست‌ها | `src/domain/commerce.ts` · `src/lib/domain/commerce-rules.ts` · `src/lib/shipping/{eligibility,validation}.ts` · `src/lib/payments/{payment-rules,provider-contract}.ts` · `src/lib/orders/{label,return-policy}.ts` · `src/lib/customers/customer-segmentation.ts` · `src/types/{shipping,payment,order-fulfillment,customer,checkout-order}.ts` · `src/lib/checkout/address-label.ts` + ۵ فایل تست | ۳h |
 | **۴ — ادمین واقعی نمونه** | بازنویسی settings/shipping و settings/payments با الگوی «Server Page + Client island + mock-adapter» + لینک در `nav.ts` (حذف از `planned`) + تست رندر | `src/app/admin/(panel)/settings/{shipping,payments}/page.tsx` · `src/components/admin/{shipping,payments}/*` · `src/lib/{shipping,payments}/mock-adapter.ts` · `src/lib/admin/nav.ts` | ۳h |
 | **۵ — کیفیت** | ① پچ‌های ۰۱، ۰۲، ۰۴، ۰۵، ۰۶، ۰۷ (اگر در فاز ۱–۲ نشد) ② audit `'use client'` (۸۷) ③ focus-trap drawer ④ TipTap lazy ⑤ OG image ⑥ `error.tsx`/`loading.tsx` برای ۶ سگمنت ⑦ آرشیو docs منقضی ⑧ تست‌های جاافتاده | پراکنده (بخش ۸) | ۴h |
-| **۶ — پایش (پیشنهاد Copilot)** | E2E اولیه (Playwright: ورود ادمین، سبد→checkout، فیلتر، ویرایشگر) + بازبینی route handlerها + برچسب «آماده production» | `e2e/` (جدید) | ۳h |
+| **۶ — پایش** | E2E اولیه (Playwright: ورود ادمین، سبد→checkout، فیلتر، ویرایشگر) + بازبینی ۲ route handler (هر دو دارای `getAdminSession`) + `playwright.config.ts` + ۴ spec (۱۳ تست) — ✅ آماده (`--list` ۱۳ تست, نیاز به `install` روی سیستم شما) | `e2e/` + `playwright.config.ts` + `package.json` | ۳h |
 | | | **جمع تقریبی** | **~۱۵h** |
 
 ---
@@ -252,8 +252,8 @@ git add -A && git commit -m "phase N: ..." && git push origin arena/019fdc47-sai
 
 ### باقی‌مانده و جدید
 
-1. **بررسی کامل route handlerهای ادمین (جزئی)** — شکاف emojis بسته شد (`03-emojis-route-auth-guard.patch` + `emojis-route-auth.test.ts`)، اما سایر `src/app/api` و `src/app/admin/api` باید یک‌بار `grep -L "getAdminSession"` شوند تا نشت دیگری نماند — ۱۵ دقیقه
-2. **E2E اولیه — فاز ۶ پیشنهادی (منتظر تأیید شما)** — Playwright نصب نیست. پیشنهاد: ۴ سناریو (ورود ادمین 307→login, سبد→checkout repriced, فیلتر محصول, ویرایشگر ذخیره) + `e2e/` + CI. بدون تأیید صریح نصب نمی‌شود (طبق بخش ۱۰ ممنوعیت ۶)
-3. **۱۸/۲۹ صفحهٔ ادمین هنوز placeholder** — در این سشن ۲ نمونه (shipping/payments) واقعی شد؛ ۱۸ مورد باقی (orders, customers, finance, reports, marketing, ...). هر کدام نیاز به mock-adapter + اتصال به domain rules دارد — ~۱۰h
-4. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
+1. **بررسی کامل route handlerهای ادمین — تکمیل شد (فاز ۶)** — هر دو handler موجود (`/admin/api/session` و `/api/admin/emojis`) اکنون دارای `getAdminSession` هستند؛ `grep -L` دیگر موردی بدون گارد ندارد — با این حال هنگام افزودن route جدید، چک‌لیست بخش ۹ را اجرا کنید
+2. **۱۸/۲۹ صفحهٔ ادمین هنوز placeholder** — در این سشن ۲ نمونه (shipping/payments) واقعی شد؛ ۱۸ مورد باقی (orders, customers, finance, reports, marketing, ...). هر کدام نیاز به mock-adapter + اتصال به domain rules دارد — ~۱۰h
+3. **بک‌اند واقعی — بزرگ‌ترین ریسک** — `price-authority` شکل درست را قفل کرد اما تا `NEXT_PUBLIC_USE_MOCK=false` و Prisma/API واقعی نیاید، مرز اعتماد صوری است. پیشنهاد: از `src/types/product.ts` اسکیمای Prisma و `/api/products` بسازید — پس از آن هر صفحهٔ ادمین mock دوباره بازنویسی می‌شود
+4. **اجرای E2E در CI — نیاز به نصب مرورگر** — فاز ۶ با ۱۳ تست در ۴ فایل و `playwright.config.ts` آماده شد و `npx playwright test --list` سبز است؛ اما `npx playwright install chromium` در این سندباکس به دلیل محدودیت شبکه ناموفق بود. روی سیستم شما (Windows + Git Bash) با اینترنت باز، یک‌بار `npx playwright install` را اجرا کنید، سپس `npm run e2e` — در CI نیز `mcr.microsoft.com/playwright` image را استفاده کنید
 5. **نقص‌های جزئی باقی‌مانده از Copilot #۵** — رنگ‌های FAB واتساپ/اینستاگرام توکن نشدند (عمدی — رنگ رسمی پلتفرم)؛ اگر خواستید به `lib/constants` منتقل کنید — کم‌اولویت
