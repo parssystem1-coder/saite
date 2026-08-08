@@ -37,7 +37,7 @@ async function main() {
         consumables: product.consumables,
         isFeatured: product.isFeatured,
         isBestSeller: product.isBestSeller,
-        createdAt: product.createdAt,
+        createdAt: product.createdAt ? new Date(product.createdAt) : undefined,
       },
     })
   }
