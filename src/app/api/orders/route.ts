@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { ordersService } from '@/server/modules/orders/service'
+import { getCustomerSession } from '@/server/auth/customer-session'
+import { handleServiceError } from '../products/_utils'
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getCustomerSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { searchParams } = req.nextUrl
+    const page = Number(searchParams.get('page')) || 1
+    const perPage = Number(searchParams.get('perPage')) || 10
+
+    const result = await ordersService.getCustomerOrders(session.sub, page, perPage)
+    return NextResponse.json(result)
+  } catch (err) {
+    return handleServiceError(err)
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getCustomerSession()
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const body = await req.json()
+    const order = await ordersService.create({
+      customerId: session.sub,
+      items: body.items,
+      shippingAddress: body.shippingAddress,
+    })
+    return NextResponse.json(order, { status: 201 })
+  } catch (err) {
+    return handleServiceError(err)
+  }
+}
