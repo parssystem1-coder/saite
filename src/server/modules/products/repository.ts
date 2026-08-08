@@ -1,7 +1,7 @@
 import 'server-only'
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
-import type { Prisma, ProductOrderByWithRelationInput } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
 export const productsRepository = {
   async findBySlug(slug: string) {
@@ -93,7 +93,7 @@ function buildWhere(query: ProductListQuery): Prisma.ProductWhereInput {
   return where
 }
 
-function orderBy(sort?: string): ProductOrderByWithRelationInput {
+function orderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {
   switch (sort) {
     case 'price_asc':
       return { price: 'asc' }
