@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { PRODUCTS } from '../src/lib/mock-data'
 
 const prisma = new PrismaClient()
@@ -27,7 +27,7 @@ async function main() {
         shortDescription: product.shortDescription,
         description: product.description,
         keyFeatures: product.keyFeatures,
-        specs: product.specs ? (product.specs as unknown as Prisma.InputJsonValue) : undefined,
+        specs: product.specs ? (product.specs as unknown as Record<string, unknown>) : undefined,
         technology: product.technology,
         colorSupport: product.colorSupport,
         usageClass: product.usageClass,

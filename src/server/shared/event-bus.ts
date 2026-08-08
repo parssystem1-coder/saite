@@ -1,6 +1,5 @@
 import 'server-only'
 import { prisma } from './db'
-import type { Prisma } from '@prisma/client'
 import type { ProductEvent } from '@/server/modules/products/events'
 
 type DomainEvent = ProductEvent | { type: string; [key: string]: unknown }
@@ -10,7 +9,7 @@ export const eventBus = {
     await prisma.outboxEvent.create({
       data: {
         type,
-        payload: payload as unknown as Prisma.InputJsonValue,
+        payload: payload as unknown as Record<string, unknown>,
         aggregateId: (payload.productId as string) || (payload.orderId as string) || 'unknown',
       },
     })
