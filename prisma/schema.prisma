@@ -1,0 +1,468 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+// TODO: zod-prisma-types فاز ۲ — فعلاً manual Zod
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── محصولات ──────────────────────────────────────────
+
+model Product {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  name           String
+  brand          String
+  model          String
+  sku            String      @unique
+  category       String
+  subCategory    String?
+  priceType      PriceType
+  price          Int?
+  compareAtPrice Int?
+  stockStatus    StockStatus @default(in_stock)
+  images         String[]    @default([])
+  shortDescription String
+  description    String?
+  keyFeatures    String[]    @default([])
+  specs          Json?
+  technology     String?
+  colorSupport   String?
+  usageClass     String?
+  warrantyMonths Int?
+  condition      ProductCondition @default(new)
+  compatibleWith String[]    @default([])
+  consumables    String[]    @default([])
+  isFeatured     Boolean     @default(false)
+  isBestSeller   Boolean     @default(false)
+  embedding      Unsupported("vector(1536)")?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+enum PriceType {
+  fixed
+  quote_only
+}
+
+enum StockStatus {
+  in_stock
+  low_stock
+  out_of_stock
+  on_request
+}
+
+enum ProductCondition {
+  new
+  refurbished
+}
+
+// ── سفارشات ──────────────────────────────────────────
+
+model Order {
+  id            String      @id @default(cuid())
+  customerId    String
+  status        OrderStatus @default(pending)
+  totalAmount   Int
+  currency      String      @default("IRR")
+  shippingAddress Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items          OrderItem[]
+  paymentIntents PaymentIntent[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  pending
+  paid
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+// ── پرداخت ───────────────────────────────────────────
+
+model PaymentIntent {
+  id             String            @id @default(cuid())
+  orderId        String
+  providerCode   String
+  amount         Int
+  currency       String            @default("IRR")
+  status         PaymentIntentStatus @default(created)
+  idempotencyKey String            @unique
+  authority      String?           @unique
+  transactionId  String?
+  redirectUrl    String?
+  failureCode    String?
+  failureMessage String?
+  createdAt      DateTime          @default(now())
+  expiresAt      DateTime
+  verifiedAt     DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payment_intents")
+}
+
+enum PaymentIntentStatus {
+  created
+  redirect_required
+  pending
+  succeeded
+  failed
+  cancelled
+  expired
+  refunded
+  partially_refunded
+  chargeback
+}
+
+// ── مشتریان ──────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  name      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+// ── رویدادها (Outbox Pattern) ────────────────────────
+
+model OutboxEvent {
+  id          String   @id @default(cuid())
+  type        String
+  payload     Json
+  aggregateId String
+  processedAt DateTime?
+  retryCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
+}
+
+// ── لاگ AI ────────────────────────────────────────────
+
+model AiUsageLog {
+  id                String   @id @default(cuid())
+  feature           String
+  promptVersion     String
+  provider          String
+  model             String
+  actorId           String
+  inputTokens       Int
+  outputTokens      Int
+  estimatedCostRial Int?
+  durationMs        Int
+  status            String // success | error | fallback
+  gitSha            String?
+  createdAt         DateTime @default(now())
+
+  @@index([feature, createdAt])
+  @@map("ai_usage_logs")
+}
+
+// ── feature flags ─────────────────────────────────────
+
+model FeatureFlag {
+  key               String   @id
+  enabled           Boolean  @default(false)
+  rolloutPercentage Int      @default(100)
+  allowedRoles      String[] @default([])
+  updatedAt         DateTime @updatedAt
+
+  @@map("feature_flags")
+}
+
+// ── مالی (Finance) ────────────────────────────────────
+
+model Invoice {
+  id            String          @id @default(cuid())
+  orderId       String          @unique
+  customerId    String
+  invoiceNumber String          @unique
+  status        InvoiceStatus   @default(draft)
+  subtotal      Int
+  taxAmount     Int             @default(0)
+  discountAmount Int            @default(0)
+  totalAmount   Int
+  currency      String          @default("IRR")
+  issuedAt      DateTime        @default(now())
+  dueDate       DateTime?
+  paidAt        DateTime?
+  notes         String?
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  transactions Transaction[]
+
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  draft
+  issued
+  sent
+  paid
+  overdue
+  cancelled
+  refunded
+}
+
+model Transaction {
+  id          String            @id @default(cuid())
+  invoiceId   String?
+  orderId     String?
+  type        TransactionType
+  amount      Int
+  currency    String            @default("IRR")
+  provider    String?           // zarinpal, idpay, bank_transfer, cash
+  referenceId String?           // شماره پیگیری بانکی
+  status      TransactionStatus @default(pending)
+  settledAt   DateTime?
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("transactions")
+}
+
+enum TransactionType {
+  payment
+  refund
+  fee
+  settlement
+  adjustment
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+  reversed
+}
+
+// ── ارسال (Shipping) ──────────────────────────────────
+
+model Shipment {
+  id              String          @id @default(cuid())
+  orderId         String          @unique
+  carrier         String          // post, tipax, snappbox, etc.
+  trackingNumber  String?
+  status          ShipmentStatus  @default(pending)
+  shippingCost    Int             @default(0)
+  weightGrams     Int?
+  dimensions      String?         // 30x20x10
+  originAddress   Json?
+  destinationAddress Json?
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  estimatedDelivery DateTime?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("shipments")
+}
+
+enum ShipmentStatus {
+  pending
+  label_created
+  picked_up
+  in_transit
+  out_for_delivery
+  delivered
+  failed
+  returned
+}
+
+model ShippingRate {
+  id          String   @id @default(cuid())
+  carrier     String
+  zone        String   // tehran, other_provinces, remote
+  minWeight   Int      @default(0)
+  maxWeight   Int?
+  baseCost    Int
+  perKgCost   Int      @default(0)
+  codFee      Int      @default(0)
+  estimatedDays Int    @default(3)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([carrier, zone, minWeight])
+  @@map("shipping_rates")
+}
+
+// ── بازاریابی (Marketing) ─────────────────────────────
+
+model Coupon {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  name            String
+  description     String?
+  type            CouponType
+  value           Int          // درصد یا مبلغ ثابت (ریال)
+  minOrderAmount  Int          @default(0)
+  maxDiscount     Int?         // سقف تخفیف برای درصدی
+  usageLimit      Int?         // محدودیت کل استفاده
+  usageCount      Int          @default(0)
+  perCustomerLimit Int         @default(1)
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  applicableProducts String[]  @default([]) // خالی = همه
+  applicableCategories String[] @default([])
+  firstOrderOnly  Boolean      @default(false)
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("coupons")
+}
+
+enum CouponType {
+  percentage
+  fixed_amount
+  free_shipping
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   // discount, bundle, flash_sale
+  startDate   DateTime
+  endDate     DateTime
+  bannerUrl   String?
+  targetUrl   String?
+  priority    Int      @default(0)
+  active      Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("campaigns")
+}
+
+// ── ارتباطات (Communications) ─────────────────────────
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String   @db.Text
+  template  String?  // welcome, order_confirmation, invoice, etc.
+  status    String   @default("pending") // pending, sent, failed, bounced
+  provider  String   @default("console") // console, smtp, resend
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([to, createdAt])
+  @@map("email_logs")
+}
+
+model SmsLog {
+  id        String   @id @default(cuid())
+  to        String
+  body      String
+  template  String?
+  status    String   @default("pending")
+  provider  String   @default("console")
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([to, createdAt])
+  @@map("sms_logs")
+}
+
+// ── محتوا (Content) ───────────────────────────────────
+
+model Page {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  content     String   @db.Text
+  metaTitle   String?
+  metaDescription String?
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String?
+  content     String   @db.Text
+  coverImage  String?
+  tags        String[] @default([])
+  metaTitle   String?
+  metaDescription String?
+  authorName  String?
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("posts")
+}
+
+model MenuItem {
+  id        String  @id @default(cuid())
+  label     String
+  url       String
+  parentId  String?
+  order     Int     @default(0)
+  location  String  @default("header") // header, footer, sidebar
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   MenuItem?  @relation("MenuTree", fields: [parentId], references: [id])
+  children MenuItem[] @relation("MenuTree")
+
+  @@map("menu_items")
+}
