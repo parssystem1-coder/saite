@@ -3,6 +3,7 @@ export const mockAiProvider = {
     return {
       text: 'این یک پاسخ آزمایشی است — کلید API تنظیم نشده.',
       usage: { inputTokens: 0, outputTokens: 0 },
+      durationMs: 0,
     }
   },
 

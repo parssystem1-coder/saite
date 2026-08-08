@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/server/shared/db'
 import { zarinpalProvider } from '@/server/payments/providers/zarinpal'
-import { ordersService } from '@/server/modules/orders/service'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
