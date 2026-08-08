@@ -35,8 +35,8 @@ export const ordersService = {
 
     for (const item of input.items) {
       await ordersRepository.createOrderItem({
-        orderId: order.id,
-        productId: item.productId,
+        order: { connect: { id: order.id } },
+        product: { connect: { id: item.productId } },
         quantity: item.quantity,
         unitPrice: item.unitPrice,
       })

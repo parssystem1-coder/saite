@@ -31,7 +31,7 @@ export const ordersRepository = {
   async updateStatus(id: string, status: string) {
     return prisma.order.update({
       where: { id },
-      data: { status },
+      data: { status: status as import('@prisma/client').OrderStatus },
     })
   },
 
