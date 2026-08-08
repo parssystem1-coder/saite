@@ -27,7 +27,7 @@ async function main() {
         shortDescription: product.shortDescription,
         description: product.description,
         keyFeatures: product.keyFeatures,
-        specs: product.specs as unknown as Prisma.JsonValue,
+        specs: product.specs ? (product.specs as unknown as Prisma.InputJsonValue) : undefined,
         technology: product.technology,
         colorSupport: product.colorSupport,
         usageClass: product.usageClass,
