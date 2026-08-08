@@ -40,15 +40,8 @@ export const productsRepository = {
     return prisma.product.delete({ where: { id } })
   },
 
-  async findSimilar(embedding: number[], limit = 10) {
-    return prisma.$queryRaw`
-      SELECT id, slug, name, 1 - (embedding <=> ${embedding}::vector) AS similarity
-      FROM products
-      WHERE embedding IS NOT NULL
-      ORDER BY embedding <=> ${embedding}::vector
-      LIMIT ${limit}
-    `
-  },
+  // TODO: pgvector — فاز ۵ (semantic search)
+  // async findSimilar(embedding: number[], limit = 10) { ... }
 }
 
 function buildWhere(query: ProductListQuery): Prisma.ProductWhereInput {

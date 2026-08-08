@@ -12,9 +12,8 @@ generator zod {
 }
 
 datasource db {
-  provider   = "postgresql"
-  url        = env("DATABASE_URL")
-  extensions = [vector]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ── محصولات ──────────────────────────────────────────
@@ -46,7 +45,6 @@ model Product {
   consumables    String[]    @default([])
   isFeatured     Boolean     @default(false)
   isBestSeller   Boolean     @default(false)
-  embedding      Unsupported("vector(1536)")?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
