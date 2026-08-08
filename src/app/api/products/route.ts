@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
 import { handleServiceError } from './_utils'
+import type { ProductListQuery } from '@/lib/api-types'
+import type { CategorySlug } from '@/types/product'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
 
-  const query = {
+  const category = searchParams.get('category')
+  const sort = searchParams.get('sort')
+
+  const query: ProductListQuery = {
     q: searchParams.get('q') || undefined,
-    category: searchParams.get('category') || undefined,
+    category: (category && category !== 'all' ? category : undefined) as CategorySlug | undefined,
     subCategory: searchParams.get('subCategory') || undefined,
     brand: searchParams.get('brand') || undefined,
     technology: searchParams.get('technology') || undefined,
@@ -16,7 +21,7 @@ export async function GET(req: NextRequest) {
     inStock: searchParams.get('inStock') === 'true',
     minPrice: searchParams.has('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
     maxPrice: searchParams.has('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
-    sort: searchParams.get('sort') || undefined,
+    sort: (sort || undefined) as ProductListQuery['sort'],
     page: searchParams.has('page') ? Number(searchParams.get('page')) : undefined,
     perPage: searchParams.has('perPage') ? Number(searchParams.get('perPage')) : undefined,
   }

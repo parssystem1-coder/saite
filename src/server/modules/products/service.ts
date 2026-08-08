@@ -1,7 +1,7 @@
 import 'server-only'
 import { productsRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
-import { NotFoundError, ValidationError } from '@/server/shared/errors'
+import { NotFoundError } from '@/server/shared/errors'
 import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
 import type { Prisma } from '@prisma/client'
 
