@@ -74,7 +74,7 @@ export const financeRepository = {
     return prisma.invoice.update({
       where: { id },
       data: {
-        status,
+        status: status as never,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
@@ -96,7 +96,7 @@ export const financeRepository = {
       data: {
         ...data,
         currency: data.currency || 'IRR',
-        status: data.status || 'pending',
+        status: (data.status || 'pending') as never,
         metadata: data.metadata ? (data.metadata as never) : undefined,
       },
     })
@@ -105,7 +105,7 @@ export const financeRepository = {
   async updateTransactionStatus(id: string, status: string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status, ...(settledAt && { settledAt }) },
+      data: { status: status as never, ...(settledAt && { settledAt }) },
     })
   },
 

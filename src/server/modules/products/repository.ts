@@ -95,12 +95,12 @@ function buildWhere(query: ProductListQuery) {
 function orderBy(sort?: string) {
   switch (sort) {
     case 'price_asc':
-      return { price: 'asc' }
+      return { price: 'asc' as const }
     case 'price_desc':
-      return { price: 'desc' }
+      return { price: 'desc' as const }
     case 'best_selling':
-      return { isBestSeller: 'desc' }
+      return { isBestSeller: 'desc' as const }
     default:
-      return { createdAt: 'desc' }
+      return { createdAt: 'desc' as const }
   }
 }

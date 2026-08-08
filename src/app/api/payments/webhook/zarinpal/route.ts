@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
       existing.amount
     )
 
-    await prisma.$transaction(async (tx: typeof prisma) => {
+    await prisma.$transaction(async (tx) => {
       await tx.paymentIntent.update({
         where: { authority },
         data: {

@@ -21,6 +21,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
+        type: data.type as never,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
