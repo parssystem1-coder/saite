@@ -31,6 +31,7 @@ export const localDiskProvider = {
       url: `${PUBLIC_URL}/uploads/${folder}/${key}`,
       key: `${folder}/${key}`,
       provider: 'local' as const,
+      error: undefined,
     }
   },
 
