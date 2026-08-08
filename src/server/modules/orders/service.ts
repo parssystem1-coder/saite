@@ -3,7 +3,7 @@ import { ordersRepository } from './repository'
 import { assertValidTransition } from './state-machine'
 import { eventBus } from '@/server/shared/event-bus'
 import { NotFoundError } from '@/server/shared/errors'
-import type { Prisma } from '@prisma/client'
+
 
 export interface CreateOrderInput {
   customerId: string
@@ -30,7 +30,7 @@ export const ordersService = {
       status: 'pending',
       totalAmount,
       currency: 'IRR',
-      shippingAddress: input.shippingAddress as unknown as Prisma.InputJsonValue,
+      shippingAddress: input.shippingAddress as unknown as Record<string, unknown>,
     })
 
     for (const item of input.items) {

@@ -3,7 +3,7 @@ import { productsRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { NotFoundError } from '@/server/shared/errors'
 import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
-import type { Prisma } from '@prisma/client'
+
 
 const DEFAULT_PER_PAGE = 9
 
@@ -35,15 +35,13 @@ export const productsService = {
   },
 
   async create(input: unknown, actorId: string) {
-    const data = input as Prisma.ProductCreateInput
-    const product = await productsRepository.create(data)
+    const product = await productsRepository.create(input as Record<string, unknown>)
     await eventBus.publish('product.created', { productId: product.id, actorId })
     return product
   },
 
   async update(id: string, input: unknown, actorId: string) {
-    const data = input as Prisma.ProductUpdateInput
-    const product = await productsRepository.update(id, data)
+    const product = await productsRepository.update(id, input as Record<string, unknown>)
     await eventBus.publish('product.updated', { productId: product.id, actorId })
     return product
   },

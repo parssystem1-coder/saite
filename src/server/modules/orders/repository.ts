@@ -1,6 +1,5 @@
 import 'server-only'
 import { prisma } from '@/server/shared/db'
-import type { Prisma } from '@prisma/client'
 
 export const ordersRepository = {
   async findById(id: string) {
@@ -24,18 +23,18 @@ export const ordersRepository = {
     return { items, total }
   },
 
-  async create(data: Prisma.OrderCreateInput) {
-    return prisma.order.create({ data })
+  async create(data: Record<string, unknown>) {
+    return prisma.order.create({ data: data as never })
   },
 
   async updateStatus(id: string, status: string) {
     return prisma.order.update({
       where: { id },
-      data: { status: status as import('@prisma/client').OrderStatus },
+      data: { status: status as never },
     })
   },
 
-  async createOrderItem(data: Prisma.OrderItemCreateInput) {
-    return prisma.orderItem.create({ data })
+  async createOrderItem(data: Record<string, unknown>) {
+    return prisma.orderItem.create({ data: data as never })
   },
 }

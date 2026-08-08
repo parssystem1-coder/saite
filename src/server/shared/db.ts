@@ -1,5 +1,6 @@
 import 'server-only'
 import { PrismaClient } from '@prisma/client'
+import { startBackgroundJobs } from '@/server/jobs/init'
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
@@ -11,3 +12,6 @@ prisma.$connect().catch((err: unknown) => {
   console.error('Prisma connection failed:', err)
   process.exit(1)
 })
+
+// راه‌اندازی background jobs هنگام import db
+startBackgroundJobs()

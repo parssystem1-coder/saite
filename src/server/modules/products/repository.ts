@@ -1,7 +1,6 @@
 import 'server-only'
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
-import type { Prisma } from '@prisma/client'
 
 export const productsRepository = {
   async findBySlug(slug: string) {
@@ -13,7 +12,7 @@ export const productsRepository = {
   },
 
   async list(query: ProductListQuery, page: number, perPage: number) {
-    const where: Prisma.ProductWhereInput = buildWhere(query)
+    const where = buildWhere(query)
 
     const [items, total] = await prisma.$transaction([
       prisma.product.findMany({
@@ -28,12 +27,12 @@ export const productsRepository = {
     return { items, total }
   },
 
-  async create(data: Prisma.ProductCreateInput) {
-    return prisma.product.create({ data })
+  async create(data: Record<string, unknown>) {
+    return prisma.product.create({ data: data as never })
   },
 
-  async update(id: string, data: Prisma.ProductUpdateInput) {
-    return prisma.product.update({ where: { id }, data })
+  async update(id: string, data: Record<string, unknown>) {
+    return prisma.product.update({ where: { id }, data: data as never })
   },
 
   async delete(id: string) {
@@ -44,8 +43,8 @@ export const productsRepository = {
   // async findSimilar(embedding: number[], limit = 10) { ... }
 }
 
-function buildWhere(query: ProductListQuery): Prisma.ProductWhereInput {
-  const where: Prisma.ProductWhereInput = {}
+function buildWhere(query: ProductListQuery) {
+  const where: Record<string, unknown> = {}
 
   if (query.q) {
     where.OR = [
@@ -86,14 +85,14 @@ function buildWhere(query: ProductListQuery): Prisma.ProductWhereInput {
 
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     where.price = {}
-    if (query.minPrice !== undefined) where.price.gte = query.minPrice
-    if (query.maxPrice !== undefined) where.price.lte = query.maxPrice
+    if (query.minPrice !== undefined) (where.price as Record<string, unknown>).gte = query.minPrice
+    if (query.maxPrice !== undefined) (where.price as Record<string, unknown>).lte = query.maxPrice
   }
 
   return where
 }
 
-function orderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {
+function orderBy(sort?: string) {
   switch (sort) {
     case 'price_asc':
       return { price: 'asc' }
