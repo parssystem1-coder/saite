@@ -6,8 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-# اگر کامیت جدیدی روی همان برنچ پوش شود، اجرای قبلی لغو می‌شود
-# تا دقیقه‌های Actions هدر نرود.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,11 +25,11 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      # npm ci از package-lock.json می‌خواند و نصب تکرارپذیر می‌دهد.
-      # پیش از این CI با pnpm نصب می‌کرد در حالی که تیم با npm کار
-      # می‌کند — دو درخت وابستگی متفاوت، دو نتیجهٔ متفاوت.
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
 
       - name: Type check
         run: npm run type-check
