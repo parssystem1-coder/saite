@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider = "zod-prisma-types"
+  output   = "./zod"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+// ── محصولات ──────────────────────────────────────────
+
+model Product {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  name           String
+  brand          String
+  model          String
+  sku            String      @unique
+  category       String
+  subCategory    String?
+  priceType      PriceType
+  price          Int?
+  compareAtPrice Int?
+  stockStatus    StockStatus @default(in_stock)
+  images         String[]    @default([])
+  shortDescription String
+  description    String?
+  keyFeatures    String[]    @default([])
+  specs          Json?
+  technology     String?
+  colorSupport   String?
+  usageClass     String?
+  warrantyMonths Int?
+  condition      ProductCondition @default(new)
+  compatibleWith String[]    @default([])
+  consumables    String[]    @default([])
+  isFeatured     Boolean     @default(false)
+  isBestSeller   Boolean     @default(false)
+  embedding      Unsupported("vector(1536)")?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+enum PriceType {
+  fixed
+  quote_only
+}
+
+enum StockStatus {
+  in_stock
+  low_stock
+  out_of_stock
+  on_request
+}
+
+enum ProductCondition {
+  new
+  refurbished
+}
+
+// ── سفارشات ──────────────────────────────────────────
+
+model Order {
+  id            String      @id @default(cuid())
+  customerId    String
+  status        OrderStatus @default(pending)
+  totalAmount   Int
+  currency      String      @default("IRR")
+  shippingAddress Json?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  items          OrderItem[]
+  paymentIntents PaymentIntent[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+enum OrderStatus {
+  pending
+  paid
+  processing
+  shipped
+  delivered
+  cancelled
+  refunded
+}
+
+// ── پرداخت ───────────────────────────────────────────
+
+model PaymentIntent {
+  id             String            @id @default(cuid())
+  orderId        String
+  providerCode   String
+  amount         Int
+  currency       String            @default("IRR")
+  status         PaymentIntentStatus @default(created)
+  idempotencyKey String            @unique
+  authority      String?           @unique
+  transactionId  String?
+  redirectUrl    String?
+  failureCode    String?
+  failureMessage String?
+  createdAt      DateTime          @default(now())
+  expiresAt      DateTime
+  verifiedAt     DateTime?
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("payment_intents")
+}
+
+enum PaymentIntentStatus {
+  created
+  redirect_required
+  pending
+  succeeded
+  failed
+  cancelled
+  expired
+  refunded
+  partially_refunded
+  chargeback
+}
+
+// ── مشتریان ──────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  name      String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("customers")
+}
+
+// ── رویدادها (Outbox Pattern) ────────────────────────
+
+model OutboxEvent {
+  id          String   @id @default(cuid())
+  type        String
+  payload     Json
+  aggregateId String
+  processedAt DateTime?
+  retryCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_events")
+}
+
+// ── لاگ AI ────────────────────────────────────────────
+
+model AiUsageLog {
+  id                String   @id @default(cuid())
+  feature           String
+  promptVersion     String
+  provider          String
+  model             String
+  actorId           String
+  inputTokens       Int
+  outputTokens      Int
+  estimatedCostRial Int?
+  durationMs        Int
+  status            String // success | error | fallback
+  gitSha            String?
+  createdAt         DateTime @default(now())
+
+  @@index([feature, createdAt])
+  @@map("ai_usage_logs")
+}
+
+// ── feature flags ─────────────────────────────────────
+
+model FeatureFlag {
+  key               String   @id
+  enabled           Boolean  @default(false)
+  rolloutPercentage Int      @default(100)
+  allowedRoles      String[] @default([])
+  updatedAt         DateTime @updatedAt
+
+  @@map("feature_flags")
+}
