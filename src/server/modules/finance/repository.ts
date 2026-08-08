@@ -92,14 +92,19 @@ export const financeRepository = {
     status?: string
     metadata?: unknown
   }) {
-    return prisma.transaction.create({
-      data: {
-        ...data,
-        currency: data.currency || 'IRR',
-        status: (data.status || 'pending') as never,
-        metadata: data.metadata ? (data.metadata as never) : undefined,
-      },
-    })
+    const payload: Record<string, unknown> = {
+      type: data.type,
+      amount: data.amount,
+      currency: data.currency || 'IRR',
+      status: (data.status || 'pending') as never,
+    }
+    if (data.invoiceId) payload.invoiceId = data.invoiceId
+    if (data.orderId) payload.orderId = data.orderId
+    if (data.provider) payload.provider = data.provider
+    if (data.referenceId) payload.referenceId = data.referenceId
+    if (data.metadata) payload.metadata = data.metadata as never
+
+    return prisma.transaction.create({ data: payload as never })
   },
 
   async updateTransactionStatus(id: string, status: string, settledAt?: Date) {
