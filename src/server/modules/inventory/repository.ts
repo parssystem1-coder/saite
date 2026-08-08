@@ -9,7 +9,7 @@ export const inventoryRepository = {
     })
   },
 
-  async reserve(productId: string, quantity: number) {
+  async reserve(productId: string, _quantity: number) {
     // TODO: فاز ۳ — reservation واقعی با جدول inventory
     const product = await prisma.product.findUnique({ where: { id: productId } })
     if (!product || product.stockStatus === 'out_of_stock') {
