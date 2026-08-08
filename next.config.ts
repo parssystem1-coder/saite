@@ -27,6 +27,8 @@ import { buildSecurityHeaders } from './src/lib/security-headers'
  * دو جا نگذاشتن یعنی تنها منبع حقیقت هر هدر ادمین، proxy است.
  */
 const nextConfig: NextConfig = {
+  output: 'standalone',
+
   // هدر `X-Powered-By: Next.js` نسخهٔ فریم‌ورک را لو می‌دهد
   poweredByHeader: false,
 
