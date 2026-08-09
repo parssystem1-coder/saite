@@ -72,7 +72,13 @@ export const marketingService = {
     const result = await this.validateCoupon(code, opts)
 
     // ── اعمال اتمیک: سقف کلی + سقف هر مشتری در یک تراکنش ──────────────────────────
+    // قفل advisory روی coupon — جلوگیری از race condition perCustomerLimit > 1
+    // pg_advisory_xact_lock تا پایان transaction نگه داشته و خودکار آزاد می‌شود.
+    // transaction دوم منتظر اول می‌ماند (reject نمی‌شود) — نیازی به retry loop نیست.
     await prisma.$transaction(async (tx: any) => {
+      const lockKey = `coupon_apply:${result.coupon.id}`
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
+
       // perCustomerLimit — اگر >0 باشد، تعداد قبلی این مشتری را چک کن
       if (result.coupon.perCustomerLimit > 0) {
         const existingCount = await tx.couponRedemption.count({
@@ -102,7 +108,7 @@ export const marketingService = {
         throw new CouponValidationError('سقف استفاده از کد تخفیف تکمیل شده')
       }
 
-      // ثبت redemption برای perCustomerLimit — unique constraint جلوی race را می‌گیرد
+      // ثبت redemption برای perCustomerLimit — unique constraint هم محافظت دوم است
       try {
         await tx.couponRedemption.create({
           data: {

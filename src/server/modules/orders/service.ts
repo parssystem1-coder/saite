@@ -9,7 +9,7 @@ import { NotFoundError, ValidationError } from '@/server/shared/errors'
 
 export interface CreateOrderInput {
   customerId: string
-  items: { productId: string; quantity: number; unitPrice?: number }[]
+  items: { productId: string; quantity: number }[]
   shippingAddress: Record<string, unknown>
 }
 
