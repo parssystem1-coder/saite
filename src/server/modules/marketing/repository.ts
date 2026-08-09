@@ -68,6 +68,38 @@ export const marketingRepository = {
     })
   },
 
+  // اتمیک: فقط اگر سقف پر نشده باشد increment می‌کند — برای جلوگیری از race
+  async tryIncrementCouponUsageAtomic(id: string, usageLimit: number | null): Promise<boolean> {
+    if (usageLimit === null) {
+      await prisma.coupon.update({
+        where: { id },
+        data: { usageCount: { increment: 1 } },
+      })
+      return true
+    }
+    const result = await prisma.coupon.updateMany({
+      where: { id, usageCount: { lt: usageLimit } },
+      data: { usageCount: { increment: 1 } },
+    })
+    return result.count === 1
+  },
+
+  async findRedemption(couponId: string, customerId: string) {
+    return prisma.couponRedemption.findUnique({
+      where: { couponId_customerId: { couponId, customerId } },
+    })
+  },
+
+  async countRedemptionsByCustomer(couponId: string, customerId: string) {
+    return prisma.couponRedemption.count({
+      where: { couponId, customerId },
+    })
+  },
+
+  async createRedemption(data: { couponId: string; customerId: string; orderId: string }) {
+    return prisma.couponRedemption.create({ data })
+  },
+
   async updateCoupon(id: string, data: Partial<{ name: string; active: boolean; expiresAt: Date | null }>) {
     return prisma.coupon.update({ where: { id }, data })
   },

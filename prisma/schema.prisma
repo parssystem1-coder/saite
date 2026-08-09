@@ -354,7 +354,23 @@ model Coupon {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  redemptions CouponRedemption[]
+
   @@map("coupons")
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  customerId String
+  orderId    String   @unique
+  createdAt  DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, customerId])
+  @@index([customerId])
+  @@map("coupon_redemptions")
 }
 
 enum CouponType {
