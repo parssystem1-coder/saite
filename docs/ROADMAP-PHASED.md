@@ -1,305 +1,416 @@
-# نقشه راه فازی — اصلاح بک‌اند Saite
-## مرجع اجرا برای تمام سشن‌های آینده
+# نقشهٔ راه فازبندی‌شده — Saite Backend Hardening
 
-> **نسخه:** 1.0 — ۱۸ مرداد ۱۴۰۵ (2026-08-09)  
-> **مرجع تحلیل:** `docs/AUDIT-COMBINED-FINAL-2026-08-09.md` (تجمیع دو گزارش مستقل، میانگین ۵.۵/۱۰)  
-> **شاخه‌های مرتبط:** `arena/019fe81d-saite` (سشن فعلی، commit `676a838`) و `arena/019fe061-saite` (commit `9667c06` — گزارش B)  
-> **قانون طلایی هر فاز:** `npm run type-check && npm run lint && npm run test && npm run build` سبز → `git add` → `commit -m "پیام فارسی"` → `git push origin arena/019fe81d-saite` (و mirror به `019fe061` اگر نیاز بود)  
-> **قراردادهای تغییرناپذیر:** `src/lib/api.ts` امضا ثابت · Mock adapters حذف نمی‌شوند · بدون تغییر ساختار اصلی — فقط refactoring
+> **تاریخ ایجاد:** ۲۰۲۶-۰۸-۰۹  
+> **مبتنی بر:** `AUDIT-2026-08-09-FULL.md`  
+> **sha:** `716e0608`  
+> **شاخهٔ فعال:** `arena/019fe8c8-saite`
 
 ---
 
-## نمای کل — ۷ فاز، ۱۹ روز کاری، ۱۵ بحران (C1-C15)
+## نمای کلی فازها
 
-| فاز | نام | بحران‌های پوشش | مدت | پیش‌نیاز | خروجی قابل سنجش |
-|-----|-----|---------------|------|----------|-----------------|
-| **۰** | تثبیت بیلد — Build سبز | C1, C10, C11 | ۱-۲ روز | هیچ | `npm run build` بدون `DATABASE_URL` **دیگر کرش نمی‌کند** + `docker compose build` سبز + migration اولیه |
-| **۱** | بستن حفره مالی — Financial Firewall | C2, C7 | ۲-۳ روز | فاز ۰ | هیچ سفارشی با قیمت کلاینت ثبت نمی‌شود؛ کوپن race ندارد |
-| **۲** | قفل API — سد احراز هویت | C3, C4, C5, C6 | ۳-۴ روز | فاز ۰ | تمام `POST/PATCH/DELETE` مدیریتی `401` بدون توکن؛ IDOR بسته |
-| **۳** | یکپارچگی داده و صف | C9, C12, C14 | ۲-۳ روز | فاز ۱+۲ | `order.paid → invoice + inventory + email` اتمیک؛ دیسپچر با DLQ |
-| **۴** | سخت‌سازی API و قرارداد | C8, C13, C15 + R6 | ۲ روز | فاز ۲ | `perPage ≤100`، rate-limit روی `ai/chat`، خطاها یکسان‌شکل |
-| **۵** | کیفیت کد و مشاهده‌پذیری | R16, R11, R10, R17 | ۲-۳ روز | فاز ۴ | صفر `as never`، `pino` واقعی، `constants.ts` |
-| **۶** | زیرساخت و مقیاس | R12, R15 | ۲ روز | فاز ۰ | `compose` بدون `ports:3000` مستقیم، healthcheck، worker جدا |
-| **۷** | تست | R14 | موازی P1-P6 | فاز ۰ | `state-machine/coupon/session` ≥۸۰٪ + ۳ integration کلیدی |
-
-> **ترتیب اجرا الزامی است:** فاز ۰ باید اول شود — بدون آن هیچ `verify` معنادار نیست. فاز ۱ و ۲ را می‌توان موازی با دو نفر برد، ولی فاز ۳ بدون فاز ۱ بی‌معناست (جریان پول به قیمت درست وابسته است).
+| فاز | عنوان | مشکلات | تخمین | وضعیت |
+|:---:|-------|--------|:------:|:------:|
+| ۰ | تثبیت استقرار + جریان پول | C9, C11 | ۱-۲ روز | ⬜ |
+| ۱ | قفل مالی | C2, C7 | ۲-۳ روز | ⬜ |
+| ۲ | قفل امنیتی API | C3, C5, C6 | ۳-۴ روز | ⬜ |
+| ۳ | یکپارچگی داده و صف | C12, C14 | ۲-۳ روز | ⬜ |
+| ۴ | سخت‌سازی API | C8, C13, C15 | ۲ روز | ⬜ |
+| ۵ | کیفیت کد | T1, T2, T3 | ۲-۳ روز | ⬜ |
+| ۶ | زیرساخت | P1, P2 | ۲ روز | ⬜ |
+| ۷ | تست Integration | Q1 | موازی | ⬜ |
 
 ---
 
-## فاز ۰ — تثبیت بیلد (C1, C10, C11)
+## فاز ۰ — تثبیت استقرار + جریان پول
 
-**هدف:** `npm run verify` و `docker compose build` بدون تکیه بر DB زنده سبز شوند.
+**هدف:** تضمین deploy صحیح + کامل کردن زنجیرهٔ مالی  
+**تخمین:** ۱-۲ روز  
+**مشکلات:** C9 (جریان پول قطع), C11 (صفر migration)
 
-### بحران‌ها
+### چک‌لیست
 
-| شناسه | عنوان | فایل‌های درگیر |
-|-------|-------|---------------|
-| C1 | `process.exit` در `db.ts` + بوت جاب در import | `src/server/shared/db.ts:10-17`, `src/server/jobs/init.ts`, `src/server/jobs/registry.ts` |
-| C10 | `Dockerfile:9` `--omit=dev` → غیبت `typescript/@tailwindcss/postcss` در builder | `Dockerfile` |
-| C11 | صفر migration واقعی (`prisma/migrations/` فقط README) | `prisma/schema.prisma`, `prisma/migrations/` |
+- [ ] **C11-1:** `npx prisma migrate dev --name init` — تولید migration اولیه
+- [ ] **C11-2:** بررسی migration تولیدشده (جدول‌ها، ایندکس‌ها، FKها)
+- [ ] **C11-3:** اضافه کردن `prisma migrate deploy` به Dockerfile CMD یا entrypoint
+- [ ] **C9-1:** اصلاح `outbox-worker.ts` — بعد از `createInvoiceFromOrder`، `markInvoicePaid` را هم صدا بزند (با idempotency)
+- [ ] **C9-2:** ثبت `Transaction` با `type: 'payment'` + `status: 'completed'` + `referenceId`
+- [ ] **C9-3:** تست دستی: webhook شبیه‌سازی → Invoice.paid + Transaction.created
 
-### چک‌لیست اجرایی
+### فایل‌های درگیر
 
-- [ ] **C1-a** حذف `prisma.$connect().catch(...process.exit)` از `src/server/shared/db.ts` — Prisma lazy بماند، خطا فقط در `/api/health` دیده شود
-- [ ] **C1-b** حذف `startBackgroundJobs()` از سطح ماژول `db.ts` → انتقال به `src/instrumentation.ts` (Next 15+ hook) با guard `if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'test') return`
-- [ ] **C1-c** گسستن چرخه `db → jobs/init → registry → workers → db` — `registry.ts` فقط `export function createWorkers()` کند، نه `new Worker` در سطح ماژول
-- [ ] **C1-d** `src/server/shared/redis.ts` → `lazyConnect: true` + `enableReadyCheck: true` (یا حذف `new IORedis` از import)
-- [ ] **C10-a** `Dockerfile` دو `node_modules`: یکی کامل برای builder (`npm ci`) و یکی `omit=dev` فقط برای runner — یا `COPY --from=deps` را فقط برای runner نگه دار و builder `npm ci` جدا بزند
-- [ ] **C10-b** افزودن `HEALTHCHECK --interval=30s CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"`
-- [ ] **C11-a** `npx prisma migrate dev --name init` روی dev → کامیت `prisma/migrations/*` (شامل ایندکس‌های C14 اگر خواستید همین‌جا بیاورید)
-- [ ] **پیش‌نیاز کوچک (رفع ۱ خطای type-check فعلی):** `src/app/api/payments/webhook/zarinpal/route.ts:57` → `async (tx: Prisma.TransactionClient) =>` (همین commit)
-- [ ] **خانه‌تکانی ۹ اوت:** `package.json` → `"engines": {"node": ">=22"}` + `npm install` → `npm ci` در `ci.yml` + `pino-pretty` به `devDependencies`
+| فایل | تغییر |
+|------|-------|
+| `prisma/migrations/<timestamp>_init/migration.sql` | جدید — خروجی prisma migrate |
+| `src/server/jobs/workers/outbox-worker.ts:55-80` | اضافه کردن markInvoicePaid + createTransaction بعد از createInvoiceFromOrder |
+
+### معیار پذیرش (Verification)
+
+```bash
+npm run type-check && npm run lint && npm run test && npm run build
+# همه سبز
+```
+
+- migration فایل موجود باشد و `prisma migrate deploy` بدون خطا اجرا شود
+- `outbox-worker` بعد از `order.status_changed → paid`:
+  1. Invoice ساخته شود (idempotent)
+  2. Invoice به `paid` تغییر وضعیت دهد
+  3. Transaction با `type=payment` + `status=completed` ثبت شود
+
+### Git
+
+```bash
+git add prisma/migrations/ src/server/jobs/workers/outbox-worker.ts
+git commit -m "فاز ۰: migration اولیه + اصلاح جریان مالی (C9, C11)"
+git push origin arena/019fe8c8-saite
+```
+
+---
+
+## فاز ۱ — قفل مالی
+
+**هدف:** حذف ورودی مالی از کلاینت + رفع race condition کوپن  
+**تخمین:** ۲-۳ روز  
+**مشکلات:** C2 (unitPrice در interface), C7 (perCustomerLimit race)
+
+### چک‌لیست
+
+- [ ] **C2-1:** حذف `unitPrice?: number` از `CreateOrderInput` interface (`orders/service.ts:14`)
+- [ ] **C2-2:** بررسی تمام callers — هیچ‌جا unitPrice ارسال نمی‌کند
+- [ ] **C7-1:** تغییر `marketingService.applyCoupon` — استفاده از `SELECT ... FOR UPDATE` روی Coupon
+- [ ] **C7-2:** یا استفاده از `SERIALIZABLE` isolation در تراکنش
+- [ ] **C7-3:** تست race: دو درخواست هم‌زمان با perCustomerLimit=3
+
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/server/modules/orders/service.ts:12-14` | حذف `unitPrice` از interface |
+| `src/server/modules/marketing/service.ts:85-140` | اتمیک‌سازی پرCustomerLimit با advisory lock یا serializable |
 
 ### معیار پذیرش
 
-```bash
-DATABASE_URL="" npm run build  # دیگر P1012 نمی‌دهد، فقط health 503
-docker compose -f docker-compose.prod.yml build  # سبز
-npx prisma migrate deploy  # روی CI با DB خالی سبز
-npm run verify  # type-check/lint/test سبز، build با DATABASE_URL dummy سبز
-```
+- `CreateOrderInput` بدون `unitPrice` — `tsc` سبز
+- Race condition test: ۱۰ درخواست هم‌زمان → دقیقاً `perCustomerLimit` ردیمپشن ثبت شود
+- `npm run type-check && npm run lint && npm run test && npm run build` ✅
 
-### کامیت پیشنهادی
+### Git
 
 ```bash
-npm run verify
-git add src/server/shared/db.ts src/server/shared/redis.ts src/server/jobs/init.ts src/server/jobs/registry.ts src/instrumentation.ts Dockerfile prisma/migrations prisma/schema.prisma package.json
-git commit -m "فاز ۰: تثبیت بیلد — حذف اتصال مشتاق Prisma و process.exit، اصلاح Dockerfile و افزودن migration اولیه"
-git push origin arena/019fe81d-saite
-git push origin HEAD:arena/019fe061-saite  # mirror برای سازگاری با نام تسک
+git add src/server/modules/orders/service.ts src/server/modules/marketing/service.ts
+git commit -m "فاز ۱: حذف unitPrice از interface + رفع race کوپن (C2, C7)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۱ — بستن حفره مالی (C2, C7)
+## فاز ۲ — قفل امنیتی API
 
-**هدف:** پول فقط با قیمت سرور محاسبه شود؛ کوپن قابل سوءاستفاده نباشد.
+**هدف:** بستن حفره‌های auth + upload hardening + demo password  
+**تخمین:** ۳-۴ روز  
+**مشکلات:** C3 (AI بدون auth), C5 (demo password), C6 (upload بدون magic bytes + CSP)
 
 ### چک‌لیست
 
-- [ ] **C2-a** `src/server/modules/orders/service.ts` — امضا شود `create(input: {customerId, items: {productId, quantity}[]})` بدون `unitPrice`
-- [ ] **C2-b** داخل `prisma.$transaction` قیمت هر `productId` را از DB بخوان، `priceType==='fixed' && price!=null && stockStatus!=='out_of_stock'` assert
-- [ ] **C2-c** از `src/lib/checkout/price-authority.ts` (از طریق `actions.ts` wrapper) یا منطق مشابه داخل تراکنش استفاده کن؛ `totalAmount` سروری
-- [ ] **C2-d** `Order + OrderItem[] + OutboxEvent` در یک `$transaction` واحد (nested `create` یا `createMany`)
-- [ ] **C2-e** `src/app/api/orders/route.ts:29-33` فقط `productId/quantity` بگیرد
-- [ ] **C7-a** `marketing/service.ts:69-78` → `prisma.coupon.updateMany({where:{id, usageCount:{lt: usageLimit}}, data:{usageCount:{increment:1}}})` و چک `count===1`
-- [ ] **C7-b** جدول `CouponRedemption (couponId, customerId, orderId, @@unique([couponId, customerId]))` یا تا آن زمان `perCustomerLimit` را از API حذف/مستند “نمایشی”
-- [ ] تست هم‌زمانی کوپن (دو request موازی)
+- [ ] **C3-1:** اضافه کردن `getCustomerSession` یا `requirePermission` به `ai/chat/route.ts`
+- [ ] **C5-1:** guard قوی‌تر: `ALLOW_DEMO_LOGIN` env flag + `NODE_ENV !== 'production'`
+- [ ] **C6-1:** magic bytes validation برای upload (JPEG: FF D8 FF, PNG: 89 50 4E 47, WebP, GIF, PDF)
+- [ ] **C6-2:** `Content-Disposition: attachment` + `X-Content-Type-Options: nosniff` در nginx `/uploads/`
+- [ ] **C6-3:** CSP header در nginx — حداقل `default-src 'self'; script-src 'self'`
+
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/app/api/ai/chat/route.ts` | اضافه کردن customer session check |
+| `src/app/api/customers/session/route.ts:70-76` | guard قوی‌تر demo password |
+| `src/app/api/upload/route.ts` | magic bytes validation |
+| `src/server/upload/providers/local.ts` | magic bytes check در لایه provider |
+| `nginx/nginx.conf:79-83` | Content-Disposition + X-Content-Type-Options + CSP |
 
 ### معیار پذیرش
 
-```bash
-# curl با unitPrice دستکاری‌شده → 400 یا قیمت DB برگردد نه ۱۰۰۰ ریال
-# دو درخواست همزمان کوپن با سقف ۱ → یکی 409
-npm run verify
-```
+- `curl POST /api/ai/chat` بدون cookie → 401
+- `curl POST /api/customers/session` با demo password در production → 401 (حتی بدون passwordHash)
+- Upload فایل `.js` با MIME `image/jpeg` → 400 (magic bytes mismatch)
+- `curl -I /uploads/file.jpg` → `Content-Disposition: attachment`
+- `curl -I https://site/` → `Content-Security-Policy` header موجود
 
-### کامیت
+### Git
 
 ```bash
-git add src/server/modules/orders/service.ts src/server/modules/orders/repository.ts src/app/api/orders/route.ts src/server/modules/marketing/service.ts prisma/schema.prisma
-git commit -m "فاز ۱: قفل مالی — محاسبه قیمت از DB و اعمال اتمیک سقف کوپن"
-git push origin arena/019fe81d-saite
+git add src/app/api/ai/chat/route.ts src/app/api/customers/session/route.ts src/app/api/upload/route.ts src/server/upload/providers/local.ts nginx/nginx.conf
+git commit -m "فاز ۲: قفل امنیتی API — AI auth, demo guard, upload hardening, CSP (C3, C5, C6)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۲ — قفل API (C3, C4, C5, C6)
+## فاز ۳ — یکپارچگی داده و صف
 
-**هدف:** هیچ نوشتاری بدون نقش، هیچ خواندنی بدون مالکیت.
+**هدف:** رفع outbox re-enqueue + افزودن ایندکس‌های مفقود  
+**تخمین:** ۲-۳ روز  
+**مشکلات:** C12 (outbox re-enqueue), C14 (ایندکس/FK مفقود)
 
 ### چک‌لیست
 
-- [ ] **C3** روی همه نوشتاری: `POST /api/products`, `PATCH/DELETE /api/products/[id]`, `POST /api/marketing/coupons|campaigns`, `POST /api/shipping/rates|shipments`, `PATCH /api/shipping/shipments/[id]`, `POST/PATCH/DELETE /api/content/**` → `const guard = await requirePermission('<domain>:write'); if(!guard.ok) return guard.response` + `actorId = guard.admin.id` به‌جای `'system'`
-- [ ] **C3-mirror** خواندن مدیریتی `GET /api/marketing/coupons`, `/api/shipping/rates` → `requirePermission(':read')`؛ خواندن عمومی فقط `isPublished:true/active:true`
-- [ ] **C4** `GET /api/finance/invoices?customerId=` → `requirePermission('finance:read')`؛ نسخه مشتری جدا `GET /api/me/invoices` با `customerId = session.sub` + `ForbiddenError → 403` در `handleServiceError`
-- [ ] **C4** `GET /api/comms/email-logs|sms-logs` + `GET /api/shipping/shipments/[id]` → `requirePermission('comms:read'|'shipping:read')`
-- [ ] **C5** `prisma/schema.prisma` → `Customer.passwordHash String?` + migration + reuse `src/lib/auth/server/password-hash.ts` (scrypt) + `consumeRateLimit` per-IP+per-email روی `POST /api/customers/session` + guard `NODE_ENV !== 'production'` تا تکمیل
-- [ ] **C6** `POST /api/upload` → `requirePermission('media:write')` + مپ `mimetype → ext` ثابت (نادیده گرفتن پسوند کلاینت) + `folder` whitelist `/^[a-z0-9-]{1,32}$/` + حذف PDF یا `Content-Disposition: attachment` + `nginx: client_max_body_size 10m`
+- [ ] **C12-1:** اضافه کردن advisory lock به outbox-dispatcher — جلوگیری از double-processing در multi-instance
+- [ ] **C12-2:** یا استفاده از `UPDATE ... RETURNING` اتمیک — claim batch قبل از enqueue
+- [ ] **C14-1:** اضافه کردن `@@index([orderId])` روی `Transaction`
+- [ ] **C14-2:** اضافه کردن `@@index([orderId])` روی `OrderItem`
+- [ ] **C14-3:** اضافه کردن `@@index([productId])` روی `OrderItem`
+- [ ] **C14-4:** `prisma migrate dev` برای تولید migration جدید
+
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/server/jobs/dispatchers/outbox-dispatcher.ts` | atomic claim batch |
+| `prisma/schema.prisma` | افزودن ۳ ایندکس |
+| `prisma/migrations/<ts>_add_indexes/migration.sql` | migration جدید |
 
 ### معیار پذیرش
 
-```bash
-curl -X POST /api/products -d '{}'  # بدون کوکی → 401
-curl "/api/finance/invoices?customerId=other" -H "Cookie: ..."  # → 403 یا فیلتر به خود
-curl -X POST /api/upload -F file=@x.html  # بدون auth → 401؛ با auth و .html → 400
-```
+- outbox-dispatcher: دو instance هم‌زمان → هر event فقط یک بار enqueue شود
+- `EXPLAIN ANALYZE` روی `SELECT * FROM transactions WHERE orderId = ?` → Index Scan (نه Seq Scan)
+- `npm run type-check && npm run lint && npm run test && npm run build` ✅
 
-### کامیت‌ها (قابل شکستن به ۲)
+### Git
 
 ```bash
-git add src/app/api/products src/app/api/marketing src/app/api/shipping src/app/api/content
-git commit -m "فاز ۲-الف: قفل نوشتاری مدیریتی — اتصال requirePermission به تمام POST/PATCH/DELETE"
-git push origin arena/019fe81d-saite
-
-git add src/app/api/finance src/app/api/comms src/app/api/shipping src/app/api/customers/session.route.ts src/app/api/upload/route.ts src/server/upload/providers/local.ts prisma/schema.prisma nginx/nginx.conf
-git commit -m "فاز ۲-ب: بستن IDOR، ورود مشتری امن و سخت‌گیری آپلود"
-git push origin arena/019fe81d-saite
+git add prisma/schema.prisma prisma/migrations/ src/server/jobs/dispatchers/outbox-dispatcher.ts
+git commit -m "فاز ۳: atomic outbox dispatch + ایندکس‌های مفقود (C12, C14)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۳ — یکپارچگی داده و صف (C9, C12, C14)
+## فاز ۴ — سخت‌سازی API
 
-**هدف:** پرداخت موفق واقعاً فاکتور و موجودی و ایمیل بسازد؛ صف هرگز گیر نکند.
+**هدف:** سقف perPage + rate-limit mutations + قرارداد خطا  
+**تخمین:** ۲ روز  
+**مشکلات:** C8 (۶ endpoint بدون سقف), C13 (rate-limit mutations), C15 (فرمت خطا)
 
 ### چک‌لیست
 
-- [ ] **C9** `webhook/zarinpal:61-66` فقط `ordersService.transitionState(orderId,'paid','zarinpal-webhook')` → انتشار `order.paid` به outbox
-- [ ] **C9** `outbox-worker.ts` هندلر `order.paid`: `financeService.createInvoiceFromOrder` (idempotent موجود) + `inventoryService.reserveItems` + `emailQueue.add('order_confirmation')` — همه idempotent
-- [ ] **C12** `outbox-dispatcher.ts` claim اتمیک: `dispatchedAt` ستون یا `updateMany` → فقط dispatch نشده‌ها + `retryCount++` روی `failed` و پس از ۵ به DLQ/flag
-- [ ] **C12** `POLL_INTERVAL_MS` از `env`
-- [ ] **C14** در migration فاز ۰ یا جدا: `@@index([customerId, createdAt])` روی `Order`/`Invoice`, `@@index([category, createdAt])` و `@@index([brand])` روی `Product`, `@@index([orderId])` روی `PaymentIntent`, `Order.customerId → Customer @relation(onDelete: Restrict)`, `onDelete` صریح برای `OrderItem`
+- [ ] **C8-1:** استخراج `parsePagination` از `products/_utils.ts` به `server/shared/validation.ts` یا `server/shared/http-utils.ts`
+- [ ] **C8-2:** استفاده از `parsePagination` در ۶ endpoint (finance invoices, finance transactions, comms email-logs, comms sms-logs, shipping shipments, marketing coupons/campaigns)
+- [ ] **C8-3:** حذف import نسبی `../../products/_utils` — جایگزینی با shared import
+- [ ] **C13-1:** اضافه کردن rate-limit middleware برای mutation endpoints (POST/PUT/DELETE)
+- [ ] **C15-1:** استانداردسازی فرمت خطا: `{ error: string, code?: string, details?: unknown }`
+- [ ] **C15-2:** یکپارچه‌سازی با `require-role.ts` فرمت (`{ ok: false, reason, message }` → `{ error: message, code: reason }`)
+
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/server/shared/http-utils.ts` | جدید — handleServiceError + parsePagination + parseLimit |
+| `src/app/api/products/_utils.ts` | حذف یا re-export از shared |
+| ۶ فایل route (finance, comms, shipping, marketing) | import از shared + parsePagination |
+| `src/lib/auth/server/rate-limit.ts` | اضافه کردن `consumeMutationRateLimit` |
+| ۶ فایل route mutation | اضافه کردن rate-limit |
+| `src/app/api/products/_utils.ts:4-17` | استانداردسازی فرمت خطا |
 
 ### معیار پذیرش
 
-```bash
-# پرداخت موفق → invoice در DB، ایمیل در queue، موجودی رزرو
-# kill کردن worker وسط dispatch → پس از restart دوباره dispatch ولی بدون دوبار invoice
-```
+- `GET /api/finance/transactions?limit=999999` → `limit=100` (clamped)
+- ۲۰ POST هم‌زمان → 429 با `Retry-After`
+- همه خطاها فرمت `{ error, code?, details? }` دارند
 
-### کامیت
+### Git
 
 ```bash
-git add src/app/api/payments/webhook/zarinpal/route.ts src/server/jobs/workers/outbox-worker.ts src/server/jobs/dispatchers/outbox-dispatcher.ts prisma/schema.prisma prisma/migrations
-git commit -m "فاز ۳: زنجیره پرداخت و صف — اتصال invoice/inventory/email به order.paid و DLQ"
-git push origin arena/019fe81d-saite
+git add src/server/shared/http-utils.ts src/app/api/products/_utils.ts src/app/api/ src/lib/auth/server/rate-limit.ts
+git commit -m "فاز ۴: سقف perPage + rate-limit mutations + قرارداد خطا (C8, C13, C15)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۴ — سخت‌سازی API و قرارداد (C8, C13, C15 + R6)
+## فاز ۵ — کیفیت کد
 
-**هدف:** API در برابر DoS و سوءاستفاده هزینه‌ای مقاوم؛ قرارداد HTTP mode ناقص نباشد.
+**هدف:** cleanup type-safety + logger统一 + error hierarchy  
+**تخمین:** ۲-۳ روز  
+**مشکلات:** T1 (22x as unknown as any), T2 (console.* → logger), T3 (error hierarchy)
 
 ### چک‌لیست
 
-- [ ] **C8** `perPage = Math.min(100, Math.max(1, Number(...)))` + `Number.isFinite` guard + helper `parsePagination(searchParams)` در `src/app/api/products/_utils.ts` و استفاده در ۱۰ route
-- [ ] **C13** `POST /api/ai/chat` → `requirePermission('ai:use')` یا `getCustomerSession` + `Redis INCR+EXPIRE` سقف روزانه per-user + `actorId` از session نه body + `consumeRateLimit` روی `POST /api/marketing/coupons/validate` و `POST /api/customers/session`
-- [ ] **C15** یکسان‌سازی خطا: سرور همیشه `{error, message}`، `src/lib/api-client.ts:54` هر دو کلید را بخواند؛ `GET /api/products?featured=1` آرایه برگرداند (سازگار با `src/lib/api.ts:97-107`)؛ ۵ endpoint موهوم (`/compatible`, `/by-ids` ...) یا route واقعی یا fallback خالی بدون تغییر امضا
-- [ ] **R6** `src/server/shared/validation.ts` — Zod schema برای body/query هر route + `ValidationError` → `400` با پیام فارسی
+- [ ] **T1-1:** ایجاد `src/server/shared/prisma-helpers.ts` — helper type `PrismaInput<T>` برای cast امن
+- [ ] **T1-2:** جایگزینی `as unknown as any` در ۷ فایل repository
+- [ ] **T2-1:** جایگزینی `console.error` → `logger.error` در ۴ فایل API
+- [ ] **T2-2:** جایگزینی `console.log` → `logger.info` در webhook
+- [ ] **T3-1:** `CouponValidationError extends ValidationError` (`errors.ts`)
+- [ ] **T3-2:** `InvalidStateTransitionError extends DomainError` — ساختن `DomainError` base class
+- [ ] **T3-3:** ساده‌سازی `handleServiceError` — حذف name-based dispatch
 
-### کامیت
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/server/shared/prisma-helpers.ts` | جدید — helper types |
+| ۷ فایل repository | حذف `as unknown as any` |
+| ۴ فایل API (webhook, ai/chat, _utils, error.tsx) | `console.*` → `logger.*` |
+| `src/server/shared/errors.ts` | DomainError base + CouponValidationError + InvalidStateTransitionError |
+| `src/server/modules/marketing/service.ts` | throw new ValidationError به‌جای CouponValidationError |
+| `src/server/modules/orders/state-machine.ts` | throw new DomainError |
+| `src/app/api/products/_utils.ts` | حذف name-based dispatch |
+
+### معیار پذیرش
+
+- `grep -rn "as unknown as any" src/` → ۰ نتیجه
+- `grep -rn "console\." src/server/ src/app/api/` → ۰ نتیجه (فقط error.tsx client مجاز)
+- `handleServiceError` فقط `instanceof` chain — بدون name-based
+- `npm run type-check && npm run lint && npm run test && npm run build` ✅
+
+### Git
 
 ```bash
-git add src/app/api/products/_utils.ts src/app/api src/lib/api-client.ts src/server/shared/validation.ts
-git commit -m "فاز ۴: سخت‌سازی API — سقف صفحه، rate-limit، یکسان‌سازی خطا و اعتبارسنجی Zod"
-git push origin arena/019fe81d-saite
+git add src/
+git commit -m "فاز ۵: کیفیت کد — type-safety + logger + error hierarchy (T1, T2, T3)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۵ — کیفیت کد و مشاهده‌پذیری (R16, R11, R10, R17)
+## فاز ۶ — زیرساخت
 
-**هدف:** صفر `as never`، لاگ واقعی، بدون magic.
+**هدف:** رفع N+1 inventory + cache-aside pattern  
+**تخمین:** ۲ روز  
+**مشکلات:** P1 (inventory N+1), P2 (cache-aside)
 
 ### چک‌لیست
 
-- [ ] **R16** حذف ۱۷ `as never` با `Prisma.*CreateInput/WhereInput` + مپر `toPublicProduct(prismaProduct): Product` (تنها نقطه ترجمه `price: null → undefined`)
-- [ ] **R11** مهاجرت `console.*` در ۱۴ فایل سرور به `pino` (`src/server/shared/logger.ts`) + `childLogger({traceId})` در routeها + `redact: ['*.to','*.phone','*.email']`
-- [ ] **R10** ادغام دو `session-token` (۳۰۴+۱۱۷ خط) → core HMAC مشترک + افزودن `version` revocation به نشست مشتری + تست واحد هر دو
-- [ ] **R17** `src/server/shared/constants.ts` (TTLها، `TAX_RATE` از env، `PAYMENT_INTENT_TTL_MS`, `INVOICE_DUE_DAYS`) + helper `fetchJson(url, {timeoutMs})` با `AbortSignal.timeout(10_000)` برای ۸ fetch خارجی + رفع `taxRate=0.09` هاردکد
+- [ ] **P1-1:** `inventoryService.reserveItems` — یک `findMany` به‌جای N تا `findUnique`
+- [ ] **P1-2:** بررسی اتمیک بودن — `$transaction` با `FOR UPDATE`
+- [ ] **P2-1:** ایجاد `src/server/shared/cache.ts` — Redis cache-aside helper
+- [ ] **P2-2:** cache products list (TTL 60s) — invalidation روی product.created/updated/deleted
+- [ ] **P2-3:** cache shipping rates (TTL 5 min) — invalidation روی rate create
 
-### کامیت‌ها
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `src/server/modules/inventory/service.ts` | batch query + transaction |
+| `src/server/modules/inventory/repository.ts` | findMany + FOR UPDATE |
+| `src/server/shared/cache.ts` | جدید — cacheAside<T>(key, ttl, fetcher) |
+| `src/server/modules/products/service.ts` | استفاده از cache-aside |
+| `src/server/modules/shipping/service.ts` | استفاده از cache-aside |
+
+### معیار پذیرش
+
+- `reserveItems(10 items)` — ۱ query به‌جای ۱۰
+- `GET /api/products` تکراری → Redis hit (نه DB query) — قابل مشاهده در `MONITOR` Redis
+- Invalidation: product create → cache miss بعدی
+- `npm run type-check && npm run lint && npm run test && npm run build` ✅
+
+### Git
 
 ```bash
-git add src/server/modules src/server/shared/event-bus.ts
-git commit -m "فاز ۵-الف: حذف as never با تایپ‌های Prisma و مپر صریح"
-git push origin arena/019fe81d-saite
-
-git add src/server src/lib/auth/server/session-token.ts src/server/auth/session-token.ts src/server/shared/constants.ts
-git commit -m "فاز ۵-ب: لاگ pino، یکپارچه‌سازی session-token و ثابت‌ها"
-git push origin arena/019fe81d-saite
+git add src/server/modules/inventory/ src/server/shared/cache.ts src/server/modules/products/service.ts src/server/modules/shipping/service.ts
+git commit -m "فاز ۶: رفع N+1 inventory + cache-aside pattern (P1, P2)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۶ — زیرساخت و مقیاس (R12, R15)
+## فاز ۷ — تست Integration
 
-**هدف:** compose و nginx دقیقاً همان چیزی باشد که سند وعده داده.
+**هدف:** coverage برای endpointهای بحرانی  
+**تخمین:** موازی با فازهای دیگر  
+**مشکلات:** Q1 (بدون تست integration)
 
 ### چک‌لیست
 
-- [ ] **R15-compose** حذف `ports: "3000:3000"` → `expose: - "3000"` (فقط nginx به اینترنت) + `healthcheck` برای `db`/`redis` + `depends_on: condition: service_healthy` + `deploy.resources.limits` طبق بودجه RAM سند + mount `uploads:/app/public/uploads:ro` برای سرویس `nginx` (یا حذف `location /uploads/` از nginx)
-- [ ] **R15-nginx** `client_max_body_size 10m` + map شرطی برای `Connection: upgrade` + pin دامنه/گواهی با متغیر `DOMAIN` به‌جای هاردکد `saite.ir` + صفحات خطای سفارشی
-- [ ] **R12** سرویس `worker` جدا در compose (همان ایمیج، `command: ["node","--loader","tsx","src/server/jobs/start.ts"]` یا `tsx` جدا) + `RUN_JOBS=1` flag — producer در app، consumer در worker، dispatcher فقط در worker
+- [ ] **Q1-1:** تست endpoint `POST /api/orders` — happy path + validation errors
+- [ ] **Q1-2:** تست endpoint `GET /api/orders/[id]` — IDOR check (مشتری A نتواند سفارش مشتری B ببیند)
+- [ ] **Q1-3:** تست `POST /api/marketing/coupons/validate` — expiration, usage limit, per-customer
+- [ ] **Q1-4:** تست `POST /api/payments/webhook/zarinpal` — idempotency
+- [ ] **Q1-5:** تست `POST /api/upload` — MIME validation + size limit
+- [ ] **Q1-6:** تست `POST /api/customers/session` — rate limit + anti-enumeration
 
-### کامیت
+### فایل‌های درگیر
+
+| فایل | تغییر |
+|------|-------|
+| `tests/integration/orders.test.ts` | جدید |
+| `tests/integration/orders-idor.test.ts` | جدید |
+| `tests/integration/coupon-validate.test.ts` | جدید |
+| `tests/integration/payment-webhook.test.ts` | جدید |
+| `tests/integration/upload.test.ts` | جدید |
+| `tests/integration/customer-auth.test.ts` | جدید |
+
+### معیار پذیرش
+
+- حداقل ۶ فایل تست integration
+- coverage: تمام endpointهای بحرانی (auth, مالی, سفارش)
+- `npm run test` ✅ — همه unit + integration سبز
+
+### Git
 
 ```bash
-docker compose -f docker-compose.prod.yml config  # اعتبارسنجی
-git add docker-compose.prod.yml nginx/nginx.conf src/server/jobs/start.ts
-git commit -m "فاز ۶: هم‌ترازی زیرساخت — healthcheck، worker جدا و اصلاح nginx"
-git push origin arena/019fe81d-saite
+git add tests/integration/
+git commit -m "فاز ۷: تست‌های integration — 6 endpoint بحرانی (Q1)"
+git push origin arena/019fe8c8-saite
 ```
 
 ---
 
-## فاز ۷ — تست (R14) — موازی با فاز ۱-۶
+## وابستگی بین فازها
 
-**هدف:** هر بحران با تست قفل شود.
-
-### چک‌لیست
-
-- [ ] واحد خالص: `state-machine` گذار مجاز/ممنوع، `marketing.validateCoupon` با repo موک، `session-token` انقضا/امضا/نوع، `price-authority` reprice
-- [ ] Integration با Postgres واقعی (services آماده در `ci.yml`): `orders.create` قیمت سروری، `webhook` idempotency (دو بار `Authority` یکسان)، `coupon` race
-- [ ] فعال‌سازی `tests/integration/products.test.ts.skip` → `.test.ts`
-- [ ] E2E برای HTTP mode قرارداد (`?featured=1`, `/by-ids`)
-
-### کامیت
-
-```bash
-git add tests vitest.config.ts
-git commit -m "فاز ۷: پوشش تست سرور — واحد و یکپارچگی با DB واقعی"
-git push origin arena/019fe81d-saite
+```
+فاز ۰ (migration + جریان پول) ← هیچ وابستگی
+    ↓
+فاز ۱ (قفل مالی) ← نیاز به migration فاز ۰
+    ↓
+فاز ۲ (امنیت) ← مستقل از فاز ۱
+    ↓
+فاز ۳ (داده + صف) ← نیاز به migration فاز ۰
+    ↓
+فاز ۴ (سخت‌سازی) ← مستقل
+    ↓
+فاز ۵ (کیفیت) ← بعد از فاز ۲-۴ (refactor بعد از تثبیت)
+    ↓
+فاز ۶ (زیرساخت) ← بعد از فاز ۵ (type-safety قبل از cache)
+    ↓
+فاز ۷ (تست) ← موازی — بعد از هر فاز تست‌های مربوطه
 ```
 
 ---
 
-## الگوهای طراحی پیشنهادی (بدون تغییر ساختار کلی)
+## دستورالعمل‌های عمومی
 
-| الگو | کجا | منفعت |
-|------|-----|-------|
-| Unit of Work / `prisma.$transaction` | `orders.create`, webhook, coupon apply | Outbox واقعی؛ سازگاری رویداد↔داده |
-| Strategy (موجود) | `payments/upload/ai` providers | حفظ؛ factory یکدست `resolveProvider<T>` |
-| Repository interface + DI سبک | `createOrdersRepository(prisma)` | تست بدون DB؛ حذف singleton سخت |
-| State Machine تعمیم‌یافته | `Invoice`/`Shipment` مثل `Order` | جلوگیری از `paid → refunded → paid` |
-| Retry + timeout policy | فراخوانی‌های خارجی | `fetchJson` یکدست، قابل تست |
-| Idempotency-Key | `POST /api/orders`, `/api/upload` | دوبار-کلیک بدون دوبله |
+### قبل از هر commit
 
----
+```bash
+npm run type-check && npm run lint && npm run test && npm run build
+```
 
-## بهینه‌سازی Performance — چک‌لیست سریع هر فاز
+### Pull برای لپ‌تاپ محلی (D:\saite)
 
-| # | مورد | محل | فاز |
-|---|------|------|-----|
-| ۱ | N+1 ساخت آیتم | `orders/service.ts:35-41` → `createMany` در `$transaction` | ۱ |
-| ۲ | ایندکس `Order.customerId` | schema C14 | ۳ |
-| ۳ | ایندکس `category/brand` | schema | ۳ |
-| ۴ | دیسپچر scan | `outbox-dispatcher` + claim اتمیک | ۳ |
-| ۵ | سقف صفحه | `perPage ≤100` | ۴ |
-| ۶ | include عریض | `orders/repository:6-9` فقط `select` | ۴ |
-| ۷ | کش پاسخ عمومی | `Cache-Control: s-maxage=60` | ۴ |
-| ۸ | `getActiveCampaigns` بدون سقف | `marketing/repository:99` | ۴ |
+**Git Bash:**
+```bash
+cd /d/saite
+git restore package-lock.json 2>/dev/null  # اگر دست‌خورده
+git fetch origin
+git pull origin arena/019fe8c8-saite
+npx prisma generate  # اگر schema.prisma عوض شده
+npm run type-check && npm run build
+```
 
----
+**PowerShell:**
+```powershell
+cd D:\saite
+git restore package-lock.json 2>$null
+git fetch origin
+git pull origin arena/019fe8c8-saite
+npx prisma generate
+npm run type-check; npm run build
+```
 
-## چگونه در سشن جدید ادامه دهیم (راهنمای ۳۰ ثانیه‌ای)
+### قوانین
 
-1. `git fetch origin && git checkout arena/019fe81d-saite && git pull` (یا `019fe061` اگر تسک آن است)
-2. `cat docs/PROGRESS-TRACKER.md` — ببین کدام فاز `⏳ در حال انجام` است
-3. `cat docs/AUDIT-COMBINED-FINAL-2026-08-09.md` — جزئیات بحران همان فاز
-4. همان فاز را ادامه بده؛ پس از هر زیر-تسک `npm run verify` → commit فارسی → push
-5. پس از اتمام فاز، `PROGRESS-TRACKER.md` را به‌روزرسانی کن و push کن
-
-> **نکته دو شاخه:** `019fe81d` شاخه سشن فعلی و `019fe061` شاخه گزارش B است. هر push را روی هر دو انجام بده: `git push origin HEAD:arena/019fe81d-saite && git push origin HEAD:arena/019fe061-saite`
-
----
-
-## مراجع
-
-- تحلیل تجمیعی کامل: `docs/AUDIT-COMBINED-FINAL-2026-08-09.md`
-- تحلیل اولیه: `docs/AUDIT-2026-08-09-FULL.md`
-- گزارش خارجی پیوست‌شده: (متن کامل در `AUDIT-COMBINED` فصل ۹ تطبیق شده)
-- سند معماری: `docs/BACKEND-ARCHITECTURE.md`
-- قرارداد API: `docs/API_CONTRACT.md`
+- هر فاز یک commit مجزا
+- پیام commit فارسی
+- `npm run verify` قبل از هر push
+- هرگز `main` را push نکنید
+- Mock adapterها حذف نشوند — فقط stub
