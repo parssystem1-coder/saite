@@ -8,6 +8,7 @@ export async function startBackgroundJobs() {
   if (started) return
   if (process.env.NEXT_PHASE === 'phase-production-build') return
   if (process.env.NODE_ENV === 'test') return
+  if (process.env.RUN_JOBS === '0') return
 
   started = true
   // registry فقط زمانی لود شود که واقعاً می‌خواهیم jobها را استارت کنیم

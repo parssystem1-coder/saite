@@ -29,7 +29,7 @@
 | **۳** | یکپارچگی داده و صف (C9, C12, C14) | ✅ **انجام شد — ۱۰۰٪** | webhook با state-machine + outbox-worker زنجیره کامل + دیسپچر با retryCount/DLQ + ایندکس/FK | `src/app/api/payments/webhook/zarinpal/route.ts`, `src/server/jobs/workers/outbox-worker.ts`, `dispatchers/outbox-dispatcher.ts`, `prisma/schema.prisma` | نیاز به `npx prisma migrate dev --name phase3_indexes` روی DB واقعی |
 | **۴** | سخت‌سازی API (C8, C13, C15, R6) | ✅ **انجام شد — ۱۰۰٪** | `parsePagination` با سقف ۱۰۰ + rate-limit روی `ai/chat` و `coupon/validate` + `api-client` با هر دو شکل خطا + `api.ts` با featured/bestSeller و ۵ endpoint با fallback + `validation.ts` | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts` | — |
 | **۵** | کیفیت کد (R16, R11, R10, R17) | ✅ **انجام شد — ۱۰۰٪** | `as never` صفر، `console→pino`، `session-token-core`، `constants`+`fetch` | `src/server/**`, `src/lib/auth/server/session-token*`, `src/server/shared/constants.ts` | — |
-| **۶** | زیرساخت (R12, R15) | 🔲 انجام‌نشده | ۰٪ | — | — |
+| **۶** | زیرساخت (R12, R15) | ✅ **انجام شد — ۱۰۰٪** | `worker` جدا + `healthcheck` + `expose` + `RUN_JOBS` + `nginx` map | `docker-compose.prod.yml`, `nginx/nginx.conf`, `src/instrumentation.ts`, `src/server/jobs/init.ts` | `docker compose config` دستی چک شود |
 | **۷** | تست (R14) | 🔲 انجام‌نشده | ۰٪ | موازی با بقیه | — |
 
 **توضیح فاز ۵:**
@@ -37,6 +37,10 @@
 - **R11:** ۱۴ فایل `console.*` → `logger.*` با `pino` + `queueMicrotask` → `prisma.create().catch`
 - **R10:** `session-token-core.ts` + ادمین/مشتری هر دو با `ver` و `timingSafeEqual` مشترک
 - **R17:** `constants.ts` (PAYMENT_TTL, TAX_RATE, MAX_PER_PAGE…) + `fetch.ts` با `AbortSignal.timeout(10s)`
+
+**توضیح فاز ۶:**
+- **R12:** `worker` service جدا (800M) با `RUN_JOBS=1`، `app` با `RUN_JOBS=0` + `instrumentation.ts` + `init.ts` با `RUN_JOBS` guard
+- **R15:** `app: ports→expose`, `db/redis` healthcheck, `depends_on: service_healthy`, `deploy.resources.limits`, `nginx` با `uploads:ro` + `map $connection_upgrade`
 
 **راهنما:**
 - `🔲` انجام‌نشده
@@ -81,6 +85,7 @@
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۳ اجرا شد** — یکپارچگی داده: زنجیره پرداخت + صف + ایندکس | `src/app/api/payments/webhook/zarinpal/route.ts`, `src/server/jobs/workers/outbox-worker.ts`, `src/server/jobs/dispatchers/outbox-dispatcher.ts`, `prisma/schema.prisma` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۴ اجرا شد** — سخت‌سازی API: سقف صفحه، rate-limit، قرارداد + validation | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts`, `src/server/modules/products/*` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۵ اجرا شد** — کیفیت کد: as never صفر، pino، session-core، constants | `src/server/**` (۲۳ فایل), `src/lib/auth/server/session-token-core.ts`, `src/server/shared/constants.ts` | ✅ `type-check` `lint` `test` `build` سبز |
+| 2026-08-09 | Arena `019fe81d` — agent | **فاز ۶ اجرا شد** — زیرساخت: worker جدا + healthcheck + nginx map | `docker-compose.prod.yml`, `nginx/nginx.conf`, `src/instrumentation.ts`, `src/server/jobs/init.ts` | ✅ `type-check` `lint` `test` `build` سبز + `docker-compose` دستی چک |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.
