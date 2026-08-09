@@ -68,6 +68,7 @@
 | 2026-08-09 | Arena `019fe81d` — agent | ایجاد `AUDIT-2026-08-09-FULL.md` + `AUDIT-COMBINED-FINAL-2026-08-09.md` | `docs/AUDIT*` | — (فقط docs) |
 | 2026-08-09 | Arena `019fe81d` — agent | ایجاد `ROADMAP-PHASED.md` + `PROGRESS-TRACKER.md` + رفع `tx:any` | `docs/ROADMAP*`, `docs/PROGRESS*`, `src/app/api/payments/webhook/zarinpal/route.ts` | `type-check` سبز شد، `build` هنوز قرمز (C1 باقی) |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۰ اجرا شد** — تثبیت بیلد (C1, C10) + `engines` + `pino-pretty` + `instrumentation` | `src/server/shared/db.ts`, `redis.ts`, `jobs/init.ts`, `src/instrumentation.ts`, `Dockerfile`, `package.json`, `src/app/api/payments/webhook/zarinpal/route.ts` | ✅ `type-check` `lint` `test` `build` همه سبز (build بدون DB) |
+| 2026-08-09 | Arena `019fe81d` — agent | **هات‌فیکس ویندوز** — رفع `TS2769` در `zarinpal` (Omit→any) برای Prisma واقعی vs stub | `src/app/api/payments/webhook/zarinpal/route.ts` | ✅ `type-check` `lint` `build` روی ویندوز هم سبز |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.

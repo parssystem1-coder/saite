@@ -54,7 +54,8 @@ export async function GET(req: NextRequest) {
       existing.amount
     )
 
-    await prisma.$transaction(async (tx: typeof prisma) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma TransactionClient تایپ واحدی ندارد (stub=any، real=Omit<...>)؛ any امن‌ترین برای هر دو
+    await prisma.$transaction(async (tx: any) => {
       await tx.paymentIntent.update({
         where: { authority },
         data: {
