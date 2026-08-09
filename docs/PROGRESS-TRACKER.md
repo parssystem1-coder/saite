@@ -10,7 +10,7 @@
 ```
 فاز ۰ [██████████] 100%  — تثبیت استقرار + جریان پول (C9, C11) ✅
 فاز ۱ [██████████] 100%  — قفل مالی (C2, C7) ✅
-فاز ۲ [░░░░░░░░░░] 0%   — قفل امنیتی API (C3, C5, C6)
+فاز ۲ [██████████] 100%  — قفل امنیتی API (C3, C5, C6) ✅
 فاز ۳ [░░░░░░░░░░] 0%   — یکپارچگی داده و صف (C12, C14)
 فاز ۴ [░░░░░░░░░░] 0%   — سخت‌سازی API (C8, C13, C15)
 فاز ۵ [░░░░░░░░░░] 0%   — کیفیت کد (T1, T2, T3)
@@ -52,11 +52,14 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| C3-1 | AI chat — customer session check | ⬜ | — |
-| C5-1 | Demo password — ALLOW_DEMO_LOGIN guard | ⬜ | — |
-| C6-1 | Upload — magic bytes validation | ⬜ | — |
-| C6-2 | nginx — Content-Disposition + X-Content-Type-Options | ⬜ | — |
-| C6-3 | nginx — CSP header | ⬜ | — |
+| C3-1 | AI chat — customer session check | ✅ | فاز ۲ |
+| C3-2 | AI chat — actorId impersonation guard | ✅ | فاز ۲ |
+| C5-1 | Demo password — ALLOW_DEMO_LOGIN guard | ✅ | فاز ۲ |
+| C6-1 | Upload — magic bytes validation | ✅ | فاز ۲ |
+| C6-2 | nginx — Content-Disposition + X-Content-Type-Options برای /uploads/ | ✅ | فاز ۲ |
+| C6-3 | nginx — CSP header + Permissions-Policy | ✅ | فاز ۲ |
+
+**Verify:** `tsc --noEmit` ✅ | `eslint` ✅ | `vitest` 698/698 ✅ | `build` ✅
 
 ---
 
@@ -131,3 +134,5 @@
 | ۲۰۲۶-۰۸-۰۹ | — | C4 (IDOR) در audit اصلاح‌شده علامت خورد | `canAccessOrder` محافظت می‌کند |
 | ۲۰۲۶-۰۸-۰۹ | — | C10 (Dockerfile) مشکلی ندارد | builder stage جداگانه full install دارد |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۰ | C9 به فاز ۰ منتقل شد | مستقیماً به استقرار مربوط است |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۲ | CSP `unsafe-eval` و `unsafe-inline` پذیرفته شد | Next.js 16 برای hydration نیاز دارد — بعداً nonce-based CSP ممکن است |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۲ | C3 فقط customer session + actorId check | AI فعلاً admin ندارد؛ اگر اضافه شد requirePermission هم لازم است |
