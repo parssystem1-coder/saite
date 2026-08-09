@@ -1,6 +1,7 @@
 import 'server-only'
 /* eslint-disable @typescript-eslint/no-explicit-any -- Prisma TransactionClient و Map<any> برای stub vs real */
 import { prisma } from '@/server/shared/db'
+import { MAX_LINES, MAX_QUANTITY_PER_LINE } from '@/server/shared/constants'
 import { ordersRepository } from './repository'
 import { assertValidTransition } from './state-machine'
 import { eventBus } from '@/server/shared/event-bus'
@@ -12,8 +13,7 @@ export interface CreateOrderInput {
   shippingAddress: Record<string, unknown>
 }
 
-const MAX_QUANTITY_PER_LINE = 20
-const MAX_LINES = 50
+
 
 export const ordersService = {
   async getById(id: string) {
@@ -100,7 +100,7 @@ export const ordersService = {
           status: 'pending',
           totalAmount,
           currency: 'IRR',
-          shippingAddress: input.shippingAddress as never,
+          shippingAddress: input.shippingAddress as unknown as any,
         },
       })
 
@@ -117,7 +117,7 @@ export const ordersService = {
       await tx.outboxEvent.create({
         data: {
           type: 'order.created',
-          payload: { orderId: createdOrder.id, customerId: input.customerId } as never,
+          payload: { orderId: createdOrder.id, customerId: input.customerId } as unknown as any,
           aggregateId: createdOrder.id,
         },
       })

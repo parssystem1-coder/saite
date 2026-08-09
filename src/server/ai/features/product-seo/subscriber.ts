@@ -1,4 +1,5 @@
 import 'server-only'
+import { logger } from '@/server/shared/logger'
 import { callChat } from '../../gateway'
 import { prisma } from '@/server/shared/db'
 
@@ -18,8 +19,8 @@ export async function handleProductCreated(event: { productId: string; actorId: 
     })
 
     // TODO: ذخیره SEO در جدول product_seo
-    console.log(`[AI SEO] Generated for ${product.slug}:`, seoText.substring(0, 100))
+    logger.info({ slug: product.slug, seoPreview: seoText.substring(0, 100) }, '[AI SEO] Generated')
   } catch (err) {
-    console.error('[AI SEO] Failed:', err)
+    logger.error({ err }, '[AI SEO] Failed')
   }
 }

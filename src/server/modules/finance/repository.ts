@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
 export const financeRepository = {
@@ -19,7 +20,7 @@ export const financeRepository = {
       data: {
         ...data,
         currency: data.currency || 'IRR',
-        metadata: data.metadata ? (data.metadata as never) : undefined,
+        metadata: data.metadata ? (data.metadata as unknown as any) : undefined,
       },
     })
   },
@@ -74,7 +75,7 @@ export const financeRepository = {
     return prisma.invoice.update({
       where: { id },
       data: {
-        status: status as never,
+        status: status as unknown as string,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
@@ -93,24 +94,24 @@ export const financeRepository = {
     metadata?: unknown
   }) {
     const payload: Record<string, unknown> = {
-      type: data.type,
+      type: data.type as unknown as string,
       amount: data.amount,
       currency: data.currency || 'IRR',
-      status: (data.status || 'pending') as never,
+      status: (data.status || 'pending') as unknown as string,
     }
     if (data.invoiceId) payload.invoiceId = data.invoiceId
     if (data.orderId) payload.orderId = data.orderId
     if (data.provider) payload.provider = data.provider
     if (data.referenceId) payload.referenceId = data.referenceId
-    if (data.metadata) payload.metadata = data.metadata as never
+    if (data.metadata) payload.metadata = data.metadata as unknown as any
 
-    return prisma.transaction.create({ data: payload as never })
+    return prisma.transaction.create({ data: payload as unknown as any })
   },
 
   async updateTransactionStatus(id: string, status: string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status: status as never, ...(settledAt && { settledAt }) },
+      data: { status: status as unknown as string, ...(settledAt && { settledAt }) },
     })
   },
 

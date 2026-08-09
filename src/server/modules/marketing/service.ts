@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
@@ -71,7 +72,6 @@ export const marketingService = {
     const result = await this.validateCoupon(code, opts)
 
     // ── اعمال اتمیک: سقف کلی + سقف هر مشتری در یک تراکنش ──────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma TransactionClient
     await prisma.$transaction(async (tx: any) => {
       // perCustomerLimit — اگر >0 باشد، تعداد قبلی این مشتری را چک کن
       if (result.coupon.perCustomerLimit > 0) {
@@ -130,7 +130,7 @@ export const marketingService = {
             orderId,
             discount: result.discount,
             customerId: opts.customerId,
-          } as never,
+          } as unknown as any,
           aggregateId: result.coupon.id,
         },
       })

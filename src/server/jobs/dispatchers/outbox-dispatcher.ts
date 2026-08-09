@@ -1,10 +1,9 @@
 import 'server-only'
+import { logger } from '@/server/shared/logger'
 /* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، Map/filter با any */
 import { prisma } from '@/server/shared/db'
+import { OUTBOX_BATCH_SIZE, OUTBOX_MAX_RETRY, OUTBOX_POLL_MS } from '@/server/shared/constants'
 import { outboxQueue } from '../queues'
-
-const POLL_INTERVAL_MS = Number(process.env.OUTBOX_POLL_MS) || 5000
-const MAX_RETRY = 5
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 
@@ -14,9 +13,9 @@ export function startOutboxDispatcher() {
   async function poll() {
     try {
       const events = await prisma.outboxEvent.findMany({
-        where: { processedAt: null, retryCount: { lt: MAX_RETRY } },
+        where: { processedAt: null, retryCount: { lt: OUTBOX_MAX_RETRY } },
         orderBy: { createdAt: 'asc' },
-        take: 100,
+        take: OUTBOX_BATCH_SIZE,
       })
 
       for (const event of events) {
@@ -36,22 +35,22 @@ export function startOutboxDispatcher() {
           // اگر jobId تکراری باشد (dedupe)، خطا را نادیده بگیر
           const msg = e instanceof Error ? e.message : String(e)
           if (!msg.includes('already exists') && !msg.includes('Job')) {
-            console.error(`[OutboxDispatcher] enqueue failed for ${event.id}:`, e)
+            logger.error({ err: e, eventId: event.id }, '[OutboxDispatcher] enqueue failed')
           }
         }
       }
 
       // DLQ: رویدادهایی که ۵ بار تلاش شدند و هنوز processedAt ندارند را لاگ کن
-      const stuck = events.filter((e: any) => e.retryCount + 1 >= MAX_RETRY)
+      const stuck = events.filter((e: any) => e.retryCount + 1 >= OUTBOX_MAX_RETRY)
       if (stuck.length > 0) {
-        console.warn(`[OutboxDispatcher] ${stuck.length} events reached DLQ (retryCount>=${MAX_RETRY}):`, stuck.map((e: any) => e.id))
+        logger.warn({ stuckIds: stuck.map((e: any) => e.id) }, `[OutboxDispatcher] ${stuck.length} events reached DLQ`)
       }
     } catch (err) {
-      console.error('[OutboxDispatcher] poll error:', err)
+      logger.error({ err }, '[OutboxDispatcher] poll error')
     }
   }
 
-  intervalId = setInterval(poll, POLL_INTERVAL_MS)
+  intervalId = setInterval(poll, OUTBOX_POLL_MS)
   // جلوگیری از نگه‌داشتن process در تست
   if (intervalId && typeof (intervalId as unknown as { unref?: () => void }).unref === 'function') {
     ;(intervalId as unknown as { unref: () => void }).unref()

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadService } from '@/server/upload/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
-
-const MAX_SIZE_MB = 10
+import { UPLOAD_MAX_SIZE_MB } from '@/server/shared/constants'
+import { logger } from '@/server/shared/logger'
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     }
     const folder = folderRaw
 
-    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      return NextResponse.json({ error: `حداکثر حجم ${MAX_SIZE_MB}MB` }, { status: 400 })
+    if (file.size > UPLOAD_MAX_SIZE_MB * 1024 * 1024) {
+      return NextResponse.json({ error: `حداکثر حجم ${UPLOAD_MAX_SIZE_MB}MB` }, { status: 400 })
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       provider: result.provider,
     })
   } catch (err) {
-    console.error('[Upload]', err)
+    logger.error({ err }, '[Upload] failed')
     return NextResponse.json({ error: 'خطای سرور' }, { status: 500 })
   }
 }

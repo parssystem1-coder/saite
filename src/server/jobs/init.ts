@@ -1,4 +1,5 @@
 import 'server-only'
+import { logger } from '@/server/shared/logger'
 import { startOutboxDispatcher } from './dispatchers/outbox-dispatcher'
 
 let started = false
@@ -13,5 +14,5 @@ export async function startBackgroundJobs() {
   // تا وابستگی چرخه‌ای db → jobs → registry → workers → db در زمان build شکسته شود
   await import('./registry')
   startOutboxDispatcher()
-  console.log('[BackgroundJobs] outbox dispatcher started')
+  logger.info('[BackgroundJobs] outbox dispatcher started')
 }

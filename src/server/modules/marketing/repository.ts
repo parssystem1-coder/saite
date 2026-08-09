@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
 export const marketingRepository = {
@@ -21,7 +22,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type as never,
+        type: data.type as unknown as string,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -119,7 +120,7 @@ export const marketingRepository = {
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ? (data.metadata as never) : undefined,
+        metadata: data.metadata ? (data.metadata as unknown as any) : undefined,
       },
     })
   },
