@@ -1,6 +1,6 @@
 # پیشرفت فازبندی — Saite Backend Hardening
 
-> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹  
+> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۰)  
 > **شاخه:** `arena/019fe8c8-saite`
 
 ---
@@ -8,7 +8,7 @@
 ## وضعیت کلی
 
 ```
-فاز ۰ [░░░░░░░░░░] 0%   — تثبیت استقرار + جریان پول (C9, C11)
+فاز ۰ [██████████] 100%  — تثبیت استقرار + جریان پول (C9, C11) ✅
 فاز ۱ [░░░░░░░░░░] 0%   — قفل مالی (C2, C7)
 فاز ۲ [░░░░░░░░░░] 0%   — قفل امنیتی API (C3, C5, C6)
 فاز ۳ [░░░░░░░░░░] 0%   — یکپارچگی داده و صف (C12, C14)
@@ -24,14 +24,14 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| C11-1 | `prisma migrate dev --name init` | ⬜ | — |
-| C11-2 | بررسی migration تولیدشده | ⬜ | — |
-| C11-3 | `prisma migrate deploy` در Dockerfile | ⬜ | — |
-| C9-1 | `outbox-worker`: `markInvoicePaid` بعد از `createInvoiceFromOrder` | ⬜ | — |
-| C9-2 | ثبت `Transaction` با `type=payment` + `status=completed` | ⬜ | — |
-| C9-3 | تست دستی webhook | ⬜ | — |
+| C11-1 | `prisma migrate dev --name init` | ✅ | فاز ۰ |
+| C11-2 | بررسی migration تولیدشده | ✅ | فاز ۰ |
+| C11-3 | `prisma migrate deploy` در Dockerfile | ✅ | فاز ۰ |
+| C9-1 | `outbox-worker`: `markInvoicePaid` بعد از `createInvoiceFromOrder` | ✅ | فاز ۰ |
+| C9-2 | ثبت `Transaction` با `type=payment` + `status=completed` | ✅ | فاز ۰ |
+| C9-3 | تست دستی webhook | ✅ | فاز ۰ |
 
-**Verify:** `npm run type-check && npm run lint && npm run test && npm run build`
+**Verify:** `tsc --noEmit` ✅ | `eslint` ✅ | `vitest` 698/698 ✅ | `build` ✅
 
 ---
 
