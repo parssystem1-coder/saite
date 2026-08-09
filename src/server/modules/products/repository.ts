@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
 
@@ -28,11 +29,11 @@ export const productsRepository = {
   },
 
   async create(data: Record<string, unknown>) {
-    return prisma.product.create({ data: data as never })
+    return prisma.product.create({ data: data as unknown as any })
   },
 
   async update(id: string, data: Record<string, unknown>) {
-    return prisma.product.update({ where: { id }, data: data as never })
+    return prisma.product.update({ where: { id }, data: data as unknown as any })
   },
 
   async delete(id: string) {
@@ -82,6 +83,11 @@ function buildWhere(query: ProductListQuery) {
   if (query.inStock) {
     where.stockStatus = { not: 'out_of_stock' }
   }
+
+  // برای سازگاری با src/lib/api.ts — featured/bestSeller
+  const qAny = query as unknown as Record<string, unknown>
+  if (qAny.isFeatured) where.isFeatured = true
+  if (qAny.isBestSeller) where.isBestSeller = true
 
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     where.price = {}

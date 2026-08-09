@@ -6,11 +6,12 @@ import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
 
 
 const DEFAULT_PER_PAGE = 9
+const MAX_PER_PAGE = 100
 
 export const productsService = {
   async getList(query: ProductListQuery = {}): Promise<ProductListResult> {
     const page = Math.max(1, query.page ?? 1)
-    const perPage = Math.max(1, query.perPage ?? DEFAULT_PER_PAGE)
+    const perPage = Math.min(MAX_PER_PAGE, Math.max(1, query.perPage ?? DEFAULT_PER_PAGE))
     const { items, total } = await productsRepository.list(query, page, perPage)
 
     return {

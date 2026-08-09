@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
 export const marketingRepository = {
@@ -21,7 +22,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type as never,
+        type: data.type as unknown as any,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -68,6 +69,38 @@ export const marketingRepository = {
     })
   },
 
+  // اتمیک: فقط اگر سقف پر نشده باشد increment می‌کند — برای جلوگیری از race
+  async tryIncrementCouponUsageAtomic(id: string, usageLimit: number | null): Promise<boolean> {
+    if (usageLimit === null) {
+      await prisma.coupon.update({
+        where: { id },
+        data: { usageCount: { increment: 1 } },
+      })
+      return true
+    }
+    const result = await prisma.coupon.updateMany({
+      where: { id, usageCount: { lt: usageLimit } },
+      data: { usageCount: { increment: 1 } },
+    })
+    return result.count === 1
+  },
+
+  async findRedemption(couponId: string, customerId: string) {
+    return prisma.couponRedemption.findUnique({
+      where: { couponId_customerId: { couponId, customerId } },
+    })
+  },
+
+  async countRedemptionsByCustomer(couponId: string, customerId: string) {
+    return prisma.couponRedemption.count({
+      where: { couponId, customerId },
+    })
+  },
+
+  async createRedemption(data: { couponId: string; customerId: string; orderId: string }) {
+    return prisma.couponRedemption.create({ data })
+  },
+
   async updateCoupon(id: string, data: Partial<{ name: string; active: boolean; expiresAt: Date | null }>) {
     return prisma.coupon.update({ where: { id }, data })
   },
@@ -87,7 +120,7 @@ export const marketingRepository = {
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ? (data.metadata as never) : undefined,
+        metadata: data.metadata ? (data.metadata as unknown as any) : undefined,
       },
     })
   },

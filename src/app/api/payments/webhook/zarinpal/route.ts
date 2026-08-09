@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/server/shared/db'
 import { zarinpalProvider } from '@/server/payments/providers/zarinpal'
+import { ordersService } from '@/server/modules/orders/service'
+import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -54,24 +56,29 @@ export async function GET(req: NextRequest) {
       existing.amount
     )
 
-    await prisma.$transaction(async (tx) => {
-      await tx.paymentIntent.update({
-        where: { authority },
-        data: {
-          status: result.success ? 'succeeded' : 'failed',
-          transactionId: result.transactionId,
-          verifiedAt: new Date(),
-          failureMessage: result.success ? null : result.message,
-        },
-      })
-
-      if (result.success) {
-        await tx.order.update({
-          where: { id: existing.orderId },
-          data: { status: 'paid' },
-        })
-      }
+    // به‌روزرسانی PaymentIntent — همیشه
+    await prisma.paymentIntent.update({
+      where: { authority },
+      data: {
+        status: result.success ? 'succeeded' : 'failed',
+        transactionId: result.transactionId,
+        verifiedAt: new Date(),
+        failureMessage: result.success ? null : result.message,
+      },
     })
+
+    if (result.success) {
+      try {
+        await ordersService.transitionState(existing.orderId, 'paid', 'zarinpal-webhook')
+      } catch (e) {
+        if (e instanceof InvalidStateTransitionError) {
+          // سفارش قبلاً paid شده — idempotent، نادیده بگیر
+          console.log(`[Zarinpal Webhook] order ${existing.orderId} already paid, ignoring transition`)
+        } else {
+          throw e
+        }
+      }
+    }
 
     return NextResponse.redirect(orderStatusUrl(existing.orderId, result.success ? 'success' : 'failed'))
   } catch (err) {

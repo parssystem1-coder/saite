@@ -48,6 +48,9 @@ model Product {
 
   orderItems OrderItem[]
 
+  @@index([category, createdAt])
+  @@index([brand])
+  @@index([stockStatus])
   @@map("products")
 }
 
@@ -80,9 +83,13 @@ model Order {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   items          OrderItem[]
   paymentIntents PaymentIntent[]
+  invoice        Invoice?
+  shipment       Shipment?
 
+  @@index([customerId, createdAt])
   @@map("orders")
 }
 
@@ -130,6 +137,7 @@ model PaymentIntent {
 
   order Order @relation(fields: [orderId], references: [id])
 
+  @@index([orderId])
   @@map("payment_intents")
 }
 
@@ -149,13 +157,17 @@ enum PaymentIntentStatus {
 // ── مشتریان ──────────────────────────────────────────
 
 model Customer {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  phone     String?
-  name      String
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?
+  name         String
+  passwordHash String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders   Order[]
+  invoices Invoice[]
 
   @@map("customers")
 }
@@ -229,8 +241,11 @@ model Invoice {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   transactions Transaction[]
 
+  @@index([customerId, createdAt])
   @@map("invoices")
 }
 
@@ -299,6 +314,9 @@ model Shipment {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([carrier, status])
   @@map("shipments")
 }
 
@@ -354,7 +372,23 @@ model Coupon {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  redemptions CouponRedemption[]
+
   @@map("coupons")
+}
+
+model CouponRedemption {
+  id         String   @id @default(cuid())
+  couponId   String
+  customerId String
+  orderId    String   @unique
+  createdAt  DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, customerId])
+  @@index([customerId])
+  @@map("coupon_redemptions")
 }
 
 enum CouponType {

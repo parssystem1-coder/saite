@@ -96,14 +96,22 @@ export async function getProductsByCategory(category: CategorySlug): Promise<Pro
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   if (!isMockMode()) {
-    return httpJson<Product[]>('/api/products?featured=1')
+    try {
+      return await httpJson<Product[]>('/api/products?featured=1')
+    } catch {
+      return []
+    }
   }
   return PRODUCTS.filter((p) => p.isFeatured)
 }
 
 export async function getBestSellers(): Promise<Product[]> {
   if (!isMockMode()) {
-    return httpJson<Product[]>('/api/products?bestSeller=1')
+    try {
+      return await httpJson<Product[]>('/api/products?bestSeller=1')
+    } catch {
+      return []
+    }
   }
   return PRODUCTS.filter((p) => p.isBestSeller)
 }
@@ -117,9 +125,13 @@ export async function getCompatibleItems(deviceModel: string): Promise<Product[]
   if (!needle) return []
 
   if (!isMockMode()) {
-    return httpJson<Product[]>(
-      `/api/products/compatible?model=${encodeURIComponent(deviceModel)}`
-    )
+    try {
+      return await httpJson<Product[]>(
+        `/api/products/compatible?model=${encodeURIComponent(deviceModel)}`
+      )
+    } catch {
+      return []
+    }
   }
 
   return PRODUCTS.filter((p) =>
@@ -132,7 +144,11 @@ export async function getSupportedDeviceModels(): Promise<
   { brand: string; model: string }[]
 > {
   if (!isMockMode()) {
-    return httpJson<{ brand: string; model: string }[]>('/api/products/supported-models')
+    try {
+      return await httpJson<{ brand: string; model: string }[]>('/api/products/supported-models')
+    } catch {
+      return []
+    }
   }
 
   const seen = new Map<string, { brand: string; model: string }>()
@@ -152,9 +168,13 @@ export async function getSupportedDeviceModels(): Promise<
 /** محصولات مرتبط: هم‌دسته، به‌جز خود محصول */
 export async function getRelatedProducts(product: Product, limit = 4): Promise<Product[]> {
   if (!isMockMode()) {
-    return httpJson<Product[]>(
-      `/api/products/${encodeURIComponent(product.id)}/related?limit=${limit}`
-    )
+    try {
+      return await httpJson<Product[]>(
+        `/api/products/${encodeURIComponent(product.id)}/related?limit=${limit}`
+      )
+    } catch {
+      return []
+    }
   }
   return PRODUCTS.filter((p) => p.category === product.category && p.id !== product.id).slice(
     0,
@@ -171,9 +191,13 @@ export async function getConsumablesForDevice(product: Product): Promise<Product
   if (!ids || ids.length === 0) return []
 
   if (!isMockMode()) {
-    return httpJson<Product[]>(
-      `/api/products/${encodeURIComponent(product.id)}/consumables`
-    )
+    try {
+      return await httpJson<Product[]>(
+        `/api/products/${encodeURIComponent(product.id)}/consumables`
+      )
+    } catch {
+      return []
+    }
   }
 
   return ids
@@ -186,9 +210,13 @@ export async function getProductsByIds(ids: string[]): Promise<Product[]> {
   if (ids.length === 0) return []
 
   if (!isMockMode()) {
-    return httpJson<Product[]>(
-      `/api/products/by-ids?ids=${ids.map(encodeURIComponent).join(',')}`
-    )
+    try {
+      return await httpJson<Product[]>(
+        `/api/products/by-ids?ids=${ids.map(encodeURIComponent).join(',')}`
+      )
+    } catch {
+      return []
+    }
   }
 
   return ids

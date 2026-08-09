@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
 export const shippingRepository = {
@@ -18,8 +19,8 @@ export const shippingRepository = {
       data: {
         ...data,
         shippingCost: data.shippingCost || 0,
-        originAddress: data.originAddress ? (data.originAddress as never) : undefined,
-        destinationAddress: data.destinationAddress ? (data.destinationAddress as never) : undefined,
+        originAddress: data.originAddress ? (data.originAddress as unknown as any) : undefined,
+        destinationAddress: data.destinationAddress ? (data.destinationAddress as unknown as any) : undefined,
       },
     })
   },
@@ -36,7 +37,7 @@ export const shippingRepository = {
     return prisma.shipment.update({
       where: { id },
       data: {
-        status: status as never,
+        status: status as unknown as any,
         ...(extra?.shippedAt && { shippedAt: extra.shippedAt }),
         ...(extra?.deliveredAt && { deliveredAt: extra.deliveredAt }),
         ...(extra?.trackingNumber && { trackingNumber: extra.trackingNumber }),

@@ -1,6 +1,7 @@
 import 'server-only'
 import { financeRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
 
 function generateInvoiceNumber(): string {
   const now = new Date()
@@ -21,7 +22,7 @@ export const financeService = {
     const existing = await financeRepository.findInvoiceByOrderId(order.id)
     if (existing) return existing
 
-    const taxRate = 0.09 // 9% مالیات
+    const taxRate = TAX_RATE
     const subtotal = Math.round(order.totalAmount / (1 + taxRate))
     const taxAmount = order.totalAmount - subtotal
 
@@ -34,7 +35,7 @@ export const financeService = {
       discountAmount: 0,
       totalAmount: order.totalAmount,
       currency: order.currency || 'IRR',
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      dueDate: new Date(Date.now() + INVOICE_DUE_DAYS * 24 * 60 * 60 * 1000),
     })
 
     await eventBus.publish('invoice.created', {

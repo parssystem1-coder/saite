@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
 export const ordersRepository = {
@@ -24,17 +25,17 @@ export const ordersRepository = {
   },
 
   async create(data: Record<string, unknown>) {
-    return prisma.order.create({ data: data as never })
+    return prisma.order.create({ data: data as unknown as any })
   },
 
   async updateStatus(id: string, status: string) {
     return prisma.order.update({
       where: { id },
-      data: { status: status as never },
+      data: { status: status as unknown as any },
     })
   },
 
   async createOrderItem(data: Record<string, unknown>) {
-    return prisma.orderItem.create({ data: data as never })
+    return prisma.orderItem.create({ data: data as unknown as any })
   },
 }

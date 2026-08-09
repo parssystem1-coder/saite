@@ -1,4 +1,6 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 
@@ -68,7 +70,72 @@ export const marketingService = {
 
   async applyCoupon(code: string, orderId: string, opts: Parameters<typeof this.validateCoupon>[1]) {
     const result = await this.validateCoupon(code, opts)
-    await marketingRepository.incrementCouponUsage(result.coupon.id)
+
+    // ── اعمال اتمیک: سقف کلی + سقف هر مشتری در یک تراکنش ──────────────────────────
+    await prisma.$transaction(async (tx: any) => {
+      // perCustomerLimit — اگر >0 باشد، تعداد قبلی این مشتری را چک کن
+      if (result.coupon.perCustomerLimit > 0) {
+        const existingCount = await tx.couponRedemption.count({
+          where: { couponId: result.coupon.id, customerId: opts.customerId },
+        })
+        if (existingCount >= result.coupon.perCustomerLimit) {
+          throw new CouponValidationError('سقف استفادهٔ شخصی این کد تکمیل شده')
+        }
+      }
+
+      // سقف کلی — اتمیک increment فقط اگر usageCount < usageLimit
+      let incremented = false
+      if (result.coupon.usageLimit === null) {
+        await tx.coupon.update({
+          where: { id: result.coupon.id },
+          data: { usageCount: { increment: 1 } },
+        })
+        incremented = true
+      } else {
+        const r = await tx.coupon.updateMany({
+          where: { id: result.coupon.id, usageCount: { lt: result.coupon.usageLimit } },
+          data: { usageCount: { increment: 1 } },
+        })
+        incremented = r.count === 1
+      }
+      if (!incremented) {
+        throw new CouponValidationError('سقف استفاده از کد تخفیف تکمیل شده')
+      }
+
+      // ثبت redemption برای perCustomerLimit — unique constraint جلوی race را می‌گیرد
+      try {
+        await tx.couponRedemption.create({
+          data: {
+            couponId: result.coupon.id,
+            customerId: opts.customerId,
+            orderId,
+          },
+        })
+      } catch (e: unknown) {
+        // P2002 = unique constraint (couponId+customerId یا orderId تکراری)
+        const msg = e instanceof Error ? e.message : ''
+        if (msg.includes('Unique constraint') || msg.includes('P2002')) {
+          throw new CouponValidationError('این کد قبلاً توسط شما استفاده شده')
+        }
+        throw e
+      }
+
+      // outbox برای سازگاری با dispatcher (اختیاری — eventBus هم publish می‌کند)
+      await tx.outboxEvent.create({
+        data: {
+          type: 'coupon.applied',
+          payload: {
+            couponId: result.coupon.id,
+            code: result.coupon.code,
+            orderId,
+            discount: result.discount,
+            customerId: opts.customerId,
+          } as unknown as any,
+          aggregateId: result.coupon.id,
+        },
+      })
+    })
+
     await eventBus.publish('coupon.applied', {
       couponId: result.coupon.id,
       code: result.coupon.code,

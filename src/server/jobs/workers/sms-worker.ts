@@ -1,4 +1,5 @@
 import 'server-only'
+import { logger } from '@/server/shared/logger'
 import { Worker } from 'bullmq'
 import { redis } from '@/server/shared/redis'
 import { commsService } from '@/server/communications/service'
@@ -17,5 +18,5 @@ export const smsWorker = new Worker(
 )
 
 smsWorker.on('failed', (job, err) => {
-  console.error(`[SmsWorker] job ${job?.id} failed:`, err.message)
+  logger.error({ err, jobId: job?.id }, '[SmsWorker] job failed')
 })
