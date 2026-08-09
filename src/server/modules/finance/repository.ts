@@ -75,7 +75,7 @@ export const financeRepository = {
     return prisma.invoice.update({
       where: { id },
       data: {
-        status: status as unknown as string,
+        status: status as unknown as any,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
@@ -94,10 +94,10 @@ export const financeRepository = {
     metadata?: unknown
   }) {
     const payload: Record<string, unknown> = {
-      type: data.type as unknown as string,
+      type: data.type as unknown as any,
       amount: data.amount,
       currency: data.currency || 'IRR',
-      status: (data.status || 'pending') as unknown as string,
+      status: (data.status || 'pending') as unknown as any,
     }
     if (data.invoiceId) payload.invoiceId = data.invoiceId
     if (data.orderId) payload.orderId = data.orderId
@@ -111,7 +111,7 @@ export const financeRepository = {
   async updateTransactionStatus(id: string, status: string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status: status as unknown as string, ...(settledAt && { settledAt }) },
+      data: { status: status as unknown as any, ...(settledAt && { settledAt }) },
     })
   },
 

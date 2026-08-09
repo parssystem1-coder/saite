@@ -37,7 +37,7 @@ export const shippingRepository = {
     return prisma.shipment.update({
       where: { id },
       data: {
-        status: status as unknown as string,
+        status: status as unknown as any,
         ...(extra?.shippedAt && { shippedAt: extra.shippedAt }),
         ...(extra?.deliveredAt && { deliveredAt: extra.deliveredAt }),
         ...(extra?.trackingNumber && { trackingNumber: extra.trackingNumber }),

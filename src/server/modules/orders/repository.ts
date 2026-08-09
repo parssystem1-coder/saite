@@ -31,7 +31,7 @@ export const ordersRepository = {
   async updateStatus(id: string, status: string) {
     return prisma.order.update({
       where: { id },
-      data: { status: status as unknown as string },
+      data: { status: status as unknown as any },
     })
   },
 
