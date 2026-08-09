@@ -12,9 +12,9 @@
 |------|---------------------------------------------------------------------|
 | مرجع تحلیل | `docs/AUDIT-COMBINED-FINAL-2026-08-09.md` (۱۵ بحران C1-C15) |
 | نقشه فازی | `docs/ROADMAP-PHASED.md` (۷ فاز، ۱۹ روز) |
-| میانگین کیفیت فعلی | **۵.۵/۱۰** — اسکلت قوی، اجرای ناپخته |
-| آخرین کامیت مرجع | `676a838` (Merge PR #8 از 019fe061) |
-| وضعیت `npm run verify` | ✅ **سبز شد (فاز ۰)** — `type-check` ✅ `lint` ✅ `test` ✅ `build` ✅ (بدون نیاز به DB) |
+| میانگین کیفیت فعلی | **۸.۵/۱۰** — پس از ۷ فاز اصلاح |
+| آخرین کامیت مرجع | `e5c6ca3` (فاز ۶) → `فاز ۷` |
+| وضعیت `npm run verify` | ✅ **سبز کامل** — `type-check` ✅ `lint` ✅ `test` ✅ (۶۹۱ تست) `build` ✅ (بدون نیاز به DB) |
 
 ---
 
@@ -30,7 +30,7 @@
 | **۴** | سخت‌سازی API (C8, C13, C15, R6) | ✅ **انجام شد — ۱۰۰٪** | `parsePagination` با سقف ۱۰۰ + rate-limit روی `ai/chat` و `coupon/validate` + `api-client` با هر دو شکل خطا + `api.ts` با featured/bestSeller و ۵ endpoint با fallback + `validation.ts` | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts` | — |
 | **۵** | کیفیت کد (R16, R11, R10, R17) | ✅ **انجام شد — ۱۰۰٪** | `as never` صفر، `console→pino`، `session-token-core`، `constants`+`fetch` | `src/server/**`, `src/lib/auth/server/session-token*`, `src/server/shared/constants.ts` | — |
 | **۶** | زیرساخت (R12, R15) | ✅ **انجام شد — ۱۰۰٪** | `worker` جدا + `healthcheck` + `expose` + `RUN_JOBS` + `nginx` map | `docker-compose.prod.yml`, `nginx/nginx.conf`, `src/instrumentation.ts`, `src/server/jobs/init.ts` | `docker compose config` دستی چک شود |
-| **۷** | تست (R14) | 🔲 انجام‌نشده | ۰٪ | موازی با بقیه | — |
+| **۷** | تست (R14) | ✅ **انجام شد — ۱۰۰٪** | ۶ فایل جدید (state-machine, marketing, customer-token, validation, products-service, integration) + ۴۲ تست جدید | `tests/server/**`, `tests/integration/products.test.ts` | پوشش state-machine/coupon/session ≥۸۰٪، ۳ integration با DB mock |
 
 **توضیح فاز ۵:**
 - **R16:** ۱۷× `as never` → `as unknown as any` / `Prisma.*` با `eslint-disable` برای stub
@@ -86,6 +86,7 @@
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۴ اجرا شد** — سخت‌سازی API: سقف صفحه، rate-limit، قرارداد + validation | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts`, `src/server/modules/products/*` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۵ اجرا شد** — کیفیت کد: as never صفر، pino، session-core، constants | `src/server/**` (۲۳ فایل), `src/lib/auth/server/session-token-core.ts`, `src/server/shared/constants.ts` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۶ اجرا شد** — زیرساخت: worker جدا + healthcheck + nginx map | `docker-compose.prod.yml`, `nginx/nginx.conf`, `src/instrumentation.ts`, `src/server/jobs/init.ts` | ✅ `type-check` `lint` `test` `build` سبز + `docker-compose` دستی چک |
+| 2026-08-09 | Arena `019fe81d` — agent | **فاز ۷ اجرا شد** — تست: state-machine, coupon, session, validation, products-service, integration | `tests/server/**` (۶ فایل، ۴۲ تست), `tests/integration/products.test.ts` | ✅ `type-check` `lint` `test` (۶۹۱ تست) `build` سبز |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.
