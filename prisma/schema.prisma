@@ -149,13 +149,14 @@ enum PaymentIntentStatus {
 // ── مشتریان ──────────────────────────────────────────
 
 model Customer {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  phone     String?
-  name      String
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?
+  name         String
+  passwordHash String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@map("customers")
 }

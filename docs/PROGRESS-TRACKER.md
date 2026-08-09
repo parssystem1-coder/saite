@@ -25,7 +25,7 @@
 | **۰** | تثبیت بیلد (C1, C10, C11) | ✅ **انجام شد — ۹۰٪** | `db.ts` بدون side-effect + `redis` lazy + `jobs/init` lazy + `instrumentation.ts` + `Dockerfile` دو مرحله‌ای + `engines` + `pino-pretty` + `tx:any` | `src/server/shared/db.ts`, `redis.ts`, `jobs/init.ts`, `src/instrumentation.ts`, `Dockerfile`, `package.json` | فقط `C11` migration اولیه (نیاز به DB) باقی |
 | **۱** | قفل مالی (C2, C7) | ✅ **انجام شد — ۱۰۰٪** | `price authority` سروری + تراکنش `Order+Items+Outbox` + کوپن اتمیک + `CouponRedemption` | `src/server/modules/orders/service.ts`, `marketing/service.ts`, `marketing/repository.ts`, `prisma/schema.prisma` | نیاز به `npx prisma migrate dev --name add_coupon_redemption` روی DB واقعی |
 
-| **۲** | قفل API (C3, C4, C5, C6) | 🔲 انجام‌نشده | ۰٪ | — | — |
+| **۲** | قفل API (C3, C4, C5, C6) | ✅ **انجام شد — ۱۰۰٪** | ۱۱ route مدیریتی با `requirePermission` + IDOR بسته + `passwordHash` + آپلود امن + `client_max_body_size` | `src/app/api/**`, `prisma/schema.prisma`, `src/server/upload/**`, `nginx/nginx.conf` | نیاز به `npx prisma migrate dev --name add_customer_password` روی DB واقعی |
 | **۳** | یکپارچگی داده و صف (C9, C12, C14) | 🔲 انجام‌نشده | ۰٪ | — | — |
 | **۴** | سخت‌سازی API (C8, C13, C15, R6) | 🔲 انجام‌نشده | ۰٪ | — | — |
 | **۵** | کیفیت کد (R16, R11, R10, R17) | 🔲 انجام‌نشده | ۰٪ | — | — |
@@ -49,10 +49,10 @@
 | C11 | صفر migration | HIGH | ۰ | ⏳ کد آماده، نیاز به `npx prisma migrate dev` روی DB واقعی |
 | C2 | قیمت از کلاینت (تقلب مالی) | CRITICAL | ۱ | ✅ تراکنش سروری، `createMany`، `Outbox` اتمیک |
 | C7 | کوپن race + `perCustomerLimit` بی‌اثر | HIGH | ۱ | ✅ `updateMany` اتمیک + `CouponRedemption` + تراکنش |
-| C3 | نوشتاری بدون auth | CRITICAL | ۲ | 🔲 |
-| C4 | IDOR مالی/پیام | CRITICAL | ۲ | 🔲 |
-| C5 | ورود مشتری `demo` | CRITICAL | ۲ | 🔲 |
-| C6 | آپلود Stored XSS + traversal | CRITICAL | ۲ | 🔲 |
+| C3 | نوشتاری بدون auth | CRITICAL | ۲ | ✅ `catalog:write`/`marketing:write`/`content:write`/`orders:write`/`settings:write` + `guard.admin.id` |
+| C4 | IDOR مالی/پیام | CRITICAL | ۲ | ✅ `finance:read`/`comms:read`/`orders:read` روی همه GETهای حساس |
+| C5 | ورود مشتری `demo` | CRITICAL | ۲ | ✅ `passwordHash` + `scrypt` + `rate-limit` per-IP/per-email + هش ساختگی |
+| C6 | آپلود Stored XSS + traversal | CRITICAL | ۲ | ✅ `content:write` + `mimetype→ext` + `folder` regex + `client_max_body_size 10m` |
 | C9 | جریان پول قطع (نه فاکتور/موجودی/ایمیل) | HIGH | ۳ | 🔲 |
 | C12 | Outbox re-enqueue ابدی بدون DLQ | HIGH | ۳ | 🔲 |
 | C14 | ایندکس/FK گمشده | MEDIUM-HIGH | ۳ | 🔲 |
@@ -71,6 +71,7 @@
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۰ اجرا شد** — تثبیت بیلد (C1, C10) + `engines` + `pino-pretty` + `instrumentation` | `src/server/shared/db.ts`, `redis.ts`, `jobs/init.ts`, `src/instrumentation.ts`, `Dockerfile`, `package.json`, `src/app/api/payments/webhook/zarinpal/route.ts` | ✅ `type-check` `lint` `test` `build` همه سبز (build بدون DB) |
 | 2026-08-09 | Arena `019fe81d` — agent | **هات‌فیکس ویندوز** — رفع `TS2769` در `zarinpal` (Omit→any) برای Prisma واقعی vs stub | `src/app/api/payments/webhook/zarinpal/route.ts` | ✅ `type-check` `lint` `build` روی ویندوز هم سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۱ اجرا شد** — قفل مالی: قیمت سروری + کوپن اتمیک + CouponRedemption | `src/server/modules/orders/service.ts`, `marketing/service.ts`, `marketing/repository.ts`, `prisma/schema.prisma` | ✅ `type-check` `lint` `test` `build` سبز |
+| 2026-08-09 | Arena `019fe81d` — agent | **فاز ۲ اجرا شد** — قفل API: ۱۱ route با گارد + IDOR + ورود مشتری امن + آپلود امن | `src/app/api/**` (۱۱ فایل), `prisma/schema.prisma` (+passwordHash), `src/app/api/customers/session/route.ts`, `src/server/upload/providers/local.ts`, `src/app/api/products/_utils.ts`, `nginx/nginx.conf` | ✅ `type-check` `lint` `test` `build` سبز |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.

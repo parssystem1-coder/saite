@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { financeService } from '@/server/modules/finance/service'
+import { requirePermission } from '@/lib/auth/server/require-role'
 
 export async function GET(req: NextRequest) {
+  const guard = await requirePermission('finance:read')
+  if (!guard.ok) return guard.response
+
   const { searchParams } = req.nextUrl
   const customerId = searchParams.get('customerId') || undefined
   const status = searchParams.get('status') || undefined

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
 import { handleServiceError } from './_utils'
+import { requirePermission } from '@/lib/auth/server/require-role'
 import type { ProductListQuery } from '@/lib/api-types'
 import type { CategorySlug } from '@/types/product'
 
@@ -36,9 +37,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const guard = await requirePermission('catalog:write')
+    if (!guard.ok) return guard.response
+
     const body = await req.json()
-    // TODO: requirePermission(req, 'catalog:write') در فاز بعد
-    const product = await productsService.create(body, 'system')
+    const product = await productsService.create(body, guard.admin.id)
     return NextResponse.json(product, { status: 201 })
   } catch (err) {
     return handleServiceError(err)
