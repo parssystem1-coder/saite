@@ -11,7 +11,7 @@
 فاز ۰ [██████████] 100%  — تثبیت استقرار + جریان پول (C9, C11) ✅
 فاز ۱ [██████████] 100%  — قفل مالی (C2, C7) ✅
 فاز ۲ [██████████] 100%  — قفل امنیتی API (C3, C5, C6) ✅
-فاز ۳ [░░░░░░░░░░] 0%   — یکپارچگی داده و صف (C12, C14)
+فاز ۳ [██████████] 100%  — یکپارچگی داده و صف (C12, C14) ✅
 فاز ۴ [░░░░░░░░░░] 0%   — سخت‌سازی API (C8, C13, C15)
 فاز ۵ [░░░░░░░░░░] 0%   — کیفیت کد (T1, T2, T3)
 فاز ۶ [░░░░░░░░░░] 0%   — زیرساخت (P1, P2)
@@ -67,11 +67,13 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| C12-1 | Outbox dispatcher — atomic claim batch | ⬜ | — |
-| C14-1 | ایندکس `Transaction.orderId` | ⬜ | — |
-| C14-2 | ایندکس `OrderItem.orderId` | ⬜ | — |
-| C14-3 | ایندکس `OrderItem.productId` | ⬜ | — |
-| C14-4 | Migration جدید | ⬜ | — |
+| C12-1 | Outbox dispatcher — atomic claim batch | ✅ | فاز ۳ |
+| C14-1 | ایندکس `Transaction.orderId` | ✅* | فاز ۰ (composite موجود بود) |
+| C14-2 | ایندکس `OrderItem.orderId` | ✅ | فاز ۳ |
+| C14-3 | ایندکس `OrderItem.productId` | ✅ | فاز ۳ |
+| C14-4 | Migration جدید | ✅ | فاز ۳ |
+
+*نکته: `Transaction` قبلاً `@@index([orderId, createdAt])` داشت که برای query با WHERE orderId + ORDER BY createdAt کافی است.
 
 ---
 
@@ -136,3 +138,5 @@
 | ۲۰۲۶-۰۸-۰۹ | فاز ۰ | C9 به فاز ۰ منتقل شد | مستقیماً به استقرار مربوط است |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۲ | CSP `unsafe-eval` و `unsafe-inline` پذیرفته شد | Next.js 16 برای hydration نیاز دارد — بعداً nonce-based CSP ممکن است |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۲ | C3 فقط customer session + actorId check | AI فعلاً admin ندارد؛ اگر اضافه شد requirePermission هم لازم است |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۳ | C12 — FOR UPDATE SKIP LOCKED به جای advisory lock | PostgreSQL native — self-cleanup، نیازی به unlock دستی |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۳ | C14 — Transaction.orderId ایندکس تک‌ستونی لازم ندارد | composite `@@index([orderId, createdAt])` موجود بود — کافی است |
