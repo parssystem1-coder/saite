@@ -14,7 +14,7 @@
 | نقشه فازی | `docs/ROADMAP-PHASED.md` (۷ فاز، ۱۹ روز) |
 | میانگین کیفیت فعلی | **۵.۵/۱۰** — اسکلت قوی، اجرای ناپخته |
 | آخرین کامیت مرجع | `676a838` (Merge PR #8 از 019fe061) |
-| وضعیت `npm run verify` | 🔴 قرمز — `type-check` ۱ خطا (`tx:any`) + `build` بدون DB کرش (C1) — فاز ۰ باید سبز کند |
+| وضعیت `npm run verify` | ✅ **سبز شد (فاز ۰)** — `type-check` ✅ `lint` ✅ `test` ✅ `build` ✅ (بدون نیاز به DB) |
 
 ---
 
@@ -22,7 +22,7 @@
 
 | فاز | نام | وضعیت | پیشرفت | آخرین اقدام | بعدی |
 |-----|-----|--------|--------|-------------|------|
-| **۰** | تثبیت بیلد (C1, C10, C11) | ⏳ **در حال انجام — ۱۰٪** | `tx:any` در همین push رفع شد؛ بقیه C1/C10/C11 مانده | `docs/ROADMAP-PHASED.md` + `PROGRESS-TRACKER.md` ایجاد شد + `zarinpal/route.ts:57` تایپ شد | تکمیل `db.ts` + `Dockerfile` + migration اولیه |
+| **۰** | تثبیت بیلد (C1, C10, C11) | ✅ **انجام شد — ۹۰٪** | `db.ts` بدون side-effect + `redis` lazy + `jobs/init` lazy + `instrumentation.ts` + `Dockerfile` دو مرحله‌ای + `engines` + `pino-pretty` + `tx:any` | `src/server/shared/db.ts`, `redis.ts`, `jobs/init.ts`, `src/instrumentation.ts`, `Dockerfile`, `package.json` | فقط `C11` migration اولیه (نیاز به DB) باقی |
 | **۱** | قفل مالی (C2, C7) | 🔲 انجام‌نشده | ۰٪ | — | پس از سبز شدن فاز ۰ |
 | **۲** | قفل API (C3, C4, C5, C6) | 🔲 انجام‌نشده | ۰٪ | — | — |
 | **۳** | یکپارچگی داده و صف (C9, C12, C14) | 🔲 انجام‌نشده | ۰٪ | — | — |
@@ -43,9 +43,9 @@
 
 | شناسه | عنوان کوتاه | شدت | فاز | وضعیت |
 |-------|-------------|------|-----|--------|
-| C1 | کرش build بدون `DATABASE_URL` + `process.exit` | CRITICAL | ۰ | ⏳ `tx:any` رفع شد، بقیه مانده |
-| C10 | `Dockerfile --omit=dev` شکسته | HIGH | ۰ | 🔲 |
-| C11 | صفر migration | HIGH | ۰ | 🔲 |
+| C1 | کرش build بدون `DATABASE_URL` + `process.exit` | CRITICAL | ۰ | ✅ `db.ts` Proxy برای build + `process.exit` حذف + `instrumentation.ts` |
+| C10 | `Dockerfile --omit=dev` شکسته | HIGH | ۰ | ✅ `builder` با `npm ci` کامل + `HEALTHCHECK` |
+| C11 | صفر migration | HIGH | ۰ | ⏳ کد آماده، نیاز به `npx prisma migrate dev` روی DB واقعی |
 | C2 | قیمت از کلاینت (تقلب مالی) | CRITICAL | ۱ | 🔲 |
 | C7 | کوپن race + `perCustomerLimit` بی‌اثر | HIGH | ۱ | 🔲 |
 | C3 | نوشتاری بدون auth | CRITICAL | ۲ | 🔲 |
@@ -67,6 +67,7 @@
 |-------|------------|-------|---------|---------------|
 | 2026-08-09 | Arena `019fe81d` — agent | ایجاد `AUDIT-2026-08-09-FULL.md` + `AUDIT-COMBINED-FINAL-2026-08-09.md` | `docs/AUDIT*` | — (فقط docs) |
 | 2026-08-09 | Arena `019fe81d` — agent | ایجاد `ROADMAP-PHASED.md` + `PROGRESS-TRACKER.md` + رفع `tx:any` | `docs/ROADMAP*`, `docs/PROGRESS*`, `src/app/api/payments/webhook/zarinpal/route.ts` | `type-check` سبز شد، `build` هنوز قرمز (C1 باقی) |
+| 2026-08-09 | Arena `019fe81d` — agent | **فاز ۰ اجرا شد** — تثبیت بیلد (C1, C10) + `engines` + `pino-pretty` + `instrumentation` | `src/server/shared/db.ts`, `redis.ts`, `jobs/init.ts`, `src/instrumentation.ts`, `Dockerfile`, `package.json`, `src/app/api/payments/webhook/zarinpal/route.ts` | ✅ `type-check` `lint` `test` `build` همه سبز (build بدون DB) |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.

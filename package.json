@@ -2,6 +2,9 @@
   "name": "saite",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
@@ -77,6 +80,7 @@
     "jsdom": "^30.0.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "pino-pretty": "^13.1.2",
     "tailwindcss": "^4",
     "tsx": "^4.23.11",
     "typescript": "^5",
