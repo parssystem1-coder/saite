@@ -1,8 +1,10 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، Map/filter با any */
 import { prisma } from '@/server/shared/db'
 import { outboxQueue } from '../queues'
 
-const POLL_INTERVAL_MS = 5000
+const POLL_INTERVAL_MS = Number(process.env.OUTBOX_POLL_MS) || 5000
+const MAX_RETRY = 5
 
 let intervalId: ReturnType<typeof setInterval> | null = null
 
@@ -12,17 +14,37 @@ export function startOutboxDispatcher() {
   async function poll() {
     try {
       const events = await prisma.outboxEvent.findMany({
-        where: { processedAt: null },
+        where: { processedAt: null, retryCount: { lt: MAX_RETRY } },
         orderBy: { createdAt: 'asc' },
         take: 100,
       })
 
       for (const event of events) {
-        await outboxQueue.add(
-          event.type,
-          { eventId: event.id },
-          { jobId: event.id, attempts: 3, backoff: { type: 'exponential', delay: 2000 } }
-        )
+        try {
+          await outboxQueue.add(
+            event.type,
+            { eventId: event.id },
+            { jobId: event.id, attempts: 3, backoff: { type: 'exponential', delay: 2000 } }
+          )
+          // علامت‌گذاری dispatch — جلوگیری از re-enqueue بی‌نهایت قبل از پردازش
+          // اگر job قبلاً وجود داشته باشد (dedupe)، increment بی‌ضرر است و DLQ را جلو می‌برد
+          await prisma.outboxEvent.update({
+            where: { id: event.id },
+            data: { retryCount: { increment: 1 } },
+          })
+        } catch (e: unknown) {
+          // اگر jobId تکراری باشد (dedupe)، خطا را نادیده بگیر
+          const msg = e instanceof Error ? e.message : String(e)
+          if (!msg.includes('already exists') && !msg.includes('Job')) {
+            console.error(`[OutboxDispatcher] enqueue failed for ${event.id}:`, e)
+          }
+        }
+      }
+
+      // DLQ: رویدادهایی که ۵ بار تلاش شدند و هنوز processedAt ندارند را لاگ کن
+      const stuck = events.filter((e: any) => e.retryCount + 1 >= MAX_RETRY)
+      if (stuck.length > 0) {
+        console.warn(`[OutboxDispatcher] ${stuck.length} events reached DLQ (retryCount>=${MAX_RETRY}):`, stuck.map((e: any) => e.id))
       }
     } catch (err) {
       console.error('[OutboxDispatcher] poll error:', err)
@@ -30,6 +52,10 @@ export function startOutboxDispatcher() {
   }
 
   intervalId = setInterval(poll, POLL_INTERVAL_MS)
+  // جلوگیری از نگه‌داشتن process در تست
+  if (intervalId && typeof (intervalId as unknown as { unref?: () => void }).unref === 'function') {
+    ;(intervalId as unknown as { unref: () => void }).unref()
+  }
   poll() // اولین poll فوری
 }
 

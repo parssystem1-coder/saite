@@ -48,6 +48,9 @@ model Product {
 
   orderItems OrderItem[]
 
+  @@index([category, createdAt])
+  @@index([brand])
+  @@index([stockStatus])
   @@map("products")
 }
 
@@ -80,9 +83,13 @@ model Order {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   items          OrderItem[]
   paymentIntents PaymentIntent[]
+  invoice        Invoice?
+  shipment       Shipment?
 
+  @@index([customerId, createdAt])
   @@map("orders")
 }
 
@@ -130,6 +137,7 @@ model PaymentIntent {
 
   order Order @relation(fields: [orderId], references: [id])
 
+  @@index([orderId])
   @@map("payment_intents")
 }
 
@@ -157,6 +165,9 @@ model Customer {
   metadata     Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  orders   Order[]
+  invoices Invoice[]
 
   @@map("customers")
 }
@@ -230,8 +241,11 @@ model Invoice {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
   transactions Transaction[]
 
+  @@index([customerId, createdAt])
   @@map("invoices")
 }
 
@@ -300,6 +314,9 @@ model Shipment {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([carrier, status])
   @@map("shipments")
 }
 
