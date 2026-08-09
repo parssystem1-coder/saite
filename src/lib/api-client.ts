@@ -50,8 +50,12 @@ export async function httpJson<T>(path: string, init?: RequestInit): Promise<T> 
   if (!res.ok) {
     let message = res.statusText || 'خطای سرور'
     try {
-      const body = (await res.json()) as { message?: string }
+      const body = (await res.json()) as { message?: string; error?: string | { message?: string } }
       if (body.message) message = body.message
+      else if (typeof body.error === 'string') message = body.error
+      else if (body.error && typeof body.error === 'object' && 'message' in body.error) {
+        message = (body.error as { message: string }).message
+      }
     } catch {
       /* ignore */
     }

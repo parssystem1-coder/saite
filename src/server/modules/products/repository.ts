@@ -83,6 +83,11 @@ function buildWhere(query: ProductListQuery) {
     where.stockStatus = { not: 'out_of_stock' }
   }
 
+  // برای سازگاری با src/lib/api.ts — featured/bestSeller
+  const qAny = query as unknown as Record<string, unknown>
+  if (qAny.isFeatured) where.isFeatured = true
+  if (qAny.isBestSeller) where.isBestSeller = true
+
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
     where.price = {}
     if (query.minPrice !== undefined) (where.price as Record<string, unknown>).gte = query.minPrice

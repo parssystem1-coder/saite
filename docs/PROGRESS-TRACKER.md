@@ -27,7 +27,7 @@
 
 | **۲** | قفل API (C3, C4, C5, C6) | ✅ **انجام شد — ۱۰۰٪** | ۱۱ route مدیریتی با `requirePermission` + IDOR بسته + `passwordHash` + آپلود امن + `client_max_body_size` | `src/app/api/**`, `prisma/schema.prisma`, `src/server/upload/**`, `nginx/nginx.conf` | نیاز به `npx prisma migrate dev --name add_customer_password` روی DB واقعی |
 | **۳** | یکپارچگی داده و صف (C9, C12, C14) | ✅ **انجام شد — ۱۰۰٪** | webhook با state-machine + outbox-worker زنجیره کامل + دیسپچر با retryCount/DLQ + ایندکس/FK | `src/app/api/payments/webhook/zarinpal/route.ts`, `src/server/jobs/workers/outbox-worker.ts`, `dispatchers/outbox-dispatcher.ts`, `prisma/schema.prisma` | نیاز به `npx prisma migrate dev --name phase3_indexes` روی DB واقعی |
-| **۴** | سخت‌سازی API (C8, C13, C15, R6) | 🔲 انجام‌نشده | ۰٪ | — | — |
+| **۴** | سخت‌سازی API (C8, C13, C15, R6) | ✅ **انجام شد — ۱۰۰٪** | `parsePagination` با سقف ۱۰۰ + rate-limit روی `ai/chat` و `coupon/validate` + `api-client` با هر دو شکل خطا + `api.ts` با featured/bestSeller و ۵ endpoint با fallback + `validation.ts` | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts` | — |
 | **۵** | کیفیت کد (R16, R11, R10, R17) | 🔲 انجام‌نشده | ۰٪ | — | — |
 | **۶** | زیرساخت (R12, R15) | 🔲 انجام‌نشده | ۰٪ | — | — |
 | **۷** | تست (R14) | 🔲 انجام‌نشده | ۰٪ | موازی با بقیه | — |
@@ -56,9 +56,9 @@
 | C9 | جریان پول قطع (نه فاکتور/موجودی/ایمیل) | HIGH | ۳ | ✅ webhook → transitionState + outbox-worker با finance/inventory/comms |
 | C12 | Outbox re-enqueue ابدی بدون DLQ | HIGH | ۳ | ✅ dispatcher با retryCount<5 + DLQ + unref |
 | C14 | ایندکس/FK گمشده | MEDIUM-HIGH | ۳ | ✅ @@index(category,brand), @@index(customerId,createdAt), @@index(orderId), FK Order→Customer |
-| C8 | `perPage` بی‌سقف | HIGH | ۴ | 🔲 |
-| C13 | `ai/chat` بدون rate-limit هزینه‌ساز | HIGH | ۴ | 🔲 |
-| C15 | خطا ناسازگار + endpoint موهوم | HIGH | ۴ | 🔲 |
+| C8 | `perPage` بی‌سقف | HIGH | ۴ | ✅ `parsePagination` + `parseNumberParam` + `MAX_PER_PAGE=100` در service |
+| C13 | `ai/chat` بدون rate-limit هزینه‌ساز | HIGH | ۴ | ✅ `consumeRateLimit` per-IP برای `ai-chat` و `coupon-validate` |
+| C15 | خطا ناسازگار + endpoint موهوم | HIGH | ۴ | ✅ `api-client` با `error/message` + `api.ts` با try/catch fallback |
 
 ---
 
@@ -73,6 +73,7 @@
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۱ اجرا شد** — قفل مالی: قیمت سروری + کوپن اتمیک + CouponRedemption | `src/server/modules/orders/service.ts`, `marketing/service.ts`, `marketing/repository.ts`, `prisma/schema.prisma` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۲ اجرا شد** — قفل API: ۱۱ route با گارد + IDOR + ورود مشتری امن + آپلود امن | `src/app/api/**` (۱۱ فایل), `prisma/schema.prisma` (+passwordHash), `src/app/api/customers/session/route.ts`, `src/server/upload/providers/local.ts`, `src/app/api/products/_utils.ts`, `nginx/nginx.conf` | ✅ `type-check` `lint` `test` `build` سبز |
 | 2026-08-09 | Arena `019fe81d` — agent | **فاز ۳ اجرا شد** — یکپارچگی داده: زنجیره پرداخت + صف + ایندکس | `src/app/api/payments/webhook/zarinpal/route.ts`, `src/server/jobs/workers/outbox-worker.ts`, `src/server/jobs/dispatchers/outbox-dispatcher.ts`, `prisma/schema.prisma` | ✅ `type-check` `lint` `test` `build` سبز |
+| 2026-08-09 | Arena `019fe81d` — agent | **فاز ۴ اجرا شد** — سخت‌سازی API: سقف صفحه، rate-limit، قرارداد + validation | `src/app/api/products/*`, `src/lib/api*`, `src/server/shared/validation.ts`, `src/server/modules/products/*` | ✅ `type-check` `lint` `test` `build` سبز |
 | — | — | — | — | — |
 
 > هر سشن جدید یک ردیف به این جدول اضافه کند.
