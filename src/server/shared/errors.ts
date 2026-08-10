@@ -40,6 +40,20 @@ export class UnauthorizedError extends DomainError {
   }
 }
 
+/**
+ * پیکربندی ضروری سرویس در محیط اجرا وجود ندارد.
+ *
+ * عمداً 503 است، نه 500: خطا از درخواست کاربر نیست و retry پس از
+ * اصلاح تنظیمات ممکن است موفق شود. این خطا برای جلوگیری از fallback
+ * خطرناک به providerهای mock در production استفاده می‌شود.
+ */
+export class ServiceUnavailableError extends DomainError {
+  constructor(message = 'سرویس موقتاً در دسترس نیست', code = 'SERVICE_UNAVAILABLE') {
+    super(message, 503, code)
+    this.name = 'ServiceUnavailableError'
+  }
+}
+
 export class ForbiddenError extends DomainError {
   constructor(message = 'دسترسی ممنوع') {
     super(message, 403, 'FORBIDDEN')

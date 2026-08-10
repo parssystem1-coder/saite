@@ -4,7 +4,8 @@
 
 | نوع | URL | فاصله |
 |-----|-----|-------|
-| HTTP(s) | `https://saite.ir/api/health` | ۵ دقیقه |
+| HTTP(s) readiness | `https://saite.ir/api/health/ready` | ۵ دقیقه |
+| HTTP(s) liveness | `https://saite.ir/api/health/live` | ۱ دقیقه |
 | Keyword | `status":"ok"` در پاسخ health | ۵ دقیقه |
 
 ## لاگ‌ها

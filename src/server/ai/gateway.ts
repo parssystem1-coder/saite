@@ -4,6 +4,7 @@ import { openaiEmbeddings } from './providers/openai'
 import { mockAiProvider } from './providers/mock'
 import { trackCost } from './cost-tracker'
 import { detectInjection, redactPII } from './safety'
+import { ServiceUnavailableError } from '@/server/shared/errors'
 
 export interface ChatOptions {
   feature: string
@@ -21,7 +22,14 @@ export async function callChat(opts: ChatOptions) {
   const prompt = renderPrompt(opts.feature, opts.variables)
   const safePrompt = redactPII(prompt)
 
-  const provider = process.env.ANTHROPIC_API_KEY ? anthropicProvider : mockAiProvider
+  const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY)
+  // پاسخ ساختگی در production نباید به‌عنوان پاسخ پشتیبانی/SEO واقعی
+  // به کاربر برسد. mock فقط ابزار توسعه و تست است.
+  if (!hasAnthropicKey && process.env.NODE_ENV === 'production') {
+    throw new ServiceUnavailableError('سرویس هوش مصنوعی پیکربندی نشده است', 'AI_PROVIDER_NOT_CONFIGURED')
+  }
+
+  const provider = hasAnthropicKey ? anthropicProvider : mockAiProvider
 
   try {
     const result = await provider.chat({
@@ -62,6 +70,9 @@ export async function callChat(opts: ChatOptions) {
 
 export async function callEmbedding(text: string) {
   if (!process.env.OPENAI_API_KEY) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ServiceUnavailableError('سرویس embedding پیکربندی نشده است', 'EMBEDDING_PROVIDER_NOT_CONFIGURED')
+    }
     return new Array(1536).fill(0)
   }
   return openaiEmbeddings.create(text)
