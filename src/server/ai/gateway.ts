@@ -4,7 +4,8 @@ import { openaiEmbeddings } from './providers/openai'
 import { mockAiProvider } from './providers/mock'
 import { trackCost } from './cost-tracker'
 import { detectInjection, redactPII } from './safety'
-import { ServiceUnavailableError } from '@/server/shared/errors'
+import { ServiceUnavailableError, ValidationError } from '@/server/shared/errors'
+import { logger } from '@/server/shared/logger'
 
 export interface ChatOptions {
   feature: string
@@ -16,7 +17,7 @@ export interface ChatOptions {
 
 export async function callChat(opts: ChatOptions) {
   if (detectInjection(opts.variables)) {
-    throw new Error('ورودی مشکوک به prompt injection')
+    throw new ValidationError({ prompt: 'ورودی مشکوک به prompt injection شناسایی شد' }, 'ورودی غیرمجاز')
   }
 
   const prompt = renderPrompt(opts.feature, opts.variables)
@@ -53,6 +54,7 @@ export async function callChat(opts: ChatOptions) {
 
     return result.text
   } catch (err) {
+    logger.error({ err, feature: opts.feature, actorId: opts.actorId }, '[AiGateway] callChat error')
     await trackCost({
       feature: opts.feature,
       promptVersion: opts.promptVersion || 'v1',
@@ -91,6 +93,6 @@ function renderPrompt(feature: string, variables: Record<string, unknown>): stri
   }
 
   const template = templates[feature]
-  if (!template) throw new Error(`Prompt template not found: ${feature}`)
+  if (!template) throw new ValidationError({ feature: `قالب نامعتبر است: ${feature}` }, `Prompt template not found: ${feature}`)
   return template(variables)
 }

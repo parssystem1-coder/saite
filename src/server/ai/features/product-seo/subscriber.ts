@@ -18,9 +18,16 @@ export async function handleProductCreated(event: { productId: string; actorId: 
       },
     })
 
-    // TODO: ذخیره SEO در جدول product_seo
-    logger.info({ slug: product.slug, seoPreview: seoText.substring(0, 100) }, '[AI SEO] Generated')
+    // ذخیره یا به‌روزرسانی متن تولید شده در توضیحات محصول در صورت خالی بودن
+    if (!product.description && seoText) {
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { description: seoText },
+      })
+    }
+
+    logger.info({ productId: product.id, slug: product.slug, seoLength: seoText.length }, '[AI SEO] Generated and saved')
   } catch (err) {
-    logger.error({ err }, '[AI SEO] Failed')
+    logger.error({ err, productId: event.productId }, '[AI SEO] Failed to generate SEO')
   }
 }
