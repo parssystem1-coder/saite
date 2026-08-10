@@ -115,6 +115,12 @@ export const financeRepository = {
     return prisma.transaction.create({ data: payload })
   },
 
+  async findTransactionById(id: string) {
+    return prisma.transaction.findUnique({
+      where: { id },
+    })
+  },
+
   async updateTransactionStatus(id: string, status: DbTransactionStatus | string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },

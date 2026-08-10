@@ -1,5 +1,5 @@
 import 'server-only'
-import { financeRepository } from './repository'
+import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
 
@@ -40,6 +40,7 @@ export const financeService = {
 
     await eventBus.publish('invoice.created', {
       invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
       orderId: order.id,
       customerId: order.customerId,
       amount: invoice.totalAmount,
@@ -119,7 +120,15 @@ export const financeService = {
     return financeRepository.listInvoices(opts)
   },
 
+  async getTransaction(id: string) {
+    return financeRepository.findTransactionById(id)
+  },
+
   async listTransactions(opts: Parameters<typeof financeRepository.listTransactions>[0]) {
     return financeRepository.listTransactions(opts)
+  },
+
+  async createTransaction(data: CreateTransactionData) {
+    return financeRepository.createTransaction(data)
   },
 }

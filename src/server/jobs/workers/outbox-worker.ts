@@ -127,8 +127,23 @@ export const outboxWorker = new Worker(
         case 'invoice.created': {
           const orderId = payload.orderId as string
           const amount = payload.amount as number
+          const customerId = payload.customerId as string
+          const invoiceNumber = payload.invoiceNumber as string | undefined
           logger.info(`[OutboxWorker] invoice.created order=${orderId} amount=${amount}`)
-          // TODO: ارسال ایمیل فاکتور — فعلاً لاگ
+          if (customerId && invoiceNumber) {
+            try {
+              const customer = await prisma.customer.findUnique({ where: { id: customerId } })
+              if (customer?.email) {
+                await commsService.sendInvoiceNotification({
+                  to: customer.email,
+                  invoiceNumber,
+                  amount,
+                })
+              }
+            } catch (e) {
+              logger.error({ err: e, orderId }, '[OutboxWorker] sendInvoiceNotification failed')
+            }
+          }
           break
         }
         case 'invoice.paid': {
