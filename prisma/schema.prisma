@@ -49,6 +49,7 @@ model Product {
   orderItems OrderItem[]
   inventory InventoryItem?
   inventoryReservations InventoryReservation[]
+  inventoryAdjustments InventoryAdjustment[]
 
   @@index([category, createdAt])
   @@index([brand])
@@ -86,6 +87,29 @@ model InventoryItem {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("inventory_items")
+}
+
+model InventoryAdjustment {
+  id        String                 @id @default(cuid())
+  productId String
+  delta     Int
+  reason    InventoryAdjustmentReason
+  note      String?
+  actorId   String
+  createdAt DateTime               @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId, createdAt])
+  @@map("inventory_adjustments")
+}
+
+enum InventoryAdjustmentReason {
+  receipt
+  correction
+  damaged
+  returned
+  stocktake
 }
 
 model InventoryReservation {

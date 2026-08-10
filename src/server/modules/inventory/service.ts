@@ -8,6 +8,7 @@ export const inventoryService = {
   releaseOrder: inventoryRepository.releaseOrder,
   expireReservations: inventoryRepository.expireReservations,
   setOnHand: inventoryRepository.setOnHand,
+  adjustOnHand: inventoryRepository.adjustOnHand,
   // Compatibility for older callers; new checkout must always supply an orderId.
   async reserveItems(_items: InventoryLine[]) {
     throw new Error('reserveItems بدون orderId منسوخ شده است؛ از reserveForOrder استفاده کنید')

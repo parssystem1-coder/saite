@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Boxes, PackageX, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Boxes, PackageX, AlertTriangle, CheckCircle2, RefreshCw, Pencil } from 'lucide-react'
 import { Badge, Stat } from '@/components/admin/finance/finance-shared'
 import { Button } from '@/components/ui/button'
 
@@ -39,6 +39,28 @@ export default function InventoryReportClient() {
     },
   })
 
+  const adjust = async (row: InventoryRow) => {
+    const raw = window.prompt(`تغییر موجودی «${row.name}» را وارد کنید.
+مثبت = ورود کالا | منفی = خروج/کسری`, '0')
+    if (raw === null) return
+    const delta = Number(raw)
+    if (!Number.isSafeInteger(delta) || delta === 0) {
+      window.alert('تغییر موجودی باید عدد صحیح غیرصفر باشد.')
+      return
+    }
+    const note = window.prompt('یادداشت تغییر (اختیاری):', '')
+    const response = await fetch(`/api/products/${row.productId}/inventory/adjust`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta, reason: 'correction', note: note ?? undefined }),
+    })
+    if (!response.ok) {
+      const detail = await response.json().catch(() => null) as { error?: string } | null
+      window.alert(detail?.error || 'ثبت تغییر موجودی ناموفق بود.')
+      return
+    }
+    void refetch()
+  }
+
   const stats = React.useMemo(() => ({
     total: rows.length,
     ok: rows.filter((r) => statusFor(r.quantityAvailable) === 'ok').length,
@@ -71,10 +93,10 @@ export default function InventoryReportClient() {
         {error ? <div className="p-8 text-center text-sm text-destructive">{error.message}</div> : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-right text-sm">
-              <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th></tr></thead>
+              <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th><th className="p-3">عملیات</th></tr></thead>
               <tbody>{rows.map((row) => {
                 const status = statusFor(row.quantityAvailable)
-                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td></tr>
+                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => void adjust(row)} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button></td></tr>
               })}</tbody>
             </table>
             {!loading && rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">رکورد موجودی یافت نشد.</div>}

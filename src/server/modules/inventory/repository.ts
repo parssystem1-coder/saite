@@ -45,6 +45,29 @@ export const inventoryRepository = {
     })
   },
 
+  async adjustOnHand(input: { productId: string; delta: number; reason: 'receipt' | 'correction' | 'damaged' | 'returned' | 'stocktake'; note?: string; actorId: string }) {
+    return prisma.$transaction(async (tx: any) => {
+      // Row lock serializes adjustments with checkout reservations.
+      const current = (await tx.$queryRawUnsafe(
+        `SELECT "quantityOnHand", "quantityReserved" FROM "inventory_items" WHERE "productId" = $1 FOR UPDATE`, input.productId
+      )) as Array<{ quantityOnHand: number; quantityReserved: number }>
+      const item = current[0]
+      if (!item || item.quantityOnHand + input.delta < item.quantityReserved) {
+        throw new ValidationError({ delta: 'موجودی پس از تغییر نمی‌تواند از رزرو فعال کمتر شود' })
+      }
+      await tx.$executeRawUnsafe(
+        `UPDATE "inventory_items" SET "quantityOnHand" = "quantityOnHand" + $1, "updatedAt" = NOW() WHERE "productId" = $2`,
+        input.delta, input.productId
+      )
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "inventory_adjustments" ("id", "productId", "delta", "reason", "note", "actorId", "createdAt")
+         VALUES (concat('adj_', md5(random()::text || clock_timestamp()::text)), $1, $2, $3::"InventoryAdjustmentReason", $4, $5, NOW())`,
+        input.productId, input.delta, input.reason, input.note ?? null, input.actorId
+      )
+      return { quantityOnHand: item.quantityOnHand + input.delta, quantityReserved: item.quantityReserved }
+    })
+  },
+
   async setOnHand(productId: string, quantityOnHand: number) {
     const result = (await prisma.$queryRawUnsafe(
       `UPDATE "inventory_items" SET "quantityOnHand" = $1, "updatedAt" = NOW()
