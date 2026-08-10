@@ -82,6 +82,7 @@ model InventoryItem {
   productId        String   @unique
   quantityOnHand   Int      @default(0)
   quantityReserved Int      @default(0)
+  reorderPoint     Int      @default(5)
   updatedAt        DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)

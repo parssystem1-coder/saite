@@ -9,6 +9,7 @@ export interface InventoryReportRow {
   name: string
   quantityOnHand: number
   quantityReserved: number
+  reorderPoint: number
   quantityAvailable: number
   activeReservations: number
 }
@@ -26,9 +27,9 @@ export async function GET(req: NextRequest) {
       status === 'out'
         ? 'WHERE i."quantityOnHand" - i."quantityReserved" <= 0'
         : status === 'low'
-          ? 'WHERE i."quantityOnHand" - i."quantityReserved" BETWEEN 1 AND 5'
+          ? 'WHERE i."quantityOnHand" - i."quantityReserved" BETWEEN 1 AND i."reorderPoint"'
           : status === 'ok'
-            ? 'WHERE i."quantityOnHand" - i."quantityReserved" > 5'
+            ? 'WHERE i."quantityOnHand" - i."quantityReserved" > i."reorderPoint"'
             : ''
 
     // `status` only selects a fixed SQL fragment and all data values are bound.
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
       INNER JOIN products p ON p.id = i."productId"
       LEFT JOIN "inventory_reservations" r ON r."productId" = p.id AND r.status = 'active'
       ${where}
-      GROUP BY p.id, p.sku, p.name, i."quantityOnHand", i."quantityReserved"
+      GROUP BY p.id, p.sku, p.name, i."quantityOnHand", i."quantityReserved", i."reorderPoint"
       ORDER BY "quantityAvailable" ASC, p.name ASC
       LIMIT $1
     `, limit)) as InventoryReportRow[]
