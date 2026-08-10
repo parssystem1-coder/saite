@@ -4,7 +4,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 
-const UPLOAD_DIR = process.env.UPLOAD_LOCAL_DIR || 'public/uploads'
+const UPLOAD_SUBDIR = 'public/uploads'
 const PUBLIC_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 export const localDiskProvider = {
@@ -21,7 +21,7 @@ export const localDiskProvider = {
     if (!/^[a-z0-9-]{1,32}$/.test(folder)) {
       return { success: false, url: '', key: '', provider: 'local' as const, error: 'نام پوشه نامعتبر است' }
     }
-    const dir = join(process.cwd(), UPLOAD_DIR, folder)
+    const dir = join(process.cwd(), UPLOAD_SUBDIR, folder)
     if (!existsSync(dir)) await mkdir(dir, { recursive: true })
 
     const mimeToExt: Record<string, string> = {
@@ -47,7 +47,7 @@ export const localDiskProvider = {
   },
 
   async delete(key: string) {
-    const path = join(process.cwd(), UPLOAD_DIR, key)
+    const path = join(process.cwd(), UPLOAD_SUBDIR, key)
     try {
       await unlink(path)
       return { success: true }

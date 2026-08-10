@@ -17,9 +17,19 @@ function createPrisma(): PrismaClient {
       },
     })
   }
-  const instance = globalForPrisma.prisma || new PrismaClient()
-  if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = instance
-  return instance
+  try {
+    const instance = globalForPrisma.prisma || new PrismaClient()
+    if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = instance
+    return instance
+  } catch {
+    return new Proxy({} as PrismaClient, {
+      get(_target, prop) {
+        if (prop === 'then' || prop === 'catch' || prop === 'finally') return undefined
+        return (..._args: unknown[]) =>
+          Promise.reject(new Error(`Prisma.${String(prop)} در دسترس نیست`))
+      },
+    })
+  }
 }
 
 export const prisma = createPrisma()

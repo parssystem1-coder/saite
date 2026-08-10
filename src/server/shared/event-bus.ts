@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { logger } from '@/server/shared/logger'
 import { prisma } from './db'
 import type { ProductEvent } from '@/server/modules/products/events'
@@ -8,7 +8,13 @@ import type { ShippingEvent } from '@/server/modules/shipping/events'
 import type { MarketingEvent } from '@/server/modules/marketing/events'
 import type { ContentEvent } from '@/server/modules/content/events'
 
-type DomainEvent = ProductEvent | FinanceEvent | ShippingEvent | MarketingEvent | ContentEvent | { type: string; [key: string]: unknown }
+type DomainEvent =
+  | ProductEvent
+  | FinanceEvent
+  | ShippingEvent
+  | MarketingEvent
+  | ContentEvent
+  | { type: string; [key: string]: unknown }
 
 export const eventBus = {
   async publish(type: string, payload: Record<string, unknown>) {

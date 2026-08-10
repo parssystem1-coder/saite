@@ -1,20 +1,43 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 
+export type DbShipmentStatus =
+  | 'pending'
+  | 'label_created'
+  | 'picked_up'
+  | 'in_transit'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'failed'
+  | 'returned'
+
+export interface CreateShipmentData {
+  orderId: string
+  carrier: string
+  trackingNumber?: string
+  shippingCost?: number
+  weightGrams?: number
+  dimensions?: string
+  originAddress?: Record<string, unknown> | null
+  destinationAddress?: Record<string, unknown> | null
+  estimatedDelivery?: Date
+  notes?: string
+}
+
+export interface CreateShippingRateData {
+  carrier: string
+  zone: string
+  minWeight?: number
+  maxWeight?: number | null
+  baseCost: number
+  perKgCost?: number
+  codFee?: number
+  estimatedDays?: number
+}
+
 export const shippingRepository = {
-  async createShipment(data: {
-    orderId: string
-    carrier: string
-    trackingNumber?: string
-    shippingCost?: number
-    weightGrams?: number
-    dimensions?: string
-    originAddress?: unknown
-    destinationAddress?: unknown
-    estimatedDelivery?: Date
-    notes?: string
-  }) {
+  async createShipment(data: CreateShipmentData) {
     return prisma.shipment.create({
       data: {
         ...data,
@@ -33,7 +56,7 @@ export const shippingRepository = {
     return prisma.shipment.findUnique({ where: { orderId } })
   },
 
-  async updateShipmentStatus(id: string, status: string, extra?: { shippedAt?: Date; deliveredAt?: Date; trackingNumber?: string }) {
+  async updateShipmentStatus(id: string, status: DbShipmentStatus | string, extra?: { shippedAt?: Date; deliveredAt?: Date; trackingNumber?: string }) {
     return prisma.shipment.update({
       where: { id },
       data: {
@@ -69,16 +92,7 @@ export const shippingRepository = {
     return { items, total, page, limit }
   },
 
-  async createShippingRate(data: {
-    carrier: string
-    zone: string
-    minWeight?: number
-    maxWeight?: number | null
-    baseCost: number
-    perKgCost?: number
-    codFee?: number
-    estimatedDays?: number
-  }) {
+  async createShippingRate(data: CreateShippingRateData) {
     return prisma.shippingRate.create({
       data: {
         ...data,

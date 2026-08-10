@@ -1,7 +1,38 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
+import type { PriceType, StockStatus, ProductCondition } from '@/types/product'
+
+export interface CreateProductData {
+  slug: string
+  name: string
+  brand: string
+  model: string
+  sku: string
+  category: string
+  subCategory?: string | null
+  priceType: PriceType
+  price?: number | null
+  compareAtPrice?: number | null
+  stockStatus?: StockStatus
+  images?: string[]
+  shortDescription: string
+  description?: string | null
+  keyFeatures?: string[]
+  specs?: Record<string, unknown> | null
+  technology?: string | null
+  colorSupport?: string | null
+  usageClass?: string | null
+  warrantyMonths?: number | null
+  condition?: ProductCondition
+  compatibleWith?: string[]
+  consumables?: string[]
+  isFeatured?: boolean
+  isBestSeller?: boolean
+}
+
+export type UpdateProductData = Partial<CreateProductData>
 
 export const productsRepository = {
   async findBySlug(slug: string) {
@@ -28,11 +59,11 @@ export const productsRepository = {
     return { items, total }
   },
 
-  async create(data: Record<string, unknown>) {
+  async create(data: CreateProductData) {
     return prisma.product.create({ data: data as any })
   },
 
-  async update(id: string, data: Record<string, unknown>) {
+  async update(id: string, data: UpdateProductData) {
     return prisma.product.update({ where: { id }, data: data as any })
   },
 
@@ -90,9 +121,10 @@ function buildWhere(query: ProductListQuery) {
   if (qAny.isBestSeller) where.isBestSeller = true
 
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-    where.price = {}
-    if (query.minPrice !== undefined) (where.price as Record<string, unknown>).gte = query.minPrice
-    if (query.maxPrice !== undefined) (where.price as Record<string, unknown>).lte = query.maxPrice
+    const priceFilter: Record<string, unknown> = {}
+    if (query.minPrice !== undefined) priceFilter.gte = query.minPrice
+    if (query.maxPrice !== undefined) priceFilter.lte = query.maxPrice
+    where.price = priceFilter
   }
 
   return where

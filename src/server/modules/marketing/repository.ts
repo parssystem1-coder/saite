@@ -1,24 +1,40 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 
+export type DbCouponType = 'percentage' | 'fixed_amount' | 'free_shipping'
+
+export interface CreateCouponData {
+  code: string
+  name: string
+  description?: string | null
+  type: DbCouponType | string
+  value: number
+  minOrderAmount?: number
+  maxDiscount?: number | null
+  usageLimit?: number | null
+  perCustomerLimit?: number
+  startsAt?: Date | null
+  expiresAt?: Date | null
+  applicableProducts?: string[]
+  applicableCategories?: string[]
+  firstOrderOnly?: boolean
+}
+
+export interface CreateCampaignData {
+  name: string
+  description?: string | null
+  type: string
+  startDate: Date
+  endDate: Date
+  bannerUrl?: string | null
+  targetUrl?: string | null
+  priority?: number
+  metadata?: Record<string, unknown> | null
+}
+
 export const marketingRepository = {
-  async createCoupon(data: {
-    code: string
-    name: string
-    description?: string
-    type: string
-    value: number
-    minOrderAmount?: number
-    maxDiscount?: number | null
-    usageLimit?: number | null
-    perCustomerLimit?: number
-    startsAt?: Date | null
-    expiresAt?: Date | null
-    applicableProducts?: string[]
-    applicableCategories?: string[]
-    firstOrderOnly?: boolean
-  }) {
+  async createCoupon(data: CreateCouponData) {
     return prisma.coupon.create({
       data: {
         ...data,
@@ -105,17 +121,7 @@ export const marketingRepository = {
     return prisma.coupon.update({ where: { id }, data })
   },
 
-  async createCampaign(data: {
-    name: string
-    description?: string
-    type: string
-    startDate: Date
-    endDate: Date
-    bannerUrl?: string
-    targetUrl?: string
-    priority?: number
-    metadata?: unknown
-  }) {
+  async createCampaign(data: CreateCampaignData) {
     return prisma.campaign.create({
       data: {
         ...data,

@@ -1,5 +1,5 @@
 import 'server-only'
-import { productsRepository } from './repository'
+import { productsRepository, type CreateProductData, type UpdateProductData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
 import { NotFoundError } from '@/server/shared/errors'
@@ -73,7 +73,7 @@ export const productsService = {
   },
 
   async create(input: unknown, actorId: string) {
-    const product = await productsRepository.create(input as Record<string, unknown>)
+    const product = await productsRepository.create(input as CreateProductData)
     await eventBus.publish('product.created', { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
@@ -83,7 +83,7 @@ export const productsService = {
   },
 
   async update(id: string, input: unknown, actorId: string) {
-    const product = await productsRepository.update(id, input as Record<string, unknown>)
+    const product = await productsRepository.update(id, input as UpdateProductData)
     await eventBus.publish('product.updated', { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
