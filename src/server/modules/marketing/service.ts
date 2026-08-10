@@ -3,13 +3,10 @@ import 'server-only'
 import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { CouponValidationError } from '@/server/shared/errors'
 
-export class CouponValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'CouponValidationError'
-  }
-}
+// Re-export برای backward compatibility
+export { CouponValidationError }
 
 export const marketingService = {
   async createCoupon(data: Parameters<typeof marketingRepository.createCoupon>[0]) {
@@ -136,7 +133,7 @@ export const marketingService = {
             orderId,
             discount: result.discount,
             customerId: opts.customerId,
-          } as unknown as any,
+          } as any,
           aggregateId: result.coupon.id,
         },
       })

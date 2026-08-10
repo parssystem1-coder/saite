@@ -25,17 +25,17 @@ export const ordersRepository = {
   },
 
   async create(data: Record<string, unknown>) {
-    return prisma.order.create({ data: data as unknown as any })
+    return prisma.order.create({ data: data as any })
   },
 
   async updateStatus(id: string, status: string) {
     return prisma.order.update({
       where: { id },
-      data: { status: status as unknown as any },
+      data: { status: status as any },
     })
   },
 
   async createOrderItem(data: Record<string, unknown>) {
-    return prisma.orderItem.create({ data: data as unknown as any })
+    return prisma.orderItem.create({ data: data as any })
   },
 }

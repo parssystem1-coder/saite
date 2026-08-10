@@ -3,6 +3,7 @@ import { prisma } from '@/server/shared/db'
 import { zarinpalProvider } from '@/server/payments/providers/zarinpal'
 import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
+import { logger } from '@/server/shared/logger'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
       } catch (e) {
         if (e instanceof InvalidStateTransitionError) {
           // سفارش قبلاً paid شده — idempotent، نادیده بگیر
-          console.log(`[Zarinpal Webhook] order ${existing.orderId} already paid, ignoring transition`)
+          logger.info({ orderId: existing.orderId }, '[Zarinpal Webhook] order already paid, ignoring transition')
         } else {
           throw e
         }
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(orderStatusUrl(existing.orderId, result.success ? 'success' : 'failed'))
   } catch (err) {
-    console.error('[Zarinpal Webhook]', err)
+    logger.error({ err }, '[Zarinpal Webhook]')
     return NextResponse.redirect(orderStatusUrl(existing.orderId, 'failed'))
   }
 }

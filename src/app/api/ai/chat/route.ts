@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { callChat } from '@/server/ai/gateway'
 import { consumeRateLimit, getClientKey } from '@/lib/auth/server/rate-limit'
 import { getCustomerSession } from '@/server/auth/customer-session'
+import { logger } from '@/server/shared/logger'
 
 export async function POST(req: NextRequest) {
   // ── احراز هویت مشتری ──────────────────────────
@@ -33,9 +34,9 @@ export async function POST(req: NextRequest) {
     const text = await callChat({ feature, variables, actorId })
     return NextResponse.json({ text })
   } catch (err) {
-    console.error('[AI Chat]', err)
+    logger.error({ err }, '[AI Chat]')
     return NextResponse.json(
-      { error: 'دستیار هوشمند موقتاً در دسترس نیست' },
+      { error: 'دستیار هوشمند موقتاً در دسترس نیست', code: 'AI_UNAVAILABLE' },
       { status: 503 }
     )
   }

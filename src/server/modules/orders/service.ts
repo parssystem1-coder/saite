@@ -100,7 +100,7 @@ export const ordersService = {
           status: 'pending',
           totalAmount,
           currency: 'IRR',
-          shippingAddress: input.shippingAddress as unknown as any,
+          shippingAddress: input.shippingAddress as any,
         },
       })
 
@@ -117,7 +117,7 @@ export const ordersService = {
       await tx.outboxEvent.create({
         data: {
           type: 'order.created',
-          payload: { orderId: createdOrder.id, customerId: input.customerId } as unknown as any,
+          payload: { orderId: createdOrder.id, customerId: input.customerId } as any,
           aggregateId: createdOrder.id,
         },
       })

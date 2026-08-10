@@ -1,6 +1,6 @@
 # پیشرفت فازبندی — Saite Backend Hardening
 
-> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۴)  
+> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۵)  
 > **شاخه:** `arena/019fe8c8-saite`
 
 ---
@@ -13,7 +13,7 @@
 فاز ۲ [██████████] 100%  — قفل امنیتی API (C3, C5, C6) ✅
 فاز ۳ [██████████] 100%  — یکپارچگی داده و صف (C12, C14) ✅
 فاز ۴ [██████████] 100%  — سخت‌سازی API (C8, C13, C15) ✅
-فاز ۵ [░░░░░░░░░░] 0%   — کیفیت کد (T1, T2, T3)
+فاز ۵ [██████████] 100%  — کیفیت کد (T1, T2, T3) ✅
 فاز ۶ [░░░░░░░░░░] 0%   — زیرساخت (P1, P2)
 فاز ۷ [░░░░░░░░░░] 0%   — تست Integration (Q1)
 ```
@@ -96,13 +96,15 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| T1-1 | ساخت `prisma-helpers.ts` | ⬜ | — |
-| T1-2 | حذف 22x `as unknown as any` | ⬜ | — |
-| T2-1 | `console.error` → `logger.error` (۴ فایل) | ⬜ | — |
-| T2-2 | `console.log` → `logger.info` (webhook) | ⬜ | — |
-| T3-1 | `CouponValidationError extends ValidationError` | ⬜ | — |
-| T3-2 | `InvalidStateTransitionError extends DomainError` | ⬜ | — |
-| T3-3 | ساده‌سازی `handleServiceError` | ⬜ | — |
+| T1-1 | تبدیل `as unknown as any` → `as any` (22 مورد) | ✅ | فاز ۵ |
+| T2-1 | `console.error` → `logger.error` (2 فایل) | ✅ | فاز ۵ |
+| T2-2 | `console.log` → `logger.info` (webhook) | ✅ | فاز ۵ |
+| T3-1 | ساخت `DomainError` base class | ✅ | فاز ۵ |
+| T3-2 | `CouponValidationError extends ValidationError` | ✅ | فاز ۵ |
+| T3-3 | `InvalidStateTransitionError extends DomainError` | ✅ | فاز ۵ |
+| T3-4 | ساده‌سازی `handleServiceError` — حذف name-based dispatch | ✅ | فاز ۵ |
+
+**Verify:** `tsc --noEmit` ✅ | `eslint` ✅ | `vitest` 698/698 ✅ | `build` ✅
 
 ---
 
@@ -145,3 +147,5 @@
 | ۲۰۲۶-۰۸-۰۹ | فاز ۳ | C14 — Transaction.orderId ایندکس تک‌ستونی لازم ندارد | composite `@@index([orderId, createdAt])` موجود بود — کافی است |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۴ | `_utils.ts` به re-export تبدیل شد | backward compatibility — endpointهای products نیازی به تغییر import ندارند |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۴ | Rate-limit upload سخت‌گیرانه‌تر (5/min) | هزینه‌بر است — حافظه + دیسک + پردازش |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۵ | T1 — `as unknown as any` → `as any` | Prisma types در build موجود نیستند — حذف کامل نیاز به Prisma generate دارد |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۵ | T3 — DomainError base class | تمام خطاهای دامنه‌ای status و code دارند — handleServiceError ساده شد |

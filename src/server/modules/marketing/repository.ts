@@ -22,7 +22,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type as unknown as any,
+        type: data.type as any,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -120,7 +120,7 @@ export const marketingRepository = {
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ? (data.metadata as unknown as any) : undefined,
+        metadata: data.metadata ? (data.metadata as any) : undefined,
       },
     })
   },

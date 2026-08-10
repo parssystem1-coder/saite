@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { NotFoundError, ValidationError } from './errors'
+import { ValidationError, DomainError } from './errors'
 import { logger } from './logger'
 import { consumeRateLimit, getClientKey } from '@/lib/auth/server/rate-limit'
 
@@ -22,51 +22,19 @@ interface ApiError {
  *   code?: string,        // کد خطا برای پردازش در کلاینت
  *   details?: unknown     // جزئیات اضافی (مثلاً validation errors)
  * }
+ *
+ * تمام خطاهای دامنه‌ای از DomainError extend می‌کنند و status/code دارند.
+ * اگر خطا DomainError نباشد، 500 INTERNAL_ERROR برگردانده می‌شود.
  */
 export function handleServiceError(err: unknown): NextResponse<ApiError> {
-  if (err instanceof NotFoundError) {
-    return NextResponse.json(
-      { error: err.message, code: 'NOT_FOUND' },
-      { status: 404 }
-    )
-  }
-
-  if (err instanceof ValidationError) {
-    return NextResponse.json(
-      { error: err.message, code: 'VALIDATION_ERROR', details: err.details },
-      { status: 400 }
-    )
-  }
-
-  if (err instanceof Error) {
-    // خطاهای دامنه‌ای با نام مشخص
-    if (err.name === 'CouponValidationError') {
-      return NextResponse.json(
-        { error: err.message, code: 'COUPON_VALIDATION_ERROR' },
-        { status: 400 }
-      )
+  // خطاهای دامنه‌ای — status و code از خود error
+  if (err instanceof DomainError) {
+    const response: ApiError = { error: err.message, code: err.code }
+    // details فقط برای ValidationError
+    if (err instanceof ValidationError) {
+      response.details = err.details
     }
-
-    if (err.name === 'InvalidStateTransitionError') {
-      return NextResponse.json(
-        { error: err.message, code: 'INVALID_STATE_TRANSITION' },
-        { status: 409 }
-      )
-    }
-
-    if (err.name === 'UnauthorizedError') {
-      return NextResponse.json(
-        { error: err.message, code: 'UNAUTHORIZED' },
-        { status: 401 }
-      )
-    }
-
-    if (err.name === 'ForbiddenError') {
-      return NextResponse.json(
-        { error: err.message, code: 'FORBIDDEN' },
-        { status: 403 }
-      )
-    }
+    return NextResponse.json(response, { status: err.status })
   }
 
   // خطاهای ناشناخته

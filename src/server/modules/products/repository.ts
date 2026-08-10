@@ -29,11 +29,11 @@ export const productsRepository = {
   },
 
   async create(data: Record<string, unknown>) {
-    return prisma.product.create({ data: data as unknown as any })
+    return prisma.product.create({ data: data as any })
   },
 
   async update(id: string, data: Record<string, unknown>) {
-    return prisma.product.update({ where: { id }, data: data as unknown as any })
+    return prisma.product.update({ where: { id }, data: data as any })
   },
 
   async delete(id: string) {
