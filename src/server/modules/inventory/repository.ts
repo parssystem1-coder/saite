@@ -68,6 +68,13 @@ export const inventoryRepository = {
     })
   },
 
+  async setReorderPoint(productId: string, reorderPoint: number) {
+    const result = (await prisma.$queryRawUnsafe(
+      `UPDATE "inventory_items" SET "reorderPoint" = $1, "updatedAt" = NOW() WHERE "productId" = $2 RETURNING "productId"`, reorderPoint, productId
+    )) as { productId: string }[]
+    if (result.length !== 1) throw new ValidationError({ reorderPoint: 'رکورد موجودی محصول یافت نشد' })
+  },
+
   async setOnHand(productId: string, quantityOnHand: number) {
     const result = (await prisma.$queryRawUnsafe(
       `UPDATE "inventory_items" SET "quantityOnHand" = $1, "updatedAt" = NOW()

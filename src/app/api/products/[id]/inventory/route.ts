@@ -11,14 +11,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (limited) return limited
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response
-    const { quantityOnHand } = await req.json() as { quantityOnHand?: unknown }
-    if (typeof quantityOnHand !== 'number' || !Number.isSafeInteger(quantityOnHand) || quantityOnHand < 0) {
-      throw new ValidationError({ quantityOnHand: 'موجودی باید عدد صحیح نامنفی باشد' })
-    }
-    const safeQuantity = quantityOnHand as number
+    const { quantityOnHand, reorderPoint } = await req.json() as { quantityOnHand?: unknown; reorderPoint?: unknown }
+    if (quantityOnHand === undefined && reorderPoint === undefined) throw new ValidationError({ body: 'حداقل یک مقدار باید ارسال شود' })
+    if (quantityOnHand !== undefined && (typeof quantityOnHand !== 'number' || !Number.isSafeInteger(quantityOnHand) || quantityOnHand < 0)) throw new ValidationError({ quantityOnHand: 'موجودی باید عدد صحیح نامنفی باشد' })
+    if (reorderPoint !== undefined && (typeof reorderPoint !== 'number' || !Number.isSafeInteger(reorderPoint) || reorderPoint < 0)) throw new ValidationError({ reorderPoint: 'نقطه سفارش باید عدد صحیح نامنفی باشد' })
     const { id } = await params
-    await inventoryService.setOnHand(id, safeQuantity)
-    return NextResponse.json({ success: true, productId: id, quantityOnHand: safeQuantity })
+    if (quantityOnHand !== undefined) await inventoryService.setOnHand(id, quantityOnHand)
+    if (reorderPoint !== undefined) await inventoryService.setReorderPoint(id, reorderPoint)
+    return NextResponse.json({ success: true, productId: id, ...(quantityOnHand !== undefined ? { quantityOnHand } : {}), ...(reorderPoint !== undefined ? { reorderPoint } : {}) })
   } catch (error) {
     return handleServiceError(error)
   }

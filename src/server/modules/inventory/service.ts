@@ -8,6 +8,7 @@ export const inventoryService = {
   releaseOrder: inventoryRepository.releaseOrder,
   expireReservations: inventoryRepository.expireReservations,
   setOnHand: inventoryRepository.setOnHand,
+  setReorderPoint: inventoryRepository.setReorderPoint,
   adjustOnHand: inventoryRepository.adjustOnHand,
   // Compatibility for older callers; new checkout must always supply an orderId.
   async reserveItems(_items: InventoryLine[]) {

@@ -53,6 +53,16 @@ export default function InventoryReportClient() {
     queryFn: async () => { const response = await fetch(`/api/products/${historyFor!.productId}/inventory/adjustments`); if (!response.ok) throw new Error('دریافت تاریخچه ناموفق بود'); return (await response.json() as { items: Adjustment[] }).items },
   })
 
+  const setReorderPoint = async (row: InventoryRow) => {
+    const value = window.prompt(`نقطهٔ سفارش برای «${row.name}» را وارد کنید.`, String(row.reorderPoint))
+    if (value === null) return
+    const reorderPoint = Number(value)
+    if (!Number.isSafeInteger(reorderPoint) || reorderPoint < 0) { window.alert('نقطه سفارش باید عدد صحیح نامنفی باشد.'); return }
+    const response = await fetch(`/api/products/${row.productId}/inventory`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reorderPoint }) })
+    if (!response.ok) { const detail = await response.json().catch(() => null) as { error?: string } | null; window.alert(detail?.error || 'ثبت نقطه سفارش ناموفق بود.'); return }
+    void refetch()
+  }
+
   const adjust = async () => {
     if (!adjusting) return
     const delta = Number(deltaText)
@@ -111,7 +121,7 @@ export default function InventoryReportClient() {
               <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">نقطه سفارش</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th><th className="p-3">عملیات</th></tr></thead>
               <tbody>{rows.map((row) => {
                 const status = statusFor(row.quantityAvailable, row.reorderPoint)
-                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3">{row.reorderPoint.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => { setAdjusting(row); setDeltaText(''); setReason('correction'); setNote('') }} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button><Button size="sm" variant="ghost" onClick={() => setHistoryFor(row)} title="تاریخچه"><History className="size-4" /></Button></td></tr>
+                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3">{row.reorderPoint.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => { setAdjusting(row); setDeltaText(''); setReason('correction'); setNote('') }} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button><Button size="sm" variant="ghost" onClick={() => void setReorderPoint(row)} title="نقطه سفارش">حد</Button><Button size="sm" variant="ghost" onClick={() => setHistoryFor(row)} title="تاریخچه"><History className="size-4" /></Button></td></tr>
               })}</tbody>
             </table>
             {!loading && rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">رکورد موجودی یافت نشد.</div>}
