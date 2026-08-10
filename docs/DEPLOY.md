@@ -65,7 +65,10 @@ docker compose -f docker-compose.prod.yml exec app npx prisma db push
 ## ۶. بررسی سلامت
 
 ```bash
-curl -f https://saite.ir/api/health
+# process alive (برای Docker healthcheck)
+curl -f https://saite.ir/api/health/live
+# DB و Redis آمادهٔ سرویس‌دهی‌اند (برای monitoring خارجی)
+curl -f https://saite.ir/api/health/ready
 ```
 
 ## به‌روزرسانی

@@ -4,7 +4,6 @@ import { Worker } from 'bullmq'
 import { redis } from '@/server/shared/redis'
 import { prisma } from '@/server/shared/db'
 import { financeService } from '@/server/modules/finance/service'
-import { inventoryService } from '@/server/modules/inventory/service'
 import { commsService } from '@/server/communications/service'
 
 export const outboxWorker = new Worker(
@@ -71,18 +70,8 @@ export const outboxWorker = new Worker(
               logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice/markPaid failed')
             }
 
-            // ۲) رزرو موجودی
-            try {
-              const items = order.items.map((it: { productId: string; quantity: number }) => ({
-                productId: it.productId,
-                quantity: it.quantity,
-              }))
-              await inventoryService.reserveItems(items)
-              logger.info({ orderId }, '[OutboxWorker] inventory reserved')
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] inventory reserve failed')
-            }
-
+            // موجودی هنگام ساخت سفارش به‌صورت اتمیک رزرو و هنگام paid در
+            // همان transaction گذار سفارش confirm شده است؛ worker نباید دوباره رزرو کند.
             // ۳) ایمیل تأیید — اگر مشتری ایمیل دارد
             try {
               const customer = await prisma.customer.findUnique({ where: { id: order.customerId } })

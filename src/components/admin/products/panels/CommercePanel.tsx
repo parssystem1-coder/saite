@@ -14,7 +14,7 @@ export function CommercePanel({ draft, set }: { draft: ProductDraft; set: <K ext
       <EditorField label="قیمت خرید"><input className={editorInputClass} type="number" value={draft.costToman} onChange={numeric('costToman')} /></EditorField>
     </div></EditorSection>
     <EditorSection title="موجودی و سفارش"><div className={`${editorSurfaceClass} grid gap-4 p-4 md:grid-cols-3`}>
-      <EditorField label="وضعیت موجودی" required><select className={editorInputClass} value={draft.stockStatus} onChange={e => set('stockStatus', e.target.value as ProductDraft['stockStatus'])}><option value="in_stock">موجود</option><option value="out_of_stock">ناموجود</option><option value="pre_order">پیش‌سفارش</option><option value="coming_soon">به‌زودی</option></select></EditorField>
+      <EditorField label="وضعیت موجودی" required><select className={editorInputClass} value={draft.stockStatus} onChange={e => set('stockStatus', e.target.value as ProductDraft['stockStatus'])}><option value="in_stock">موجود</option><option value="out_of_stock">ناموجود</option><option value="on_request">تماس بگیرید</option><option value="pre_order">پیش‌سفارش</option><option value="coming_soon">به‌زودی</option></select></EditorField>
       <EditorField label="تعداد موجودی" required><input className={editorInputClass} type="number" value={draft.stock} onChange={numeric('stock')} /></EditorField>
       <EditorField label="آستانه هشدار"><input className={editorInputClass} type="number" value={draft.lowStockThreshold} onChange={numeric('lowStockThreshold')} /></EditorField>
       <EditorField label="زمان آماده‌سازی"><input className={editorInputClass} type="number" value={draft.preparationDays} onChange={numeric('preparationDays')} /></EditorField>

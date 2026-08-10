@@ -28,6 +28,10 @@ export const OUTBOX_POLL_MS = Number(process.env.OUTBOX_POLL_MS ?? '5000')
 export const OUTBOX_BATCH_SIZE = 100
 export const OUTBOX_MAX_RETRY = 5
 
+// ── موجودی ─────────────────────────────────────────────
+// رزروهای پرداخت‌نشده هر یک دقیقه بررسی و در صورت انقضا آزاد می‌شوند.
+export const INVENTORY_EXPIRY_POLL_MS = Number(process.env.INVENTORY_EXPIRY_POLL_MS ?? '60000')
+
 // ── آپلود ─────────────────────────────────────────────────
 export const UPLOAD_MAX_SIZE_MB = Number(process.env.UPLOAD_MAX_SIZE_MB ?? '10')
 

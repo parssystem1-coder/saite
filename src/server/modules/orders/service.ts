@@ -5,6 +5,8 @@ import { MAX_LINES, MAX_QUANTITY_PER_LINE } from '@/server/shared/constants'
 import { ordersRepository } from './repository'
 import { assertValidTransition } from './state-machine'
 import { eventBus } from '@/server/shared/event-bus'
+import { inventoryRepository } from '@/server/modules/inventory/repository'
+import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
 import { NotFoundError, ValidationError } from '@/server/shared/errors'
 
 export interface CreateOrderInput {
@@ -104,6 +106,10 @@ export const ordersService = {
         },
       })
 
+      // Conditional inventory reservation is in this same transaction. A failed
+      // reservation rolls back both the order and every previous line reservation.
+      await inventoryRepository.reserveForOrder(tx, createdOrder.id, pricedItems, new Date(Date.now() + PAYMENT_INTENT_TTL_MS))
+
       // createMany برای پرهیز از N+1
       await tx.orderItem.createMany({
         data: pricedItems.map((it) => ({
@@ -139,6 +145,8 @@ export const ordersService = {
       newStatus as import('./state-machine').OrderState
     )
     const updated = await ordersRepository.updateStatus(orderId, newStatus)
+    if (newStatus === 'paid') await inventoryRepository.confirmOrder(orderId)
+    if (newStatus === 'cancelled') await inventoryRepository.releaseOrder(orderId)
     await eventBus.publish('order.status_changed', { orderId, from: order.status, to: newStatus, actorId })
     return updated
   },

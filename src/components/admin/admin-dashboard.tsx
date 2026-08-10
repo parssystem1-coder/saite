@@ -1,5 +1,7 @@
 'use client'
 
+import { useQuery } from '@tanstack/react-query'
+
 import {
   Activity,
   ArrowDownRight,
@@ -7,6 +9,7 @@ import {
   DollarSign,
   Package,
   Users,
+  AlertTriangle,
 } from 'lucide-react'
 import Link from 'next/link'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
@@ -41,6 +44,10 @@ const QUICK = [
  * داده‌ها نمایشی‌اند تا اتصال API.
  */
 export function AdminDashboard() {
+  const { data: lowStock } = useQuery({
+    queryKey: ['inventory-alerts'],
+    queryFn: async () => { const response = await fetch('/api/inventory/alerts'); if (!response.ok) throw new Error('inventory alerts'); return response.json() as Promise<{ total: number; items: { id: string; name: string; sku: string; quantityAvailable: number; reorderPoint: number }[] }> },
+  })
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -52,6 +59,8 @@ export function AdminDashboard() {
           </Button>
         }
       />
+
+      {lowStock && lowStock.total > 0 && <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4"><div className="flex items-center gap-2 text-amber-300"><AlertTriangle className="size-5" /><b>{lowStock.total.toLocaleString('fa-IR')} کالا نیاز به تامین یا بررسی دارد</b><Link className="mr-auto text-sm underline" href="/admin/reports/inventory">مشاهده انبار</Link></div><div className="mt-3 flex flex-wrap gap-2">{lowStock.items.slice(0, 5).map((item) => <span key={item.id} className="rounded-lg bg-background/40 px-2 py-1 text-xs">{item.name}: {item.quantityAvailable.toLocaleString('fa-IR')} / حد {item.reorderPoint.toLocaleString('fa-IR')}</span>)}</div></section>}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {STATS.map((stat) => (
