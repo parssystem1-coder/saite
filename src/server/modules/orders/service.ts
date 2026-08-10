@@ -9,7 +9,7 @@ import { NotFoundError, ValidationError } from '@/server/shared/errors'
 
 export interface CreateOrderInput {
   customerId: string
-  items: { productId: string; quantity: number; unitPrice?: number }[]
+  items: { productId: string; quantity: number }[]
   shippingAddress: Record<string, unknown>
 }
 
@@ -100,7 +100,7 @@ export const ordersService = {
           status: 'pending',
           totalAmount,
           currency: 'IRR',
-          shippingAddress: input.shippingAddress as unknown as any,
+          shippingAddress: input.shippingAddress as any,
         },
       })
 
@@ -117,7 +117,7 @@ export const ordersService = {
       await tx.outboxEvent.create({
         data: {
           type: 'order.created',
-          payload: { orderId: createdOrder.id, customerId: input.customerId } as unknown as any,
+          payload: { orderId: createdOrder.id, customerId: input.customerId } as any,
           aggregateId: createdOrder.id,
         },
       })

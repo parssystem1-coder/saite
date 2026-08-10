@@ -40,17 +40,35 @@ export const outboxWorker = new Worker(
               break
             }
 
+            // ── یافتن referenceId از PaymentIntent موفق ──
+            let referenceId: string | undefined
+            try {
+              const paymentIntent = await prisma.paymentIntent.findFirst({
+                where: { orderId, status: 'succeeded' },
+                orderBy: { createdAt: 'desc' },
+                select: { transactionId: true },
+              })
+              referenceId = paymentIntent?.transactionId ?? undefined
+            } catch (e) {
+              logger.error({ err: e, orderId }, '[OutboxWorker] findPaymentIntent failed')
+            }
+
             // ۱) صدور فاکتور (idempotent — اگر قبلاً ساخته شده باشد برمی‌گردد)
             try {
-              await financeService.createInvoiceFromOrder({
+              const invoice = await financeService.createInvoiceFromOrder({
                 id: order.id,
                 customerId: order.customerId,
                 totalAmount: order.totalAmount,
                 currency: order.currency,
               })
-              logger.info({ orderId }, '[OutboxWorker] invoice created')
+              logger.info({ orderId, invoiceId: invoice.id }, '[OutboxWorker] invoice created')
+
+              // ۱.۱) علامت‌گذاری فاکتور به‌عنوان پرداخت‌شده + ثبت Transaction
+              // idempotent: اگر فاکتور قبلاً paid باشد، بدون تغییر برمی‌گردد
+              await financeService.markInvoicePaid(invoice.id, referenceId)
+              logger.info({ orderId, invoiceId: invoice.id, referenceId }, '[OutboxWorker] invoice marked paid')
             } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice failed')
+              logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice/markPaid failed')
             }
 
             // ۲) رزرو موجودی
@@ -90,13 +108,27 @@ export const outboxWorker = new Worker(
             include: { items: true },
           })
           if (order) {
+            let referenceId: string | undefined
             try {
-              await financeService.createInvoiceFromOrder({
+              const paymentIntent = await prisma.paymentIntent.findFirst({
+                where: { orderId, status: 'succeeded' },
+                orderBy: { createdAt: 'desc' },
+                select: { transactionId: true },
+              })
+              referenceId = paymentIntent?.transactionId ?? undefined
+            } catch (e) {
+              logger.error({ err: e, orderId }, '[OutboxWorker] findPaymentIntent (legacy) failed')
+            }
+
+            try {
+              const invoice = await financeService.createInvoiceFromOrder({
                 id: order.id,
                 customerId: order.customerId,
                 totalAmount: order.totalAmount,
                 currency: order.currency,
               })
+              await financeService.markInvoicePaid(invoice.id, referenceId)
+              logger.info({ orderId, invoiceId: invoice.id }, '[OutboxWorker] invoice created+paid (legacy)')
             } catch (e) {
               logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice (legacy) failed')
             }

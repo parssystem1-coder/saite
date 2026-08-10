@@ -1,6 +1,21 @@
 import 'server-only'
 import { shippingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
+
+/** TTL برای shipping rates — 5 دقیقه */
+const SHIPPING_RATES_TTL = 300
+
+/**
+ * ساخت کلید cache از opts
+ */
+function buildRatesCacheKey(opts: Parameters<typeof shippingRepository.findShippingRates>[0]): string {
+  const parts: string[] = []
+  if (opts.carrier) parts.push(`carrier:${opts.carrier}`)
+  if (opts.zone) parts.push(`zone:${opts.zone}`)
+  if (opts.active !== undefined) parts.push(`active:${opts.active}`)
+  return parts.join('|') || 'all'
+}
 
 export const shippingService = {
   async createShipment(data: Parameters<typeof shippingRepository.createShipment>[0]) {
@@ -50,11 +65,22 @@ export const shippingService = {
   },
 
   async createShippingRate(data: Parameters<typeof shippingRepository.createShippingRate>[0]) {
-    return shippingRepository.createShippingRate(data)
+    const rate = await shippingRepository.createShippingRate(data)
+
+    // Invalidate cache shipping rates
+    await cacheInvalidateByPrefix('shipping:rates')
+
+    return rate
   },
 
   async getShippingRates(opts: Parameters<typeof shippingRepository.findShippingRates>[0]) {
-    return shippingRepository.findShippingRates(opts)
+    const cacheKey = buildRatesCacheKey(opts)
+
+    return cacheAside(
+      cacheKey,
+      async () => shippingRepository.findShippingRates(opts),
+      { ttl: SHIPPING_RATES_TTL, prefix: 'shipping:rates' }
+    )
   },
 
   async calculateCost(carrier: string, zone: string, weightGrams: number) {

@@ -49,6 +49,14 @@ export const financeService = {
   },
 
   async markInvoicePaid(invoiceId: string, referenceId?: string) {
+    const existing = await financeRepository.findInvoiceById(invoiceId)
+    if (!existing) throw new Error('Invoice not found')
+
+    // ── Idempotency: اگر فاکتور قبلاً paid شده، بدون تغییر برگردان ──
+    if (existing.status === 'paid') {
+      return existing
+    }
+
     const invoice = await financeRepository.updateInvoiceStatus(invoiceId, 'paid', {
       paidAt: new Date(),
     })
@@ -60,6 +68,7 @@ export const financeService = {
         type: 'payment',
         amount: invoice.totalAmount,
         currency: invoice.currency,
+        provider: undefined,
         referenceId,
         status: 'completed',
       })

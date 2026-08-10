@@ -3,13 +3,10 @@ import 'server-only'
 import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { CouponValidationError } from '@/server/shared/errors'
 
-export class CouponValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'CouponValidationError'
-  }
-}
+// Re-export برای backward compatibility
+export { CouponValidationError }
 
 export const marketingService = {
   async createCoupon(data: Parameters<typeof marketingRepository.createCoupon>[0]) {
@@ -72,7 +69,13 @@ export const marketingService = {
     const result = await this.validateCoupon(code, opts)
 
     // ── اعمال اتمیک: سقف کلی + سقف هر مشتری در یک تراکنش ──────────────────────────
+    // قفل advisory روی coupon — جلوگیری از race condition perCustomerLimit > 1
+    // pg_advisory_xact_lock تا پایان transaction نگه داشته و خودکار آزاد می‌شود.
+    // transaction دوم منتظر اول می‌ماند (reject نمی‌شود) — نیازی به retry loop نیست.
     await prisma.$transaction(async (tx: any) => {
+      const lockKey = `coupon_apply:${result.coupon.id}`
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
+
       // perCustomerLimit — اگر >0 باشد، تعداد قبلی این مشتری را چک کن
       if (result.coupon.perCustomerLimit > 0) {
         const existingCount = await tx.couponRedemption.count({
@@ -102,7 +105,7 @@ export const marketingService = {
         throw new CouponValidationError('سقف استفاده از کد تخفیف تکمیل شده')
       }
 
-      // ثبت redemption برای perCustomerLimit — unique constraint جلوی race را می‌گیرد
+      // ثبت redemption برای perCustomerLimit — unique constraint هم محافظت دوم است
       try {
         await tx.couponRedemption.create({
           data: {
@@ -130,7 +133,7 @@ export const marketingService = {
             orderId,
             discount: result.discount,
             customerId: opts.customerId,
-          } as unknown as any,
+          } as any,
           aggregateId: result.coupon.id,
         },
       })

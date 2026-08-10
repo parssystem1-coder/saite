@@ -3,6 +3,24 @@ import { prisma } from '@/server/shared/db'
 import { zarinpalProvider } from '@/server/payments/providers/zarinpal'
 import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
+import { logger } from '@/server/shared/logger'
+
+/**
+ * Webhook زرین‌پال — Security Model:
+ *
+ * زرین‌پال API v4 از webhook signature استفاده نمی‌کند. در عوض:
+ * 1. Authority یک random string است که فقط زرین‌پال و ما می‌دانیم
+ * 2. ما merchant_id + amount + authority را به verify API می‌فرستیم
+ * 3. زرین‌پال چک می‌کند که این authority با این amount مطابقت دارد
+ * 4. اگر مطابقت نداشت، reject می‌کند
+ *
+ * Security layers:
+ * - Amount verification: مبلغ از DB خوانده می‌شود (نه از callback)
+ * - Zarinpal API verify: با API زرین‌پال verify می‌کنیم
+ * - Idempotency: verifiedAt check قبل از verify
+ * - Atomic update: $transaction برای جلوگیری از race condition
+ * - State machine: فقط transition مجاز از state machine
+ */
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl
@@ -13,16 +31,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Authority missing' }, { status: 400 })
   }
 
-  // Idempotency: اگر قبلاً verified شده، همان نتیجه را برگردان
+  // ── Layer 1: Idempotency — اگر قبلاً verified شده، redirect بدون re-verify ──
   const existing = await prisma.paymentIntent.findUnique({ where: { authority } })
   if (!existing) {
     return NextResponse.json({ error: 'Payment intent not found' }, { status: 404 })
   }
 
   if (existing.verifiedAt) {
+    logger.debug({ authority, orderId: existing.orderId }, '[Webhook] Already verified, redirecting')
     return NextResponse.redirect(orderStatusUrl(existing.orderId))
   }
 
+  // ── Layer 2: User cancelled ──
   if (status !== 'OK') {
     await prisma.paymentIntent.update({
       where: { authority },
@@ -32,7 +52,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await zarinpalProvider.verifyPayment(
+    // ── Layer 3: Verify with Zarinpal API ──
+    const verifyResult = await zarinpalProvider.verifyPayment(
       {
         id: 'zarinpal',
         name: 'Zarinpal',
@@ -53,36 +74,54 @@ export async function GET(req: NextRequest) {
         updatedAt: new Date().toISOString(),
       },
       authority,
-      existing.amount
+      existing.amount // ← Amount از DB، نه از callback
     )
 
-    // به‌روزرسانی PaymentIntent — همیشه
-    await prisma.paymentIntent.update({
-      where: { authority },
-      data: {
-        status: result.success ? 'succeeded' : 'failed',
-        transactionId: result.transactionId,
-        verifiedAt: new Date(),
-        failureMessage: result.success ? null : result.message,
-      },
+    // ── Layer 4: Atomic state update — جلوگیری از race condition ──
+    // استفاده از $transaction + updateMany با where condition
+    // اگر دو request هم‌زمان بیایند، فقط یکی موفق می‌شود
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const updateResult = await prisma.$transaction(async (tx: any) => {
+      const txResult = await tx.paymentIntent.updateMany({
+        where: {
+          authority,
+          verifiedAt: null, // ← فقط اگر هنوز verify نشده
+        },
+        data: {
+          status: verifyResult.success ? 'succeeded' : 'failed',
+          transactionId: verifyResult.transactionId,
+          verifiedAt: new Date(),
+          failureMessage: verifyResult.success ? null : verifyResult.message,
+        },
+      })
+      return txResult
     })
 
-    if (result.success) {
+    // اگر count=0، یعنی قبلاً verify شده (race condition)
+    if (updateResult.count === 0) {
+      logger.warn({ authority }, '[Webhook] Already verified (race condition prevented)')
+      const verified = await prisma.paymentIntent.findUnique({ where: { authority } })
+      return NextResponse.redirect(orderStatusUrl(verified?.orderId || existing.orderId))
+    }
+
+    // ── Layer 5: State machine transition ──
+    if (verifyResult.success) {
       try {
         await ordersService.transitionState(existing.orderId, 'paid', 'zarinpal-webhook')
+        logger.info({ orderId: existing.orderId, authority }, '[Webhook] Payment verified successfully')
       } catch (e) {
         if (e instanceof InvalidStateTransitionError) {
           // سفارش قبلاً paid شده — idempotent، نادیده بگیر
-          console.log(`[Zarinpal Webhook] order ${existing.orderId} already paid, ignoring transition`)
+          logger.info({ orderId: existing.orderId }, '[Webhook] Order already paid, ignoring transition')
         } else {
           throw e
         }
       }
     }
 
-    return NextResponse.redirect(orderStatusUrl(existing.orderId, result.success ? 'success' : 'failed'))
+    return NextResponse.redirect(orderStatusUrl(existing.orderId, verifyResult.success ? 'success' : 'failed'))
   } catch (err) {
-    console.error('[Zarinpal Webhook]', err)
+    logger.error({ err, authority }, '[Webhook] Error processing payment')
     return NextResponse.redirect(orderStatusUrl(existing.orderId, 'failed'))
   }
 }

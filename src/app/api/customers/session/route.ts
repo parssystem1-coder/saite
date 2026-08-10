@@ -67,11 +67,12 @@ export async function POST(req: NextRequest) {
   if (customer.passwordHash && isPasswordHash(customer.passwordHash)) {
     ok = await verifyPassword(password, customer.passwordHash)
   } else {
-    // مشتری قدیمی بدون هش — فقط در dev اجازه demo
-    if (process.env.NODE_ENV === 'production') {
-      ok = false
-    } else {
+    // مشتری قدیمی بدون هش — فقط در dev با ALLOW_DEMO_LOGIN=true اجازه demo
+    const isDemoAllowed = process.env.ALLOW_DEMO_LOGIN === 'true' && process.env.NODE_ENV !== 'production'
+    if (isDemoAllowed) {
       ok = password === 'demo'
+    } else {
+      ok = false
     }
   }
 

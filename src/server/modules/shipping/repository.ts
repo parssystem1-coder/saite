@@ -19,8 +19,8 @@ export const shippingRepository = {
       data: {
         ...data,
         shippingCost: data.shippingCost || 0,
-        originAddress: data.originAddress ? (data.originAddress as unknown as any) : undefined,
-        destinationAddress: data.destinationAddress ? (data.destinationAddress as unknown as any) : undefined,
+        originAddress: data.originAddress ? (data.originAddress as any) : undefined,
+        destinationAddress: data.destinationAddress ? (data.destinationAddress as any) : undefined,
       },
     })
   },
@@ -37,7 +37,7 @@ export const shippingRepository = {
     return prisma.shipment.update({
       where: { id },
       data: {
-        status: status as unknown as any,
+        status: status as any,
         ...(extra?.shippedAt && { shippedAt: extra.shippedAt }),
         ...(extra?.deliveredAt && { deliveredAt: extra.deliveredAt }),
         ...(extra?.trackingNumber && { trackingNumber: extra.trackingNumber }),

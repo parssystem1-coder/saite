@@ -15,7 +15,7 @@ export const eventBus = {
     await prisma.outboxEvent.create({
       data: {
         type,
-        payload: payload as unknown as any,
+        payload: payload as any,
         aggregateId: (payload.productId as string) || (payload.orderId as string) || 'unknown',
       },
     })
