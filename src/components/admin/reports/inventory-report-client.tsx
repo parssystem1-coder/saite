@@ -2,11 +2,13 @@
 
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Boxes, PackageX, AlertTriangle, CheckCircle2, RefreshCw, Pencil } from 'lucide-react'
+import { Boxes, PackageX, AlertTriangle, CheckCircle2, RefreshCw, Pencil, History } from 'lucide-react'
 import { Badge, Stat } from '@/components/admin/finance/finance-shared'
 import { Button } from '@/components/ui/button'
 
 type Status = 'all' | 'ok' | 'low' | 'out'
+type Adjustment = { id: string; delta: number; reason: string; note: string | null; actorId: string; createdAt: string }
+
 type InventoryRow = {
   productId: string
   sku: string
@@ -44,6 +46,11 @@ export default function InventoryReportClient() {
   const [reason, setReason] = React.useState('correction')
   const [note, setNote] = React.useState('')
   const [saving, setSaving] = React.useState(false)
+  const [historyFor, setHistoryFor] = React.useState<InventoryRow | null>(null)
+  const { data: history = [], isLoading: historyLoading } = useQuery({
+    queryKey: ['inventory-adjustments', historyFor?.productId], enabled: Boolean(historyFor),
+    queryFn: async () => { const response = await fetch(`/api/products/${historyFor!.productId}/inventory/adjustments`); if (!response.ok) throw new Error('دریافت تاریخچه ناموفق بود'); return (await response.json() as { items: Adjustment[] }).items },
+  })
 
   const adjust = async () => {
     if (!adjusting) return
@@ -103,13 +110,14 @@ export default function InventoryReportClient() {
               <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th><th className="p-3">عملیات</th></tr></thead>
               <tbody>{rows.map((row) => {
                 const status = statusFor(row.quantityAvailable)
-                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => { setAdjusting(row); setDeltaText(''); setReason('correction'); setNote('') }} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button></td></tr>
+                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => { setAdjusting(row); setDeltaText(''); setReason('correction'); setNote('') }} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button><Button size="sm" variant="ghost" onClick={() => setHistoryFor(row)} title="تاریخچه"><History className="size-4" /></Button></td></tr>
               })}</tbody>
             </table>
             {!loading && rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">رکورد موجودی یافت نشد.</div>}
           </div>
         )}
       </section>
+      {historyFor && <div className="fixed inset-0 z-[101] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="تاریخچه موجودی"><div className="surface-3d w-full max-w-lg rounded-2xl p-5"><div className="mb-4 flex items-center"><div><h2 className="font-bold">تاریخچهٔ موجودی</h2><p className="text-sm text-muted-foreground">{historyFor.name}</p></div><span className="flex-1" /><Button variant="outline" size="sm" onClick={() => setHistoryFor(null)}>بستن</Button></div>{historyLoading ? <p className="text-sm text-muted-foreground">در حال دریافت…</p> : <div className="max-h-80 overflow-y-auto">{history.length === 0 ? <p className="text-sm text-muted-foreground">تغییری ثبت نشده است.</p> : history.map((item) => <div key={item.id} className="border-t border-border py-3 text-sm"><div className="flex gap-3"><b className={item.delta > 0 ? 'text-emerald-400' : 'text-destructive'}>{item.delta > 0 ? '+' : ''}{item.delta}</b><span>{item.reason}</span><span className="mr-auto text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleString('fa-IR')}</span></div>{item.note && <p className="mt-1 text-muted-foreground">{item.note}</p>}</div>)}</div>}</div></div>}
       {adjusting && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="اصلاح موجودی">
         <div className="surface-3d w-full max-w-md rounded-2xl p-5">
           <div className="mb-4"><h2 className="font-bold">اصلاح موجودی</h2><p className="mt-1 text-sm text-muted-foreground">{adjusting.name} — موجودی قابل فروش: {adjusting.quantityAvailable.toLocaleString('fa-IR')}</p></div>
