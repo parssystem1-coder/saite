@@ -1,6 +1,7 @@
 import 'server-only'
 import { logger } from '@/server/shared/logger'
 import { startOutboxDispatcher } from './dispatchers/outbox-dispatcher'
+import { startInventoryExpiryDispatcher } from './dispatchers/inventory-expiry-dispatcher'
 
 let started = false
 
@@ -15,5 +16,6 @@ export async function startBackgroundJobs() {
   // تا وابستگی چرخه‌ای db → jobs → registry → workers → db در زمان build شکسته شود
   await import('./registry')
   startOutboxDispatcher()
-  logger.info('[BackgroundJobs] outbox dispatcher started')
+  startInventoryExpiryDispatcher()
+  logger.info('[BackgroundJobs] outbox and inventory expiry dispatchers started')
 }
