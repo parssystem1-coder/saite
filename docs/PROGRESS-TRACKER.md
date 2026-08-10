@@ -1,6 +1,6 @@
 # پیشرفت فازبندی — Saite Backend Hardening
 
-> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۶)  
+> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۷ — تکمیل کامل)  
 > **شاخه:** `arena/019fe8c8-saite`
 
 ---
@@ -15,7 +15,7 @@
 فاز ۴ [██████████] 100%  — سخت‌سازی API (C8, C13, C15) ✅
 فاز ۵ [██████████] 100%  — کیفیت کد (T1, T2, T3) ✅
 فاز ۶ [██████████] 100%  — زیرساخت (P1, P2) ✅
-فاز ۷ [░░░░░░░░░░] 0%   — تست Integration (Q1)
+فاز ۷ [██████████] 100%  — تست Integration (Q1) ✅
 ```
 
 ---
@@ -124,14 +124,16 @@
 
 ## فاز ۷ — تست Integration
 
-| # | آیتم | وضعیت | Commit |
-|---|------|:------:|--------|
-| Q1-1 | `POST /api/orders` — happy path | ⬜ | — |
-| Q1-2 | `GET /api/orders/[id]` — IDOR check | ⬜ | — |
-| Q1-3 | `POST /api/marketing/coupons/validate` | ⬜ | — |
-| Q1-4 | `POST /api/payments/webhook/zarinpal` — idempotency | ⬜ | — |
-| Q1-5 | `POST /api/upload` — MIME + size | ⬜ | — |
-| Q1-6 | `POST /api/customers/session` — rate limit | ⬜ | — |
+| # | آیتم | وضعیت | فایل تست |
+|---|------|:------:|----------|
+| Q1-1 | `POST /api/orders` — happy path + validation (8 tests) | ✅ | `tests/integration/orders-create.test.ts` |
+| Q1-2 | `GET /api/orders/[id]` — IDOR check (4 tests) | ✅ | `tests/integration/orders-idor.test.ts` |
+| Q1-3 | `POST /api/marketing/coupons/validate` (12 tests) | ✅ | `tests/integration/coupon-validate.test.ts` |
+| Q1-4 | `POST /api/payments/webhook/zarinpal` — idempotency (6 tests) | ✅ | `tests/integration/payment-webhook.test.ts` |
+| Q1-5 | `POST /api/upload` — MIME + size + magic bytes (12 tests) | ✅ | `tests/integration/upload.test.ts` |
+| Q1-6 | `POST /api/customers/session` — rate limit + anti-enumeration (9 tests) | ✅ | `tests/integration/customer-auth.test.ts` |
+
+**جمع:** 7 فایل تست / 54 تست integration / همه سبز ✅
 
 ---
 
@@ -153,3 +155,5 @@
 | ۲۰۲۶-۰۸-۰۹ | فاز ۵ | T3 — DomainError base class | تمام خطاهای دامنه‌ای status و code دارند — handleServiceError ساده شد |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۶ | P1 — findMany به جای FOR UPDATE | Prisma ORM FOR UPDATE را مستقیماً support نمی‌کند — findMany در transaction کافی است |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۶ | P2 — Cache bypass در تست | در NODE_ENV=test، cache غیرفعال می‌شود تا تست‌ها timeout نخورند |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۷ | Q1 — 54 تست integration | 7 فایل: orders-create, orders-idor, coupon-validate, payment-webhook, upload, customer-auth, products |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۷ | Q1-5f — PDF magic bytes 4 bytes | PDF فقط 4 bytes magic دارد (%PDF) — تابع اصلاح شد |

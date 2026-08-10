@@ -19,7 +19,9 @@ const FOLDER_RE = /^[a-z0-9-]{1,32}$/
  * هر MIME مجاز باید با امضای باینری متناظرش مطابقت داشته باشد
  */
 function validateMagicBytes(buffer: Buffer, mime: string): boolean {
-  if (buffer.length < 8) return false
+  // Check minimum length based on MIME type
+  const minRequired = mime === 'application/pdf' ? 4 : 8
+  if (buffer.length < minRequired) return false
 
   switch (mime) {
     case 'image/jpeg':
