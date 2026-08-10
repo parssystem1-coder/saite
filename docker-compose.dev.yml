@@ -1,0 +1,53 @@
+# ═══════════════════════════════════════════════════════════
+# Docker Compose — محیط توسعه Saite
+# ═══════════════════════════════════════════════════════════
+#
+# استفاده:
+#   شروع:    docker-compose -f docker-compose.dev.yml up -d
+#   توقف:    docker-compose -f docker-compose.dev.yml down
+#   لاگ:     docker-compose -f docker-compose.dev.yml logs -f
+#   ریست:    docker-compose -f docker-compose.dev.yml down -v
+#
+# ═══════════════════════════════════════════════════════════
+
+version: '3.8'
+
+services:
+  # ─── PostgreSQL 17 ──────────────────────────────────────
+  db:
+    image: postgres:17-alpine
+    container_name: saite-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: saite_user
+      POSTGRES_PASSWORD: saite_dev_password
+      POSTGRES_DB: saite_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U saite_user -d saite_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis 7 ────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: saite-dev-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
