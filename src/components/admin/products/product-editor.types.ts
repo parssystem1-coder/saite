@@ -8,7 +8,7 @@ export type TabKey =
   | 'logistics';
 
 export type ProductCondition = 'new' | 'used' | 'refurbished' | 'stock';
-export type StockStatus = 'in_stock' | 'out_of_stock' | 'pre_order' | 'coming_soon';
+export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_request' | 'pre_order' | 'coming_soon';
 
 export type ProductImage = {
   id: string;
