@@ -159,6 +159,8 @@ model Order {
   inventoryReservations InventoryReservation[]
 
   @@index([customerId, createdAt])
+  @@index([status, createdAt])
+  @@index([customerId, status, createdAt])
   @@map("orders")
 }
 
@@ -347,6 +349,8 @@ model Transaction {
   invoice Invoice? @relation(fields: [invoiceId], references: [id])
 
   @@index([orderId, createdAt])
+  @@index([invoiceId, status])
+  @@index([status, createdAt])
   @@map("transactions")
 }
 

@@ -68,7 +68,7 @@ export async function cacheAside<T>(
 }
 
 /**
- * Invalidate cache — حذف یک کلید یا گروهی از کلیدها
+ * Invalidate cache — حذف امن و غیربلاک‌کننده کلیدها با استفاده از scanStream
  *
  * @param pattern - الگوی کلید (glob pattern) — مثلاً 'products:*'
  */
@@ -79,10 +79,29 @@ export async function cacheInvalidate(pattern: string): Promise<void> {
   }
 
   try {
-    const keys = await redis.keys(pattern)
-    if (keys.length > 0) {
-      await redis.del(...keys)
-      logger.info({ pattern, count: keys.length }, 'Cache invalidated')
+    const keysToDelete: string[] = []
+    const stream = redis.scanStream({
+      match: pattern,
+      count: 100,
+    })
+
+    await new Promise<void>((resolve, reject) => {
+      stream.on('data', (resultKeys: string[]) => {
+        for (const k of resultKeys) {
+          keysToDelete.push(k)
+        }
+      })
+      stream.on('end', () => resolve())
+      stream.on('error', (err) => reject(err))
+    })
+
+    if (keysToDelete.length > 0) {
+      const BATCH_SIZE = 500
+      for (let i = 0; i < keysToDelete.length; i += BATCH_SIZE) {
+        const batch = keysToDelete.slice(i, i + BATCH_SIZE)
+        await redis.del(...batch)
+      }
+      logger.info({ pattern, count: keysToDelete.length }, 'Cache invalidated')
     }
   } catch (err) {
     logger.warn({ err, pattern }, 'Cache invalidation failed')
