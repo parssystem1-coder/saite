@@ -39,25 +39,32 @@ export default function InventoryReportClient() {
     },
   })
 
-  const adjust = async (row: InventoryRow) => {
-    const raw = window.prompt(`تغییر موجودی «${row.name}» را وارد کنید.
-مثبت = ورود کالا | منفی = خروج/کسری`, '0')
-    if (raw === null) return
-    const delta = Number(raw)
+  const [adjusting, setAdjusting] = React.useState<InventoryRow | null>(null)
+  const [deltaText, setDeltaText] = React.useState('')
+  const [reason, setReason] = React.useState('correction')
+  const [note, setNote] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+
+  const adjust = async () => {
+    if (!adjusting) return
+    const delta = Number(deltaText)
     if (!Number.isSafeInteger(delta) || delta === 0) {
       window.alert('تغییر موجودی باید عدد صحیح غیرصفر باشد.')
       return
     }
-    const note = window.prompt('یادداشت تغییر (اختیاری):', '')
-    const response = await fetch(`/api/products/${row.productId}/inventory/adjust`, {
+    setSaving(true)
+    const response = await fetch(`/api/products/${adjusting.productId}/inventory/adjust`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delta, reason: 'correction', note: note ?? undefined }),
+      body: JSON.stringify({ delta, reason, note: note || undefined }),
     })
     if (!response.ok) {
       const detail = await response.json().catch(() => null) as { error?: string } | null
       window.alert(detail?.error || 'ثبت تغییر موجودی ناموفق بود.')
+      setSaving(false)
       return
     }
+    setSaving(false)
+    setAdjusting(null)
     void refetch()
   }
 
@@ -96,13 +103,22 @@ export default function InventoryReportClient() {
               <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th><th className="p-3">عملیات</th></tr></thead>
               <tbody>{rows.map((row) => {
                 const status = statusFor(row.quantityAvailable)
-                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => void adjust(row)} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button></td></tr>
+                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td><td className="p-3"><Button size="sm" variant="outline" onClick={() => { setAdjusting(row); setDeltaText(''); setReason('correction'); setNote('') }} className="gap-1.5"><Pencil className="size-3.5" />اصلاح</Button></td></tr>
               })}</tbody>
             </table>
             {!loading && rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">رکورد موجودی یافت نشد.</div>}
           </div>
         )}
       </section>
+      {adjusting && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label="اصلاح موجودی">
+        <div className="surface-3d w-full max-w-md rounded-2xl p-5">
+          <div className="mb-4"><h2 className="font-bold">اصلاح موجودی</h2><p className="mt-1 text-sm text-muted-foreground">{adjusting.name} — موجودی قابل فروش: {adjusting.quantityAvailable.toLocaleString('fa-IR')}</p></div>
+          <label className="mb-3 block text-sm">تغییر موجودی<input autoFocus value={deltaText} onChange={(e) => setDeltaText(e.target.value)} inputMode="numeric" placeholder="مثلاً ۱۰ یا ‎-۲" className="mt-1 w-full rounded-lg border border-border bg-background p-2" /></label>
+          <label className="mb-3 block text-sm">دلیل<select value={reason} onChange={(e) => setReason(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background p-2"><option value="receipt">ورود کالا</option><option value="correction">اصلاح دستی</option><option value="damaged">آسیب‌دیدگی</option><option value="returned">بازگشت کالا</option><option value="stocktake">انبارگردانی</option></select></label>
+          <label className="mb-4 block text-sm">یادداشت <span className="text-muted-foreground">(اختیاری)</span><textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} className="mt-1 min-h-20 w-full rounded-lg border border-border bg-background p-2" /></label>
+          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setAdjusting(null)} disabled={saving}>انصراف</Button><Button onClick={() => void adjust()} disabled={saving}>{saving ? 'در حال ثبت…' : 'ثبت تغییر'}</Button></div>
+        </div>
+      </div>}
     </div>
   )
 }
