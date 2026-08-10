@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
 import type { PriceType, StockStatus, ProductCondition } from '@/types/product'
@@ -59,11 +60,11 @@ export const productsRepository = {
   },
 
   async create(data: CreateProductData) {
-    return prisma.product.create({ data })
+    return prisma.product.create({ data: data as any })
   },
 
   async update(id: string, data: UpdateProductData) {
-    return prisma.product.update({ where: { id }, data })
+    return prisma.product.update({ where: { id }, data: data as any })
   },
 
   async delete(id: string) {

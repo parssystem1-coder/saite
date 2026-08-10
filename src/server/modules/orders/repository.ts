@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 import type { OrderState } from './state-machine'
 
@@ -40,17 +41,17 @@ export const ordersRepository = {
   },
 
   async create(data: CreateOrderData) {
-    return prisma.order.create({ data })
+    return prisma.order.create({ data: data as any })
   },
 
   async updateStatus(id: string, status: OrderState | string) {
     return prisma.order.update({
       where: { id },
-      data: { status },
+      data: { status: status as any },
     })
   },
 
   async createOrderItem(data: CreateOrderItemData) {
-    return prisma.orderItem.create({ data })
+    return prisma.orderItem.create({ data: data as any })
   },
 }

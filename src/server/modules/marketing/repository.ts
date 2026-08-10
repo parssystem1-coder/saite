@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { prisma } from '@/server/shared/db'
 
 export type DbCouponType = 'percentage' | 'fixed_amount' | 'free_shipping'
@@ -37,7 +38,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type,
+        type: data.type as any,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -125,7 +126,7 @@ export const marketingRepository = {
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ?? undefined,
+        metadata: data.metadata ? (data.metadata as any) : undefined,
       },
     })
   },

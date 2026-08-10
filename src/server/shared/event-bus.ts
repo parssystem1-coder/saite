@@ -1,4 +1,5 @@
 import 'server-only'
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
 import { logger } from '@/server/shared/logger'
 import { prisma } from './db'
 import type { ProductEvent } from '@/server/modules/products/events'
@@ -20,7 +21,7 @@ export const eventBus = {
     await prisma.outboxEvent.create({
       data: {
         type,
-        payload,
+        payload: payload as any,
         aggregateId: (payload.productId as string) || (payload.orderId as string) || 'unknown',
       },
     })
