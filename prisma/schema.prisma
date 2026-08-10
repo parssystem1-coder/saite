@@ -47,6 +47,8 @@ model Product {
   updatedAt      DateTime    @updatedAt
 
   orderItems OrderItem[]
+  inventory InventoryItem?
+  inventoryReservations InventoryReservation[]
 
   @@index([category, createdAt])
   @@index([brand])
@@ -71,6 +73,47 @@ enum ProductCondition {
   refurbished
 }
 
+
+// ── موجودی و رزرو ─────────────────────────────────────
+
+model InventoryItem {
+  id               String   @id @default(cuid())
+  productId        String   @unique
+  quantityOnHand   Int      @default(0)
+  quantityReserved Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("inventory_items")
+}
+
+model InventoryReservation {
+  id        String            @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  status    ReservationStatus @default(active)
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  releasedAt DateTime?
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, productId])
+  @@index([status, expiresAt])
+  @@index([productId, status])
+  @@map("inventory_reservations")
+}
+
+enum ReservationStatus {
+  active
+  confirmed
+  released
+  expired
+}
+
 // ── سفارشات ──────────────────────────────────────────
 
 model Order {
@@ -88,6 +131,7 @@ model Order {
   paymentIntents PaymentIntent[]
   invoice        Invoice?
   shipment       Shipment?
+  inventoryReservations InventoryReservation[]
 
   @@index([customerId, createdAt])
   @@map("orders")

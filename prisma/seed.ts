@@ -38,6 +38,8 @@ async function main() {
         isFeatured: product.isFeatured,
         isBestSeller: product.isBestSeller,
         createdAt: product.createdAt ? new Date(product.createdAt) : undefined,
+        // Demo stock only. Production inventory must be counted/imported explicitly.
+        inventory: { create: { quantityOnHand: product.stockStatus === 'out_of_stock' ? 0 : 10 } },
       },
     })
   }
