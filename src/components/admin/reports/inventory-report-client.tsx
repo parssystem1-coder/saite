@@ -1,26 +1,50 @@
 'use client'
 
 import * as React from 'react'
-import { Boxes, PackageX, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import { createMockReportsAdapter } from '@/lib/reports/mock-adapter'
+import { useQuery } from '@tanstack/react-query'
+import { Boxes, PackageX, AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react'
 import { Badge, Stat } from '@/components/admin/finance/finance-shared'
+import { Button } from '@/components/ui/button'
 
-const STATUS_LABEL = { ok: 'موجود', low: 'رو به اتمام', out: 'ناموجود' } as const
+type Status = 'all' | 'ok' | 'low' | 'out'
+type InventoryRow = {
+  productId: string
+  sku: string
+  name: string
+  quantityOnHand: number
+  quantityReserved: number
+  quantityAvailable: number
+  activeReservations: number
+}
+
+const STATUS_LABEL: Record<Exclude<Status, 'all'>, string> = { ok: 'موجود', low: 'رو به اتمام', out: 'ناموجود' }
 const STATUS_TONE = { ok: 'success', low: 'warn', out: 'danger' } as const
 
+function statusFor(available: number): Exclude<Status, 'all'> {
+  if (available <= 0) return 'out'
+  if (available <= 5) return 'low'
+  return 'ok'
+}
+
 export default function InventoryReportClient() {
-  const adapter = React.useMemo(() => createMockReportsAdapter(), [])
-  const rows = adapter.inventoryStatus()
+  const [filter, setFilter] = React.useState<Status>('all')
+  const { data: rows = [], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['inventory-report', filter],
+    queryFn: async (): Promise<InventoryRow[]> => {
+      const query = filter === 'all' ? '' : `?status=${filter}`
+      const response = await fetch(`/api/inventory${query}`, { cache: 'no-store' })
+      if (!response.ok) throw new Error('دریافت دادهٔ واقعی انبار ناموفق بود')
+      const data = await response.json() as { items: InventoryRow[] }
+      return data.items
+    },
+  })
 
-  const stats = React.useMemo(() => {
-    const ok = rows.filter((r) => r.status === 'ok').length
-    const low = rows.filter((r) => r.status === 'low').length
-    const out = rows.filter((r) => r.status === 'out').length
-    return { ok, low, out, total: rows.length }
-  }, [rows])
-
-  const [filter, setFilter] = React.useState<'all' | 'ok' | 'low' | 'out'>('all')
-  const filtered = filter === 'all' ? rows : rows.filter((r) => r.status === filter)
+  const stats = React.useMemo(() => ({
+    total: rows.length,
+    ok: rows.filter((r) => statusFor(r.quantityAvailable) === 'ok').length,
+    low: rows.filter((r) => statusFor(r.quantityAvailable) === 'low').length,
+    out: rows.filter((r) => statusFor(r.quantityAvailable) === 'out').length,
+  }), [rows])
 
   return (
     <div className="space-y-6">
@@ -32,53 +56,28 @@ export default function InventoryReportClient() {
       </div>
 
       <section className="surface-3d overflow-hidden rounded-2xl">
-        <div className="flex flex-wrap gap-2 border-b border-border p-4">
-          {(['all', 'out', 'low', 'ok'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 text-xs ${filter === s ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
-            >
-              {s === 'all' ? 'همه' : STATUS_LABEL[s]}
+        <div className="flex flex-wrap items-center gap-2 border-b border-border p-4">
+          {(['all', 'out', 'low', 'ok'] as const).map((status) => (
+            <button key={status} onClick={() => setFilter(status)} className={`rounded-lg px-3 py-1.5 text-xs ${filter === status ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}>
+              {status === 'all' ? 'همه' : STATUS_LABEL[status]}
             </button>
           ))}
+          <span className="flex-1" />
+          <Button size="sm" variant="outline" onClick={() => void refetch()} disabled={loading} className="gap-2">
+            <RefreshCw className={`size-3.5 ${loading ? 'animate-spin' : ''}`} /> به‌روزرسانی
+          </Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-right text-sm">
-            <thead>
-              <tr className="text-xs text-muted-foreground">
-                <th className="p-3">کالا</th>
-                <th className="p-3">موجودی</th>
-                <th className="p-3">نقطهٔ سفارش</th>
-                <th className="p-3">فروش ۳۰ روز</th>
-                <th className="p-3">وضعیت</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((r) => (
-                <tr key={r.sku} className="border-t border-border">
-                  <td className="p-3">
-                    <div>{r.name}</div>
-                    <div className="font-mono text-xs text-muted-foreground">{r.sku}</div>
-                  </td>
-                  <td className="p-3">{r.onHand.toLocaleString('fa-IR')}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {r.reorderPoint.toLocaleString('fa-IR')}
-                  </td>
-                  <td className="p-3">{r.turnover30d.toLocaleString('fa-IR')}</td>
-                  <td className="p-3">
-                    <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            هیچ کالایی با این فیلتر پیدا نشد.
+        {error ? <div className="p-8 text-center text-sm text-destructive">{error.message}</div> : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-right text-sm">
+              <thead><tr className="text-xs text-muted-foreground"><th className="p-3">کالا</th><th className="p-3">موجودی فیزیکی</th><th className="p-3">رزرو شده</th><th className="p-3">قابل فروش</th><th className="p-3">رزرو فعال</th><th className="p-3">وضعیت</th></tr></thead>
+              <tbody>{rows.map((row) => {
+                const status = statusFor(row.quantityAvailable)
+                return <tr key={row.productId} className="border-t border-border"><td className="p-3"><div>{row.name}</div><div className="font-mono text-xs text-muted-foreground">{row.sku}</div></td><td className="p-3">{row.quantityOnHand.toLocaleString('fa-IR')}</td><td className="p-3 text-amber-300">{row.quantityReserved.toLocaleString('fa-IR')}</td><td className="p-3 font-semibold">{row.quantityAvailable.toLocaleString('fa-IR')}</td><td className="p-3">{row.activeReservations.toLocaleString('fa-IR')}</td><td className="p-3"><Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge></td></tr>
+              })}</tbody>
+            </table>
+            {!loading && rows.length === 0 && <div className="p-8 text-center text-sm text-muted-foreground">رکورد موجودی یافت نشد.</div>}
           </div>
         )}
       </section>
