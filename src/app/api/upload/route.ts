@@ -3,6 +3,7 @@ import { uploadService } from '@/server/upload/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { UPLOAD_MAX_SIZE_MB } from '@/server/shared/constants'
 import { logger } from '@/server/shared/logger'
+import { checkMutationRateLimit } from '@/server/shared/http-utils'
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -76,6 +77,10 @@ function validateMagicBytes(buffer: Buffer, mime: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Rate-limit برای upload (سخت‌گیرانه‌تر چون هزینه‌بر است)
+  const rateLimitResponse = checkMutationRateLimit(req, 'upload', 5, 60_000)
+  if (rateLimitResponse) return rateLimitResponse
+
   const guard = await requirePermission('content:write')
   if (!guard.ok) return guard.response
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
-import { handleServiceError, parseNumberParam, parsePagination } from './_utils'
+import { handleServiceError, parseNumberParam, parsePagination, checkMutationRateLimit } from '@/server/shared/http-utils'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import type { ProductListQuery } from '@/lib/api-types'
 import type { CategorySlug } from '@/types/product'
@@ -61,6 +61,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimitResponse = checkMutationRateLimit(req, 'product-create', 20, 60_000)
+    if (rateLimitResponse) return rateLimitResponse
+
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response
 

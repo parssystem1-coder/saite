@@ -1,6 +1,6 @@
 # پیشرفت فازبندی — Saite Backend Hardening
 
-> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۰)  
+> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۴)  
 > **شاخه:** `arena/019fe8c8-saite`
 
 ---
@@ -12,7 +12,7 @@
 فاز ۱ [██████████] 100%  — قفل مالی (C2, C7) ✅
 فاز ۲ [██████████] 100%  — قفل امنیتی API (C3, C5, C6) ✅
 فاز ۳ [██████████] 100%  — یکپارچگی داده و صف (C12, C14) ✅
-فاز ۴ [░░░░░░░░░░] 0%   — سخت‌سازی API (C8, C13, C15)
+فاز ۴ [██████████] 100%  — سخت‌سازی API (C8, C13, C15) ✅
 فاز ۵ [░░░░░░░░░░] 0%   — کیفیت کد (T1, T2, T3)
 فاز ۶ [░░░░░░░░░░] 0%   — زیرساخت (P1, P2)
 فاز ۷ [░░░░░░░░░░] 0%   — تست Integration (Q1)
@@ -81,11 +81,14 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| C8-1 | استخراج `parsePagination` به shared | ⬜ | — |
-| C8-2 | استفاده در ۶ endpoint | ⬜ | — |
-| C8-3 | حذف import نسبی `../../products/_utils` | ⬜ | — |
-| C13-1 | Rate-limit middleware mutations | ⬜ | — |
-| C15-1 | استانداردسازی فرمت خطا | ⬜ | — |
+| C8-1 | استخراج `parsePagination` + `parseLimit` به shared | ✅ | فاز ۴ |
+| C8-2 | استفاده در ۷ endpoint (finance, comms, shipping, marketing) | ✅ | فاز ۴ |
+| C8-3 | `_utils.ts` → re-export از shared (backward compat) | ✅ | فاز ۴ |
+| C13-1 | `checkMutationRateLimit` helper + اعمال روی orders/upload/products | ✅ | فاز ۴ |
+| C15-1 | استانداردسازی فرمت خطا: `{ error, code, details }` | ✅ | فاز ۴ |
+| C15-2 | اضافه کردن `handleServiceError` + try/catch به endpointهای بدون error handling | ✅ | فاز ۴ |
+
+**Verify:** `tsc --noEmit` ✅ | `eslint` ✅ | `vitest` 698/698 ✅ | `build` ✅
 
 ---
 
@@ -140,3 +143,5 @@
 | ۲۰۲۶-۰۸-۰۹ | فاز ۲ | C3 فقط customer session + actorId check | AI فعلاً admin ندارد؛ اگر اضافه شد requirePermission هم لازم است |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۳ | C12 — FOR UPDATE SKIP LOCKED به جای advisory lock | PostgreSQL native — self-cleanup، نیازی به unlock دستی |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۳ | C14 — Transaction.orderId ایندکس تک‌ستونی لازم ندارد | composite `@@index([orderId, createdAt])` موجود بود — کافی است |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۴ | `_utils.ts` به re-export تبدیل شد | backward compatibility — endpointهای products نیازی به تغییر import ندارند |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۴ | Rate-limit upload سخت‌گیرانه‌تر (5/min) | هزینه‌بر است — حافظه + دیسک + پردازش |
