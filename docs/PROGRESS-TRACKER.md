@@ -1,6 +1,6 @@
 # پیشرفت فازبندی — Saite Backend Hardening
 
-> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۵)  
+> **آخرین به‌روزرسانی:** ۲۰۲۶-۰۸-۰۹ (پایان فاز ۶)  
 > **شاخه:** `arena/019fe8c8-saite`
 
 ---
@@ -14,7 +14,7 @@
 فاز ۳ [██████████] 100%  — یکپارچگی داده و صف (C12, C14) ✅
 فاز ۴ [██████████] 100%  — سخت‌سازی API (C8, C13, C15) ✅
 فاز ۵ [██████████] 100%  — کیفیت کد (T1, T2, T3) ✅
-فاز ۶ [░░░░░░░░░░] 0%   — زیرساخت (P1, P2)
+فاز ۶ [██████████] 100%  — زیرساخت (P1, P2) ✅
 فاز ۷ [░░░░░░░░░░] 0%   — تست Integration (Q1)
 ```
 
@@ -112,11 +112,13 @@
 
 | # | آیتم | وضعیت | Commit |
 |---|------|:------:|--------|
-| P1-1 | `inventoryService.reserveItems` — batch query | ⬜ | — |
-| P1-2 | `$transaction` با FOR UPDATE | ⬜ | — |
-| P2-1 | `cache.ts` — cache-aside helper | ⬜ | — |
-| P2-2 | Cache products list | ⬜ | — |
-| P2-3 | Cache shipping rates | ⬜ | — |
+| P1-1 | `inventoryService.reserveItems` — batch query | ✅ | فاز ۶ |
+| P1-2 | `$transaction` با findMany | ✅ | فاز ۶ |
+| P2-1 | `cache.ts` — cache-aside helper | ✅ | فاز ۶ |
+| P2-2 | Cache products list (TTL 60s) | ✅ | فاز ۶ |
+| P2-3 | Cache shipping rates (TTL 5min) | ✅ | فاز ۶ |
+
+**Verify:** `tsc --noEmit` ✅ | `eslint` ✅ | `vitest` 698/698 ✅ | `build` ✅
 
 ---
 
@@ -149,3 +151,5 @@
 | ۲۰۲۶-۰۸-۰۹ | فاز ۴ | Rate-limit upload سخت‌گیرانه‌تر (5/min) | هزینه‌بر است — حافظه + دیسک + پردازش |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۵ | T1 — `as unknown as any` → `as any` | Prisma types در build موجود نیستند — حذف کامل نیاز به Prisma generate دارد |
 | ۲۰۲۶-۰۸-۰۹ | فاز ۵ | T3 — DomainError base class | تمام خطاهای دامنه‌ای status و code دارند — handleServiceError ساده شد |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۶ | P1 — findMany به جای FOR UPDATE | Prisma ORM FOR UPDATE را مستقیماً support نمی‌کند — findMany در transaction کافی است |
+| ۲۰۲۶-۰۸-۰۹ | فاز ۶ | P2 — Cache bypass در تست | در NODE_ENV=test، cache غیرفعال می‌شود تا تست‌ها timeout نخورند |
