@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ordersService } from '@/server/modules/orders/service'
 import { getCustomerSession } from '@/server/auth/customer-session'
 import { canAccessOrder } from '@/lib/auth/customer-scope'
-import { handleServiceError } from '../../products/_utils'
+import { handleServiceError } from '@/server/shared/http-utils'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

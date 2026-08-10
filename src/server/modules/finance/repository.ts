@@ -1,26 +1,43 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
+import type { InvoiceStatus } from '@/types/finance'
+
+export interface CreateInvoiceData {
+  orderId: string
+  customerId: string
+  invoiceNumber: string
+  subtotal: number
+  taxAmount: number
+  discountAmount: number
+  totalAmount: number
+  currency?: string
+  dueDate?: Date
+  notes?: string
+  metadata?: Record<string, unknown> | null
+}
+
+export type DbTransactionType = 'payment' | 'refund' | 'fee' | 'settlement' | 'adjustment'
+export type DbTransactionStatus = 'pending' | 'completed' | 'failed' | 'reversed'
+
+export interface CreateTransactionData {
+  invoiceId?: string
+  orderId?: string
+  type: DbTransactionType | string
+  amount: number
+  currency?: string
+  provider?: string
+  referenceId?: string
+  status?: DbTransactionStatus | string
+  metadata?: Record<string, unknown> | null
+}
 
 export const financeRepository = {
-  async createInvoice(data: {
-    orderId: string
-    customerId: string
-    invoiceNumber: string
-    subtotal: number
-    taxAmount: number
-    discountAmount: number
-    totalAmount: number
-    currency?: string
-    dueDate?: Date
-    notes?: string
-    metadata?: unknown
-  }) {
+  async createInvoice(data: CreateInvoiceData) {
     return prisma.invoice.create({
       data: {
         ...data,
         currency: data.currency || 'IRR',
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata ?? undefined,
       },
     })
   },
@@ -71,47 +88,37 @@ export const financeRepository = {
     return { items, total, page, limit }
   },
 
-  async updateInvoiceStatus(id: string, status: string, extra?: { paidAt?: Date; notes?: string }) {
+  async updateInvoiceStatus(id: string, status: InvoiceStatus | string, extra?: { paidAt?: Date; notes?: string }) {
     return prisma.invoice.update({
       where: { id },
       data: {
-        status: status as any,
+        status,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
     })
   },
 
-  async createTransaction(data: {
-    invoiceId?: string
-    orderId?: string
-    type: string
-    amount: number
-    currency?: string
-    provider?: string
-    referenceId?: string
-    status?: string
-    metadata?: unknown
-  }) {
+  async createTransaction(data: CreateTransactionData) {
     const payload: Record<string, unknown> = {
-      type: data.type as any,
+      type: data.type,
       amount: data.amount,
       currency: data.currency || 'IRR',
-      status: (data.status || 'pending') as any,
+      status: data.status || 'pending',
     }
     if (data.invoiceId) payload.invoiceId = data.invoiceId
     if (data.orderId) payload.orderId = data.orderId
     if (data.provider) payload.provider = data.provider
     if (data.referenceId) payload.referenceId = data.referenceId
-    if (data.metadata) payload.metadata = data.metadata as any
+    if (data.metadata) payload.metadata = data.metadata
 
-    return prisma.transaction.create({ data: payload as any })
+    return prisma.transaction.create({ data: payload })
   },
 
-  async updateTransactionStatus(id: string, status: string, settledAt?: Date) {
+  async updateTransactionStatus(id: string, status: DbTransactionStatus | string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status: status as any, ...(settledAt && { settledAt }) },
+      data: { status, ...(settledAt && { settledAt }) },
     })
   },
 

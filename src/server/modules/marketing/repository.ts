@@ -1,28 +1,43 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real، any برای InputJsonValue */
 import { prisma } from '@/server/shared/db'
 
+export type DbCouponType = 'percentage' | 'fixed_amount' | 'free_shipping'
+
+export interface CreateCouponData {
+  code: string
+  name: string
+  description?: string | null
+  type: DbCouponType | string
+  value: number
+  minOrderAmount?: number
+  maxDiscount?: number | null
+  usageLimit?: number | null
+  perCustomerLimit?: number
+  startsAt?: Date | null
+  expiresAt?: Date | null
+  applicableProducts?: string[]
+  applicableCategories?: string[]
+  firstOrderOnly?: boolean
+}
+
+export interface CreateCampaignData {
+  name: string
+  description?: string | null
+  type: string
+  startDate: Date
+  endDate: Date
+  bannerUrl?: string | null
+  targetUrl?: string | null
+  priority?: number
+  metadata?: Record<string, unknown> | null
+}
+
 export const marketingRepository = {
-  async createCoupon(data: {
-    code: string
-    name: string
-    description?: string
-    type: string
-    value: number
-    minOrderAmount?: number
-    maxDiscount?: number | null
-    usageLimit?: number | null
-    perCustomerLimit?: number
-    startsAt?: Date | null
-    expiresAt?: Date | null
-    applicableProducts?: string[]
-    applicableCategories?: string[]
-    firstOrderOnly?: boolean
-  }) {
+  async createCoupon(data: CreateCouponData) {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type as any,
+        type: data.type,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -105,22 +120,12 @@ export const marketingRepository = {
     return prisma.coupon.update({ where: { id }, data })
   },
 
-  async createCampaign(data: {
-    name: string
-    description?: string
-    type: string
-    startDate: Date
-    endDate: Date
-    bannerUrl?: string
-    targetUrl?: string
-    priority?: number
-    metadata?: unknown
-  }) {
+  async createCampaign(data: CreateCampaignData) {
     return prisma.campaign.create({
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata ?? undefined,
       },
     })
   },
