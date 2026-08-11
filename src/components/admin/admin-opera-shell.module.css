@@ -1,0 +1,578 @@
+/* Saite Admin Opera-style Shell - production ready, readable multiline */
+
+.root {
+  --chrome: hsl(var(--surface-1));
+  --chrome-2: hsl(var(--surface-2));
+  --chrome-3: hsl(var(--surface-3));
+  --page: hsl(var(--background));
+  --line: hsl(var(--border));
+  --ink: hsl(var(--foreground));
+  --muted: hsl(var(--muted-foreground));
+  --primary: hsl(var(--primary));
+  --primary-bright: hsl(var(--primary-bright));
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  min-height: 100dvh;
+  background: var(--page);
+  color: var(--ink);
+}
+
+/* ===== Header (68px total, two rows) ===== */
+.header {
+  position: fixed;
+  z-index: 60;
+  inset: 0 0 auto 0;
+  height: 68px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+
+.headerTop,
+.headerBottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.headerTop {
+  height: 34px;
+  background: hsl(var(--surface-0));
+  direction: ltr;
+}
+
+.headerBottom {
+  height: 34px;
+  background: var(--chrome-2);
+  direction: ltr;
+}
+
+/* decorative browser dots */
+.windowDots {
+  display: flex;
+  gap: 5px;
+  direction: ltr;
+}
+
+.windowDots i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+}
+
+.workspaceTab {
+  height: 28px;
+  min-width: 170px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 9px 9px 0 0;
+  background: var(--chrome-3);
+  font-size: 0.6875rem;
+  color: var(--ink);
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  background: var(--primary);
+  color: hsl(var(--primary-foreground));
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.tabClose {
+  margin-inline-start: auto;
+  color: var(--muted);
+}
+
+.addTab {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.headerTools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-inline-start: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+
+.location {
+  direction: rtl;
+  flex: 1;
+  max-width: 50rem;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--chrome-3);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Rail ===== */
+.rail {
+  position: fixed;
+  z-index: 50;
+  inset-block: 68px 0;
+  inset-inline-start: 0;
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 0;
+  background: var(--chrome);
+  border-inline-end: 1px solid var(--line);
+}
+
+.logo {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--primary);
+  color: hsl(var(--primary-foreground));
+  font-weight: 900;
+  margin-bottom: 15px;
+  user-select: none;
+}
+
+.rule {
+  width: 28px;
+  height: 1px;
+  background: var(--line);
+  margin: 8px 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.railButton {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color 0.16s var(--ease),
+    color 0.16s var(--ease),
+    transform 0.16s var(--ease);
+}
+
+.railButton:hover,
+.railButton:focus-visible,
+.railButtonActive {
+  background: var(--chrome-3);
+  color: var(--primary-bright);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.railButtonActive::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--primary-bright);
+}
+
+/* tooltip - only desktop */
+.tooltip {
+  position: absolute;
+  inset-inline-start: calc(100% + 9px);
+  top: 50%;
+  z-index: 40;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--chrome-3);
+  color: var(--ink);
+  font-size: 0.625rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(7px);
+  transition:
+    opacity 0.15s var(--ease),
+    transform 0.15s var(--ease);
+}
+
+.railButton:hover .tooltip,
+.railButton:focus-visible .tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.mobileMenu {
+  display: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+}
+
+.railFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.userBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--chrome-3);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ===== Flyout ===== */
+.flyout {
+  position: fixed;
+  z-index: 55;
+  inset-block: 78px 10px;
+  inset-inline-start: 60px;
+  width: 256px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  /* logical radius: flat on side touching rail (inline-start), rounded on outer side */
+  border-start-start-radius: 0;
+  border-start-end-radius: 13px;
+  border-end-end-radius: 13px;
+  border-end-start-radius: 0;
+  background: var(--chrome-3);
+  box-shadow: 1.1rem 0.75rem 2.5rem hsl(var(--surface-0) / 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-8px) scale(0.98);
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.24s var(--ease);
+}
+
+.flyout:dir(rtl) {
+  transform: translateX(8px) scale(0.98);
+}
+
+/* logical transform fix for RTL using inset-inline: we keep same but adjust via class */
+.flyoutOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.flyoutHead {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 15px 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.flyoutHead small,
+.flyoutHead p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.5625rem;
+  line-height: 1.4;
+}
+
+.flyoutHead h2 {
+  margin: 4px 0 2px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.closeButton {
+  display: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--chrome-2);
+  color: var(--ink);
+}
+
+.flyoutBody {
+  flex: 1;
+  overflow: auto;
+  padding: 9px 8px;
+}
+
+.groupLabel {
+  padding: 8px 9px 5px;
+  color: var(--muted);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.flyItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  transition:
+    background-color 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.flyItem:hover,
+.flyItem:focus-visible {
+  background: var(--chrome-2);
+  color: var(--ink);
+  outline: none;
+}
+
+.flyItemActive {
+  background: var(--chrome-2);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.flyItemActive svg {
+  color: var(--primary-bright);
+}
+
+.flyoutFoot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 45px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  flex-wrap: wrap;
+}
+
+.live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: hsl(var(--stock-in));
+  box-shadow: 0 0 8px hsl(var(--stock-in) / 0.7);
+}
+
+/* ===== Main ===== */
+.main {
+  min-height: 100dvh;
+  padding-top: 68px;
+  padding-inline-start: 60px;
+}
+
+.mainInner {
+  /* preserve original container logic but also allow pages to use their own container */
+  min-height: calc(100dvh - 68px);
+}
+
+.mobileTopbar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--chrome-2);
+}
+
+.mobileTopbar button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--chrome-3);
+  color: var(--muted);
+}
+
+/* ===== Backdrop (mobile) ===== */
+.backdrop {
+  position: fixed;
+  z-index: 52;
+  inset: 68px 0 0 0;
+  background: hsl(var(--overlay));
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+}
+
+.backdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .location {
+    max-width: 32rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .rail {
+    width: 52px;
+    /* keep same side (start) for logical consistency */
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+  }
+
+  .main {
+    padding-inline-start: 52px;
+    padding-inline-end: 0;
+  }
+
+  .flyout {
+    inset-inline-start: 52px;
+    inset-inline-end: auto;
+    width: min(300px, calc(100vw - 52px));
+    inset-block: 68px 0;
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+    border-end-end-radius: 0;
+    border-end-start-radius: 0;
+    box-shadow: 0.75rem 0 2rem hsl(var(--surface-0) / 0.5);
+    transform: translateX(-12px);
+  }
+
+  .flyout:dir(rtl) {
+    transform: translateX(12px);
+  }
+
+  .flyoutOpen {
+    transform: none;
+  }
+
+  .mobileMenu {
+    display: grid;
+  }
+
+  .tooltip {
+    display: none;
+  }
+
+  .closeButton {
+    display: grid;
+  }
+
+  .headerTools {
+    display: none;
+  }
+
+  .location {
+    font-size: 0.5625rem;
+    max-width: 18rem;
+  }
+
+  .workspaceTab {
+    min-width: 120px;
+    font-size: 0.625rem;
+  }
+
+  .mobileTopbar {
+    display: flex;
+  }
+
+  /* when mobile drawer closed, hide flyout fully */
+  .flyout:not(.flyoutOpen):not(.mobileFlyout) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobileFlyout {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspaceTab span:nth-child(2) {
+    display: none;
+  }
+
+  .workspaceTab {
+    min-width: 44px;
+  }
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  .root * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+
+  .flyout {
+    transform: none !important;
+  }
+}
+
+/* ===== Focus visible for keyboard ===== */
+.railButton:focus-visible {
+  box-shadow: 0 0 0 2px var(--chrome-3), 0 0 0 4px hsl(var(--primary) / 0.4);
+}
