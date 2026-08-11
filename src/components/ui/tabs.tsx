@@ -9,20 +9,18 @@ export interface TabItem<T extends string = string> {
   badge?: number
 }
 
+type TabsVariant = 'default' | 'opera' | 'segmented'
+
 interface TabsProps<T extends string = string> {
   items: TabItem<T>[]
   value: T
   onValueChange: (key: T) => void
-  /** شناسهٔ پایه برای aria-controls — پیش‌فرض: panel */
   idPrefix?: string
   'aria-label'?: string
   className?: string
+  variant?: TabsVariant
 }
 
-/**
- * تب‌های سبک با نقش‌های ARIA استاندارد.
- * بدون وابستگی به کتابخانهٔ خارجی.
- */
 export function Tabs<T extends string = string>({
   items,
   value,
@@ -30,37 +28,69 @@ export function Tabs<T extends string = string>({
   idPrefix = 'panel',
   'aria-label': ariaLabel = 'بخش‌ها',
   className,
+  variant = 'default',
 }: TabsProps<T>) {
+  if (variant === 'opera' || variant === 'segmented') {
+    const isSegmented = variant === 'segmented'
+    return (
+      <div role="tablist" aria-label={ariaLabel} className={cn('flex flex-wrap gap-2.5', className)}>
+        {items.map((t) => {
+          const isActive = value === t.key
+          const showBadge = t.badge !== undefined && t.badge !== null
+          return (
+            <button
+              key={t.key}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`${idPrefix}-${t.key}`}
+              id={`tab-${t.key}`}
+              onClick={() => onValueChange(t.key)}
+              className={cn(
+                'h-10 min-w-[88px] rounded-full border px-5 text-[13px] font-bold leading-none tracking-wide transition-all',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60a5fa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#273552]',
+                'hover:-translate-y-px',
+                isActive
+                  ? 'bg-[#60a5fa] border-[#60a5fa] text-[#0f172a] shadow-[0_4px_14px_#60a5fa55]'
+                  : 'bg-transparent border-[#3b82f6] text-[#93c5fd] hover:bg-[#3b82f6]/10 hover:text-[#bfdbfe] hover:border-[#60a5fa]',
+                isSegmented && 'rounded-lg'
+              )}
+            >
+              {t.label}
+              {showBadge ? <small className="ms-1.5 text-[9px] opacity-80">{formatNumber(t.badge as number)}</small> : null}
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
-    <div
-      role="tablist"
-      aria-label={ariaLabel}
-      className={cn('flex flex-wrap gap-1 border-b border-border', className)}
-    >
-      {items.map((t) => (
-        <button
-          key={t.key}
-          type="button"
-          role="tab"
-          aria-selected={value === t.key}
-          aria-controls={`${idPrefix}-${t.key}`}
-          id={`tab-${t.key}`}
-          onClick={() => onValueChange(t.key)}
-          className={cn(
-            '-mb-px flex items-center gap-1.5 border-b-2 px-5 py-3 text-sm font-bold transition-colors',
-            value === t.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          )}
-        >
-          {t.label}
-          {t.badge ? (
-            <span className="rounded-full bg-surface-2 px-1.5 text-[10px] text-muted-foreground">
-              {formatNumber(t.badge)}
-            </span>
-          ) : null}
-        </button>
-      ))}
+    <div role="tablist" aria-label={ariaLabel} className={cn('flex flex-wrap gap-1 border-b border-[#526987]', className)}>
+      {items.map((t) => {
+        const showBadge = t.badge !== undefined && t.badge !== null
+        return (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={value === t.key}
+            aria-controls={`${idPrefix}-${t.key}`}
+            id={`tab-${t.key}`}
+            onClick={() => onValueChange(t.key)}
+            className={cn(
+              '-mb-px flex items-center gap-1.5 border-b-2 px-5 py-3 text-sm font-bold transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#27d4ee] focus-visible:ring-offset-2',
+              value === t.key ? 'border-[#27d4ee] text-[#27d4ee]' : 'border-transparent text-[#b7c5da] hover:text-[#edf3ff]'
+            )}
+          >
+            {t.label}
+            {showBadge ? (
+              <span className="rounded-full bg-[#2d3952] px-1.5 text-[10px] text-[#b7c5da]">{formatNumber(t.badge as number)}</span>
+            ) : null}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -75,14 +105,8 @@ interface TabPanelProps {
 
 export function TabPanel({ id, tabId, active, className, children }: TabPanelProps) {
   if (!active) return null
-
   return (
-    <div
-      role="tabpanel"
-      id={id}
-      aria-labelledby={tabId}
-      className={cn('pt-8', className)}
-    >
+    <div role="tabpanel" id={id} aria-labelledby={tabId} className={cn('pt-8', className)}>
       {children}
     </div>
   )

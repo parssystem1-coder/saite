@@ -183,7 +183,7 @@ export function AdminProductForm() {
         <div className="space-y-6">
           <div className="surface-3d rounded-2xl p-6 text-center md:p-8">
             <p className="mb-4 text-xs font-bold text-muted-foreground">تصویر محصول</p>
-            <div className="flex aspect-square flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-surface-0/50">
+            <div className="flex aspect-square flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-surface-2/50">
               <div className="mb-3 rounded-full bg-primary/12 p-3">
                 <Upload className="size-7 text-primary" aria-hidden="true" />
               </div>

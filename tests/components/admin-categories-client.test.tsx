@@ -6,11 +6,9 @@ describe('AdminCategoriesClient', () => {
   it('تب‌های دسته‌بندی و برند را همراه با مقادیر پیش‌فرض کاتالوگ نمایش می‌دهد', () => {
     render(<AdminCategoriesClient />)
 
-    // بررسی حضور تب‌ها
-    expect(
-      screen.getByRole('button', { name: /دسته‌بندی‌های محصولات/i })
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /برندها/i })).toBeInTheDocument()
+    // بررسی حضور تب‌ها - حالا با variant opera و badge
+    expect(screen.getByRole('tab', { name: /دسته‌بندی‌ها/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /برندها/i })).toBeInTheDocument()
 
     // بررسی دسته‌بندی پیش‌فرض
     expect(screen.getByText('پرینتر')).toBeInTheDocument()

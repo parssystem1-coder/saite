@@ -149,16 +149,24 @@ export default function OrdersClient() {
           </select>
         </div>
 
-        <div className="flex gap-1 overflow-auto border-y border-border px-2 py-2">
-          {(['all', 'packing', 'ready_to_ship', 'in_transit', 'delivered'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${status === s ? 'bg-primary text-primary-foreground' : 'bg-surface-1 text-muted-foreground'}`}
-            >
-              {s === 'all' ? 'همه' : STATUS_LABEL[s as FulfillmentOrderStatus]}
-            </button>
-          ))}
+        <div className="flex gap-2.5 overflow-auto border-y border-[#526987] bg-[#273552] px-3 py-3">
+          {(['all', 'packing', 'ready_to_ship', 'in_transit', 'delivered'] as const).map((s) => {
+            const isActive = status === s
+            return (
+              <button
+                key={s}
+                onClick={() => setStatus(s)}
+                aria-pressed={isActive}
+                className={`whitespace-nowrap rounded-full border px-5 py-2 text-[13px] font-bold leading-none tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60a5fa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#273552] ${
+                  isActive
+                    ? 'bg-[#60a5fa] border-[#60a5fa] text-[#0f172a] shadow-[0_4px_14px_#60a5fa55]'
+                    : 'bg-transparent border-[#3b82f6] text-[#93c5fd] hover:bg-[#3b82f6]/10 hover:text-[#bfdbfe] hover:border-[#60a5fa] hover:-translate-y-px'
+                }`}
+              >
+                {s === 'all' ? 'همه' : STATUS_LABEL[s as FulfillmentOrderStatus]}
+              </button>
+            )
+          })}
         </div>
 
         <div className="overflow-x-auto">
@@ -258,7 +266,7 @@ function Drawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <button aria-label="بستن" onClick={onClose} className="flex-1 bg-black/40 backdrop-blur-sm" />
+      <button aria-label="بستن" onClick={onClose} className="flex-1 bg-overlay backdrop-blur-sm" />
       <div className="h-full w-[min(96vw,560px)] overflow-y-auto border-s border-border bg-surface-1 p-0 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
           <div>

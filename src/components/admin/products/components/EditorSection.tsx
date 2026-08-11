@@ -12,4 +12,5 @@ export function EditorSection({ title, hint, children }: { title: string; hint?:
   );
 }
 
-export const editorSurfaceClass = 'rounded-[var(--radius-lg)] border border-[hsl(var(--border))] bg-[hsl(var(--surface-1))] shadow-[var(--shadow-depth-2)]';
+export const editorSurfaceClass =
+  'rounded-[var(--radius-lg)] border border-[hsl(var(--border))] bg-[hsl(var(--surface-3))] shadow-[var(--shadow-depth-2)]';

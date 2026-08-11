@@ -1,0 +1,615 @@
+/* Saite Opera Reference - exact visual language from reference.css
+   Tokens from File 1: copy visual language, not DOM
+   Hierarchy per latest requirement:
+   - Sidebar & Flyout: same color #20283a (chrome)
+   - Main page: one level lighter #273552 (chrome-2)
+   - Cards: one level higher #344665 / #2d3952 / gradient #526b9e -> #40577f
+   No bg-background / pure black
+*/
+
+.root {
+  --chrome: #20283a;
+  --chrome-2: #273552;
+  --chrome-3: #344665;
+  --page: #273552; /* main one level lighter than sidebar #20283a per requirement */
+  --page-dark: #101a29; /* reference darkest, kept for reference but not used as main */
+  --surface: #2d3952;
+  --surface-hi: #465b82;
+  --border: #526987;
+  --text: #edf3ff;
+  --muted: #b7c5da;
+  --quiet: #91a1bb;
+  --cyan: #27d4ee;
+  --purple: #7545f5;
+  --green: #63d7a0;
+  --amber: #ffd875;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  min-height: 100dvh;
+  background: var(--page);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ===== Header 68px two rows ===== */
+.header {
+  position: fixed;
+  z-index: 60;
+  inset: 0 0 auto 0;
+  height: 68px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.headerTop,
+.headerBottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.headerTop {
+  height: 34px;
+  background: #1a2131; /* tabs-row from reference */
+  direction: ltr;
+}
+
+.headerBottom {
+  height: 34px;
+  background: var(--chrome-2);
+  direction: ltr;
+  color: var(--muted);
+}
+
+.windowDots {
+  display: flex;
+  gap: 5px;
+  direction: ltr;
+}
+
+.windowDots i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--quiet);
+  border-radius: 50%;
+}
+
+.workspaceTab {
+  height: 28px;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 9px 9px 0 0;
+  background: var(--chrome-3);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.brandMark {
+  width: 15px;
+  height: 15px;
+  border: 3px solid #f05268;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 900;
+  background: transparent;
+  color: transparent;
+}
+
+.brandMark::after {
+  content: '';
+}
+
+.tabClose {
+  margin-inline-start: auto;
+  color: var(--muted);
+}
+
+.addTab {
+  font-size: 18px;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.headerTools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-inline-start: auto;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+
+.location {
+  height: 24px;
+  flex: 1;
+  max-width: 50rem;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #31415f; /* address from reference */
+  color: var(--muted);
+  font-size: 10px;
+  direction: rtl;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Rail - unified with flyout ===== */
+.rail {
+  position: fixed;
+  z-index: 50;
+  inset-block: 68px 0;
+  inset-inline-start: 0;
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 0;
+  background: var(--chrome); /* SAME as flyout per requirement */
+  border-inline-end: 1px solid var(--border);
+}
+
+.logo {
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--cyan);
+  color: #0b2637;
+  font-weight: 900;
+  margin-bottom: 14px;
+  user-select: none;
+}
+
+.rule {
+  width: 28px;
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.railButton {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background-color 0.16s var(--ease),
+    color 0.16s var(--ease),
+    transform 0.16s var(--ease);
+}
+
+.railButton:hover,
+.railButton:focus-visible,
+.railButtonActive {
+  background: var(--chrome-3);
+  color: var(--cyan);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.railButtonActive::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 3px;
+  background: var(--cyan);
+}
+
+.tooltip {
+  position: absolute;
+  inset-inline-start: calc(100% + 9px);
+  top: 50%;
+  z-index: 4;
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-hi);
+  color: var(--text);
+  font-size: 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(7px);
+  transition:
+    opacity 0.16s var(--ease),
+    transform 0.16s var(--ease);
+}
+
+.railButton:hover .tooltip,
+.railButton:focus-visible .tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.mobileMenu {
+  display: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 11px;
+}
+
+.railFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.userBadge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-hi);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ===== Flyout - SAME as Sidebar #20283a ===== */
+.flyout {
+  position: fixed;
+  z-index: 55;
+  top: 78px;
+  inset-inline-start: 60px;
+  width: 246px;
+  height: calc(100vh - 88px);
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome); /* SAME as rail per latest requirement */
+  border: 1px solid var(--border);
+  border-radius: 0 13px 13px 0;
+  box-shadow: 18px 12px 40px #08111f80;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-8px) scale(0.98);
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.24s var(--ease);
+}
+
+.flyout:dir(rtl) {
+  transform: translateX(8px) scale(0.98);
+}
+
+.flyoutOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.flyoutHead {
+  padding: 15px;
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+}
+
+.flyoutHead small {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--quiet);
+  display: block;
+}
+
+.flyoutHead h2 {
+  font-size: 15px;
+  margin: 5px 0 0;
+  color: var(--text);
+}
+
+.flyoutHead p {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.closeButton {
+  display: none;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--chrome-3);
+  color: var(--text);
+}
+
+.flyoutBody {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 8px;
+  background: var(--chrome);
+}
+
+.groupLabel {
+  padding: 8px 10px 6px;
+  color: var(--quiet);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.flyItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: start;
+  text-decoration: none;
+  transition:
+    background-color 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.flyItem:hover,
+.flyItem:focus-visible {
+  background: var(--surface-hi);
+  color: var(--text);
+  outline: none;
+}
+
+.flyItemActive {
+  background: var(--surface-hi);
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.flyItemActive svg {
+  color: var(--cyan);
+}
+
+.flyoutFoot {
+  height: 46px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 10px;
+  background: var(--chrome);
+}
+
+.live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px #63d7a0b3;
+}
+
+/* ===== Main - one level lighter than sidebar ===== */
+.main {
+  min-height: 100dvh;
+  padding-top: 68px;
+  padding-inline-start: 60px;
+  background: var(--page); /* #273552 - lighter than #20283a */
+  min-width: 0;
+}
+
+.mainInner {
+  min-height: calc(100dvh - 68px);
+  max-width: 1080px;
+  margin: 0 auto;
+  background: transparent;
+  padding: 36px clamp(18px, 5vw, 60px) 70px;
+}
+
+/* legacy container override - ensure it doesn't use bg-background */
+.mainInner :global(.container) {
+  background: transparent !important;
+}
+
+.mobileTopbar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  color: var(--muted);
+}
+
+.mobileTopbar button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--chrome-3);
+  color: var(--muted);
+}
+
+.backdrop {
+  position: fixed;
+  z-index: 52;
+  inset: 68px 0 0 0;
+  background: hsl(var(--overlay));
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+}
+
+.backdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Admin content cards - one level higher ===== */
+.adminCard {
+  background: linear-gradient(145deg, #526b9e, #40577f);
+  border: 1px solid #7094d0;
+  border-radius: 9px;
+  box-shadow:
+    inset 0 1px 0 #ffffff2b,
+    0 9px 20px #08142638;
+  color: var(--text);
+}
+
+@media (max-width: 1024px) {
+  .mainInner {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .rail {
+    width: 52px;
+    inset-inline-start: 0;
+    inset-inline-end: auto;
+  }
+
+  .main {
+    padding-inline-start: 52px;
+    padding-inline-end: 0;
+  }
+
+  .mainInner {
+    padding: 24px 18px 70px;
+  }
+
+  .flyout {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    width: min(280px, calc(100vw - 60px));
+    border-radius: 13px 0 0 13px;
+    height: calc(100vh - 68px);
+    top: 68px;
+    box-shadow: 0.75rem 0 2rem #08111f80;
+    transform: translateX(12px);
+  }
+
+  .flyoutOpen {
+    transform: none;
+  }
+
+  .mobileMenu {
+    display: grid;
+  }
+
+  .tooltip {
+    display: none;
+  }
+
+  .closeButton {
+    display: grid;
+  }
+
+  .headerTools {
+    display: none;
+  }
+
+  .location {
+    font-size: 10px;
+    max-width: 18rem;
+  }
+
+  .workspaceTab {
+    min-width: 120px;
+    font-size: 10px;
+  }
+
+  .mobileTopbar {
+    display: flex;
+  }
+
+  .flyout:not(.flyoutOpen):not(.mobileFlyout) {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mobileFlyout {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .workspaceTab span:nth-child(2) {
+    display: none;
+  }
+
+  .workspaceTab {
+    min-width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+
+  .flyout {
+    transform: none !important;
+  }
+}
+
+.railButton:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--surface-hi),
+    0 0 0 4px hsl(var(--accent) / 0.4);
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
