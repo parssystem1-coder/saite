@@ -1,0 +1,5 @@
+Branch synced with main on 2026-08-11
+Includes:
+- Retry logic for API resilience
+- Exponential backoff mechanism
+- Enhanced payment provider reliability
