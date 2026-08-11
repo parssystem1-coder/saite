@@ -1,5 +1,6 @@
 import type { PaymentGatewayAdapter } from '@/lib/payments/provider-contract'
 import type { PaymentProvider } from '@/types/payment'
+import { retryAsync } from '@/lib/retry-utils'
 
 const ZARINPAL_API = 'https://api.zarinpal.com/pg/v4/payment'
 const ZARINPAL_SANDBOX_API = 'https://sandbox.zarinpal.com/pg/v4/payment'
@@ -8,18 +9,28 @@ export const zarinpalProvider: PaymentGatewayAdapter = {
   async createPayment(provider: PaymentProvider, input) {
     const baseUrl = provider.environment === 'sandbox' ? ZARINPAL_SANDBOX_API : ZARINPAL_API
 
-    const res = await fetch(`${baseUrl}/request.json`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        merchant_id: provider.merchantId,
-        amount: input.amount,
-        callback_url: input.callbackUrl,
-        description: `سفارش ${input.orderId}`,
-      }),
-    })
+    const data = await retryAsync(
+      async () => {
+        const res = await fetch(`${baseUrl}/request.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            merchant_id: provider.merchantId,
+            amount: input.amount,
+            callback_url: input.callbackUrl,
+            description: `سفارش ${input.orderId}`,
+          }),
+        })
 
-    const data = await res.json()
+        if (!res.ok) {
+          throw new Error(`Zarinpal API error: ${res.status} ${res.statusText}`)
+        }
+
+        return res.json()
+      },
+      { maxRetries: 2, initialDelayMs: 1000, maxDelayMs: 5000 }
+    )
+
     if (data.data?.code !== 100) {
       throw new Error(`Zarinpal error: ${data.errors?.message || 'unknown'}`)
     }
@@ -39,17 +50,27 @@ export const zarinpalProvider: PaymentGatewayAdapter = {
   async verifyPayment(provider: PaymentProvider, authority: string, amount: number) {
     const baseUrl = provider.environment === 'sandbox' ? ZARINPAL_SANDBOX_API : ZARINPAL_API
 
-    const res = await fetch(`${baseUrl}/verify.json`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        merchant_id: provider.merchantId,
-        amount,
-        authority,
-      }),
-    })
+    const data = await retryAsync(
+      async () => {
+        const res = await fetch(`${baseUrl}/verify.json`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            merchant_id: provider.merchantId,
+            amount,
+            authority,
+          }),
+        })
 
-    const data = await res.json()
+        if (!res.ok) {
+          throw new Error(`Zarinpal API error: ${res.status} ${res.statusText}`)
+        }
+
+        return res.json()
+      },
+      { maxRetries: 2, initialDelayMs: 1000, maxDelayMs: 5000 }
+    )
+
     if (data.data?.code === 100 || data.data?.code === 101) {
       return {
         success: true,
