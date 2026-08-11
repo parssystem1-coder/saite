@@ -14,22 +14,17 @@ interface AdminOperaTabsProps<T extends string = string> {
   value: T
   onValueChange: (key: T) => void
   className?: string
-  /** برای سازگاری با Tabs قدیمی؛ اگر true باشد از role=tab استفاده می‌کند */
   useTabRole?: boolean
   'aria-label'?: string
   idPrefix?: string
 }
 
 /**
- * کنترل فیلتر Opera-style: All | Updates | Enabled | Disabled
- * - جدا از هم، با فاصله gap-2.5
- * - active: cyan/blue (accent), border نرم, shadow
- * - hover: -translate-y-px, border-accent/40
- * - focus: ring-accent
- * - badge تعداد حتی صفر قابل نمایش
- *
- * اگر فقط داده را فیلتر می‌کند و tab panel واقعی ندارد، از aria-pressed استفاده می‌کند
- * (مطابق الزامات دسترسی‌پذیری).
+ * Opera Reference Filter - exact from reference.css
+ * .filter 36px 78px border #b8d6ff2b radius 19px bg #536a9c text #f1f5ff
+ * .filter.active bg #27d4ee border #79e7f5 text #09263b shadow
+ * badge zero displayable
+ * Uses aria-pressed when filtering (no real tabpanel)
  */
 export function AdminOperaTabs<T extends string = string>({
   items,
@@ -46,7 +41,7 @@ export function AdminOperaTabs<T extends string = string>({
     <div
       role={isTabRole ? 'tablist' : 'group'}
       aria-label={ariaLabel}
-      className={cn('flex flex-wrap gap-2.5', className)}
+      className={cn('flex flex-wrap gap-2.5', className)} // filters gap 10px from reference
     >
       {items.map((item) => {
         const isActive = value === item.key
@@ -63,19 +58,17 @@ export function AdminOperaTabs<T extends string = string>({
             id={isTabRole ? `tab-${item.key}` : undefined}
             onClick={() => onValueChange(item.key)}
             className={cn(
-              'h-9 min-w-[78px] rounded-full border px-4 text-xs font-bold transition-all',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2',
-              'hover:-translate-y-px focus-visible:translate-y-0',
+              'h-9 min-w-[78px] rounded-full border px-4 text-[11px] font-extrabold transition-all', // 36px 78px 19px from reference
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#27d4ee] focus-visible:ring-offset-2',
+              'hover:-translate-y-px',
               isActive
-                ? 'border-accent bg-accent text-accent-foreground shadow-[0_5px_14px_hsl(var(--accent)/0.25)]'
-                : 'border-border bg-surface-1 text-foreground hover:border-accent/40 hover:bg-surface-2'
+                ? 'bg-[#27d4ee] border-[#79e7f5] text-[#09263b] shadow-[0_6px_15px_#27d4ee47,inset_0_1px_0_#ffffff66]'
+                : 'bg-[#536a9c] border-[#b8d6ff2b] text-[#f1f5ff] shadow-[inset_0_1px_0_#ffffff2e,0_5px_12px_#07122733] hover:brightness-[1.12]'
             )}
           >
             <span>{item.label}</span>
             {showBadge && (
-              <span className="ms-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] opacity-90">
-                {formatNumber(item.badge as number)}
-              </span>
+              <small className="ms-1.5 text-[9px] opacity-90">{formatNumber(item.badge as number)}</small>
             )}
           </button>
         )
