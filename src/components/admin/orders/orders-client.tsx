@@ -159,8 +159,8 @@ export default function OrdersClient() {
                 aria-pressed={isActive}
                 className={`whitespace-nowrap rounded-full border px-5 py-2 text-[13px] font-bold leading-none tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60a5fa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#273552] ${
                   isActive
-                    ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_4px_12px_#3b82f64d]'
-                    : 'bg-transparent border-[#60a5fa] text-[#93c5fd] hover:bg-[#60a5fa]/15 hover:text-[#bfdbfe] hover:-translate-y-px'
+                    ? 'bg-[#60a5fa] border-[#60a5fa] text-[#0f172a] shadow-[0_4px_14px_#60a5fa55]'
+                    : 'bg-transparent border-[#3b82f6] text-[#93c5fd] hover:bg-[#3b82f6]/10 hover:text-[#bfdbfe] hover:border-[#60a5fa] hover:-translate-y-px'
                 }`}
               >
                 {s === 'all' ? 'همه' : STATUS_LABEL[s as FulfillmentOrderStatus]}
