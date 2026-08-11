@@ -90,7 +90,7 @@ export default function ProductEditor({ initialValue, onSave, onPublish }: Produ
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[hsl(var(--background))] pb-24 text-[hsl(var(--foreground))]">
+    <div dir="rtl" className="min-h-screen bg-[hsl(var(--surface-2))] pb-24 text-[hsl(var(--foreground))]">
       <header className="sticky top-[68px] z-[30] border-b border-[hsl(var(--border))] bg-[hsl(var(--surface-1)/.96)] backdrop-blur">
         <div className="mx-auto flex max-w-[1540px] items-center gap-4 px-4 py-3 lg:px-8">
           <b>Saite Admin</b>

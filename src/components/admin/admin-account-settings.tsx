@@ -62,11 +62,11 @@ export function AdminAccountSettings() {
         </header>
 
         <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-surface-0/50 p-4">
+          <div className="rounded-xl border border-border bg-surface-2/50 p-4">
             <dt className="text-[11px] text-muted-foreground">نام نمایشی</dt>
             <dd className="mt-1 text-sm font-bold text-foreground">{admin?.name ?? '—'}</dd>
           </div>
-          <div className="rounded-xl border border-border bg-surface-0/50 p-4">
+          <div className="rounded-xl border border-border bg-surface-2/50 p-4">
             <dt className="text-[11px] text-muted-foreground">نقش</dt>
             <dd className="mt-1 text-sm font-bold text-primary">مدیر سیستم</dd>
           </div>

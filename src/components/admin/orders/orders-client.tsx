@@ -258,7 +258,7 @@ function Drawer({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <button aria-label="بستن" onClick={onClose} className="flex-1 bg-black/40 backdrop-blur-sm" />
+      <button aria-label="بستن" onClick={onClose} className="flex-1 bg-overlay backdrop-blur-sm" />
       <div className="h-full w-[min(96vw,560px)] overflow-y-auto border-s border-border bg-surface-1 p-0 shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
           <div>

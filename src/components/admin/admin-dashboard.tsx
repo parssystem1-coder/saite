@@ -60,7 +60,7 @@ export function AdminDashboard() {
         }
       />
 
-      {lowStock && lowStock.total > 0 && <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4"><div className="flex items-center gap-2 text-amber-300"><AlertTriangle className="size-5" /><b>{lowStock.total.toLocaleString('fa-IR')} کالا نیاز به تامین یا بررسی دارد</b><Link className="mr-auto text-sm underline" href="/admin/reports/inventory">مشاهده انبار</Link></div><div className="mt-3 flex flex-wrap gap-2">{lowStock.items.slice(0, 5).map((item) => <span key={item.id} className="rounded-lg bg-background/40 px-2 py-1 text-xs">{item.name}: {item.quantityAvailable.toLocaleString('fa-IR')} / حد {item.reorderPoint.toLocaleString('fa-IR')}</span>)}</div></section>}
+      {lowStock && lowStock.total > 0 && <section className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4"><div className="flex items-center gap-2 text-amber-300"><AlertTriangle className="size-5" /><b>{lowStock.total.toLocaleString('fa-IR')} کالا نیاز به تامین یا بررسی دارد</b><Link className="mr-auto text-sm underline" href="/admin/reports/inventory">مشاهده انبار</Link></div><div className="mt-3 flex flex-wrap gap-2">{lowStock.items.slice(0, 5).map((item) => <span key={item.id} className="rounded-lg bg-surface-2/40 px-2 py-1 text-xs">{item.name}: {item.quantityAvailable.toLocaleString('fa-IR')} / حد {item.reorderPoint.toLocaleString('fa-IR')}</span>)}</div></section>}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {STATS.map((stat) => (
@@ -131,7 +131,7 @@ export function AdminDashboard() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-xl border border-border bg-surface-0/50 p-4">
+          <div className="mt-6 rounded-xl border border-border bg-surface-2/50 p-4">
             <p className="text-xs font-bold text-foreground">فروش لحظه‌ای</p>
             <div className="mt-4 flex h-24 items-end gap-1.5 opacity-60">
               {[40, 70, 45, 90, 65, 80, 50, 85, 100, 60].map((h, i) => (

@@ -39,7 +39,7 @@ export function AdminPlaceholder({ title, description, icon: Icon, planned }: Pr
             {planned.map((p) => (
               <li
                 key={p}
-                className="flex items-start gap-2 rounded-xl border border-border bg-surface-0/50 p-3 text-xs text-muted-foreground"
+                className="flex items-start gap-2 rounded-xl border border-border bg-surface-2/50 p-3 text-xs text-muted-foreground"
               >
                 <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
                 {p}

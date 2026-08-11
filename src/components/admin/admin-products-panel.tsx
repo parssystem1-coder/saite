@@ -92,9 +92,9 @@ export function AdminProductsPanel() {
         }
       />
 
-      <div className="surface-3d overflow-hidden rounded-2xl border border-border bg-surface-1">
-        {/* Search بالای Tabs طبق الگوی مرجع */}
-        <div className="border-b border-border bg-surface-1 p-4">
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface-3 shadow-depth-2">
+        {/* Search بالای Tabs طبق الگوی مرجع - no bg-background */}
+        <div className="border-b border-border bg-surface-3 p-4">
           <div className="flex flex-col gap-4">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -124,11 +124,11 @@ export function AdminProductsPanel() {
 
         <div className="overflow-x-auto">
           {isLoading ? (
-            <div className="flex h-56 items-center justify-center bg-surface-1">
+            <div className="flex h-56 items-center justify-center bg-surface-3">
               <Loader2 className="size-8 animate-spin text-primary" />
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="flex h-56 flex-col items-center justify-center gap-2 bg-surface-1 p-6 text-center">
+            <div className="flex h-56 flex-col items-center justify-center gap-2 bg-surface-3 p-6 text-center">
               <p className="text-sm font-bold text-foreground">محصولی یافت نشد</p>
               <p className="text-xs text-muted-foreground">
                 {searchQuery ? `جستجو برای «${searchQuery}» نتیجه‌ای نداشت` : 'در این دسته محصولی وجود ندارد'}
@@ -137,7 +137,7 @@ export function AdminProductsPanel() {
           ) : (
             <table className="w-full border-collapse text-right text-sm">
               <thead>
-                <tr className="border-b border-border bg-surface-0/40 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+                <tr className="border-b border-border bg-surface-2/60 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
                   <th className="px-4 py-3">محصول</th>
                   <th className="px-4 py-3">دسته</th>
                   <th className="px-4 py-3">وضعیت</th>
@@ -150,7 +150,7 @@ export function AdminProductsPanel() {
                   <tr key={product.id} className="transition-colors hover:bg-surface-2/40">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface-0 p-1">
+                        <div className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-border bg-surface-2 p-1">
                           <Image
                             src={product.images[0]}
                             alt={product.name}
