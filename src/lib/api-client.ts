@@ -1,10 +1,13 @@
 import { ApiError } from '@/lib/api-types'
+import { retryAsync } from '@/lib/retry-utils'
 
 /**
  * کلاینت HTTP برای فاز بک‌اند.
  *
  * الان اگر USE_MOCK=false باشد و endpoint واقعی نباشد، با ApiError واضح
  * شکست می‌خورد تا اشتباهی به production وصل نشویم.
+ *
+ * اضافه شده: Retry logic برای مقابله با API Degradation
  *
  * آماده‌سازی فاز بعد:
  *   return httpJson<ProductListResult>(`/api/products?${params}`)
@@ -33,34 +36,40 @@ export async function httpJson<T>(path: string, init?: RequestInit): Promise<T> 
     )
   }
 
-  let res: Response
-  try {
-    res = await fetch(url, {
-      ...init,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
-    })
-  } catch {
-    throw new ApiError(0, 'ارتباط با سرور برقرار نشد.', 'NETWORK_ERROR')
-  }
-
-  if (!res.ok) {
-    let message = res.statusText || 'خطای سرور'
-    try {
-      const body = (await res.json()) as { message?: string; error?: string | { message?: string } }
-      if (body.message) message = body.message
-      else if (typeof body.error === 'string') message = body.error
-      else if (body.error && typeof body.error === 'object' && 'message' in body.error) {
-        message = (body.error as { message: string }).message
+  // Retry logic برای مقابله با موقت‌ترین خطاهای API
+  return await retryAsync(
+    async () => {
+      let res: Response
+      try {
+        res = await fetch(url, {
+          ...init,
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...init?.headers,
+          },
+        })
+      } catch {
+        throw new ApiError(0, 'ارتباط با سرور برقرار نشد.', 'NETWORK_ERROR')
       }
-    } catch {
-      /* ignore */
-    }
-    throw new ApiError(res.status, message, 'HTTP_ERROR')
-  }
 
-  return res.json() as Promise<T>
+      if (!res.ok) {
+        let message = res.statusText || 'خطای سرور'
+        try {
+          const body = (await res.json()) as { message?: string; error?: string | { message?: string } }
+          if (body.message) message = body.message
+          else if (typeof body.error === 'string') message = body.error
+          else if (body.error && typeof body.error === 'object' && 'message' in body.error) {
+            message = (body.error as { message: string }).message
+          }
+        } catch {
+          /* ignore */
+        }
+        throw new ApiError(res.status, message, 'HTTP_ERROR')
+      }
+
+      return res.json() as Promise<T>
+    },
+    { maxRetries: 3, initialDelayMs: 500 }
+  )
 }
