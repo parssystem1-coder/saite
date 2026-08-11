@@ -273,7 +273,7 @@
   color: var(--muted);
 }
 
-/* ===== Flyout ===== */
+/* ===== Flyout - same color as Sidebar per requirements ===== */
 .flyout {
   position: fixed;
   z-index: 55;
@@ -289,7 +289,8 @@
   border-start-end-radius: 13px;
   border-end-end-radius: 13px;
   border-end-start-radius: 0;
-  background: var(--chrome-3);
+  /* unified with Sidebar: same --chrome (surface-1) */
+  background: var(--chrome);
   box-shadow: 1.1rem 0.75rem 2.5rem hsl(var(--surface-0) / 0.55);
   opacity: 0;
   pointer-events: none;
