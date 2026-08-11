@@ -72,7 +72,7 @@ export function AdminProductsPanel() {
         title="محصولات"
         description="مدیریت موجودی، قیمت و نمایش کاتالوگ - فیلتر Opera-style"
         actions={
-          <Button className="gap-2 bg-[#27d4ee] text-[#082638] hover:bg-[#27d4ee]/90 border-0" asChild>
+          <Button className="gap-2 bg-[#3b82f6] text-white hover:bg-[#2563eb] border border-[#60a5fa] shadow-[0_4px_12px_#3b82f64d] text-[13px] font-bold" asChild>
             <Link href="/admin/products/new">
               <PlusCircle className="size-4" />
               افزودن محصول

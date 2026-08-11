@@ -58,12 +58,12 @@ export function AdminOperaTabs<T extends string = string>({
             id={isTabRole ? `tab-${item.key}` : undefined}
             onClick={() => onValueChange(item.key)}
             className={cn(
-              'h-9 min-w-[78px] rounded-full border px-4 text-[11px] font-extrabold transition-all', // fixed box for all tabs
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#27d4ee] focus-visible:ring-offset-2',
+              'h-10 min-w-[88px] rounded-full border px-5 text-[13px] font-bold leading-none tracking-wide transition-all', // fixed box, larger readable
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#60a5fa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#273552]',
               'hover:-translate-y-px',
               isActive
-                ? 'bg-[#27d4ee] border-[#27d4ee] text-[#082638] shadow-[0_6px_15px_#27d4ee47,inset_0_1px_0_#ffffff66]'
-                : 'bg-transparent border-[#27d4ee] text-[#27d4ee] hover:bg-[#27d4ee]/10'
+                ? 'bg-[#3b82f6] border-[#3b82f6] text-white shadow-[0_4px_12px_#3b82f64d]'
+                : 'bg-transparent border-[#60a5fa] text-[#93c5fd] hover:bg-[#60a5fa]/15 hover:text-[#bfdbfe]'
             )}
           >
             <span>{item.label}</span>
