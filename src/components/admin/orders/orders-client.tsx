@@ -149,16 +149,24 @@ export default function OrdersClient() {
           </select>
         </div>
 
-        <div className="flex gap-1 overflow-auto border-y border-border px-2 py-2">
-          {(['all', 'packing', 'ready_to_ship', 'in_transit', 'delivered'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs ${status === s ? 'bg-primary text-primary-foreground' : 'bg-surface-1 text-muted-foreground'}`}
-            >
-              {s === 'all' ? 'همه' : STATUS_LABEL[s as FulfillmentOrderStatus]}
-            </button>
-          ))}
+        <div className="flex gap-2 overflow-auto border-y border-[#526987] bg-[#273552] px-3 py-3">
+          {(['all', 'packing', 'ready_to_ship', 'in_transit', 'delivered'] as const).map((s) => {
+            const isActive = status === s
+            return (
+              <button
+                key={s}
+                onClick={() => setStatus(s)}
+                aria-pressed={isActive}
+                className={`whitespace-nowrap rounded-full border px-4 py-1.5 text-[11px] font-extrabold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#27d4ee] ${
+                  isActive
+                    ? 'bg-[#27d4ee] border-[#27d4ee] text-[#082638] shadow-[0_6px_15px_#27d4ee47]'
+                    : 'bg-transparent border-[#27d4ee] text-[#27d4ee] hover:bg-[#27d4ee]/10 hover:-translate-y-px'
+                }`}
+              >
+                {s === 'all' ? 'همه' : STATUS_LABEL[s as FulfillmentOrderStatus]}
+              </button>
+            )
+          })}
         </div>
 
         <div className="overflow-x-auto">

@@ -51,8 +51,8 @@ export function Tabs<T extends string = string>({
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#27d4ee] focus-visible:ring-offset-2',
                 'hover:-translate-y-px',
                 isActive
-                  ? 'bg-[#27d4ee] border-[#79e7f5] text-[#09263b] shadow-[0_6px_15px_#27d4ee47,inset_0_1px_0_#ffffff66]'
-                  : 'bg-[#536a9c] border-[#b8d6ff2b] text-[#f1f5ff] shadow-[inset_0_1px_0_#ffffff2e,0_5px_12px_#07122733] hover:brightness-[1.12]',
+                  ? 'bg-[#27d4ee] border-[#27d4ee] text-[#082638] shadow-[0_6px_15px_#27d4ee47,inset_0_1px_0_#ffffff66]'
+                  : 'bg-transparent border-[#27d4ee] text-[#27d4ee] hover:bg-[#27d4ee]/10',
                 isSegmented && 'rounded-lg'
               )}
             >
