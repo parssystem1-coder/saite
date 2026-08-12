@@ -1,14 +1,19 @@
 import 'server-only'
+import { randomUUID } from 'crypto'
 import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
 
+/**
+ * شمارهٔ فاکتور با entropy بالا — جلوگیری از برخورد در ستون @unique.
+ * فرمت: INV-YYYYMMDD-<12hex> — UUID بخشی برای فضای نمونهٔ بسیار بزرگ.
+ */
 function generateInvoiceNumber(): string {
   const now = new Date()
   const y = now.getFullYear()
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
-  const rand = Math.floor(1000 + Math.random() * 9000)
+  const rand = randomUUID().replace(/-/g, '').slice(0, 12)
   return `INV-${y}${m}${d}-${rand}`
 }
 
