@@ -1,11 +1,25 @@
 import type { PaymentGatewayAdapter } from '@/lib/payments/provider-contract'
 import type { PaymentProvider } from '@/types/payment'
+import { fetchJson, HttpError } from '@/server/shared/fetch'
+import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
 
 const IDPAY_API = 'https://api.idpay.ir/v1.1'
 
+interface IdpayRequestResponse {
+  id?: string
+  link?: string
+  error_message?: string
+}
+
+interface IdpayVerifyResponse {
+  status?: number
+  track_id?: string | number
+  error_message?: string
+}
+
 export const idpayProvider: PaymentGatewayAdapter = {
   async createPayment(provider: PaymentProvider, input) {
-    const res = await fetch(`${IDPAY_API}/payment`, {
+    const data = await fetchJson<IdpayRequestResponse>(`${IDPAY_API}/payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -18,22 +32,24 @@ export const idpayProvider: PaymentGatewayAdapter = {
         callback: input.callbackUrl,
         desc: `سفارش ${input.orderId}`,
       }),
+      retries: 2,
+      initialDelayMs: 1000,
+      maxDelayMs: 5000,
     })
 
-    const data = await res.json()
     if (!data.id) {
       throw new Error(`IDPay error: ${data.error_message || 'unknown'}`)
     }
 
     return {
       authority: data.id,
-      redirectUrl: data.link,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      redirectUrl: data.link || '',
+      expiresAt: new Date(Date.now() + PAYMENT_INTENT_TTL_MS).toISOString(),
     }
   },
 
   async verifyPayment(provider: PaymentProvider, authority: string, amount: number) {
-    const res = await fetch(`${IDPAY_API}/payment/verify`, {
+    const data = await fetchJson<IdpayVerifyResponse>(`${IDPAY_API}/payment/verify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,9 +61,11 @@ export const idpayProvider: PaymentGatewayAdapter = {
         order_id: authority,
         amount,
       }),
+      retries: 2,
+      initialDelayMs: 1000,
+      maxDelayMs: 5000,
     })
 
-    const data = await res.json()
     if (data.status === 100 || data.status === 101 || data.status === 200) {
       return {
         success: true,
@@ -69,10 +87,11 @@ export const idpayProvider: PaymentGatewayAdapter = {
 
   async healthCheck() {
     try {
-      const res = await fetch(`${IDPAY_API}/payment`, { method: 'POST' })
-      return res.status === 400 ? 'healthy' : 'degraded'
-    } catch {
-      return 'down'
+      await fetchJson(`${IDPAY_API}/payment`, { method: 'POST' })
+      return 'healthy' as const
+    } catch (err) {
+      if (err instanceof HttpError && err.status === 400) return 'healthy' as const
+      return 'degraded' as const
     }
   },
 }
