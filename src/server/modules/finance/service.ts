@@ -2,6 +2,7 @@ import 'server-only'
 import { randomUUID } from 'crypto'
 import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { FinanceEvents } from '@/server/shared/event-types'
 import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
 
 /**
@@ -43,7 +44,7 @@ export const financeService = {
       dueDate: new Date(Date.now() + INVOICE_DUE_DAYS * 24 * 60 * 60 * 1000),
     })
 
-    await eventBus.publish('invoice.created', {
+    await eventBus.publish(FinanceEvents.created, {
       invoiceId: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
       orderId: order.id,
@@ -80,7 +81,7 @@ export const financeService = {
       })
     }
 
-    await eventBus.publish('invoice.paid', {
+    await eventBus.publish(FinanceEvents.paid, {
       invoiceId,
       orderId: invoice.orderId,
       amount: invoice.totalAmount,
@@ -103,7 +104,7 @@ export const financeService = {
       metadata: { reason },
     })
 
-    await eventBus.publish('invoice.refunded', {
+    await eventBus.publish(FinanceEvents.refunded, {
       invoiceId,
       orderId: invoice.orderId,
       amount,

@@ -2,6 +2,7 @@ import type { PaymentGatewayAdapter } from '@/lib/payments/provider-contract'
 import type { PaymentProvider } from '@/types/payment'
 import { fetchJson, HttpError } from '@/server/shared/fetch'
 import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
+import { IDPAY } from '@/server/payments/status-codes'
 
 const IDPAY_API = 'https://api.idpay.ir/v1.1'
 
@@ -66,7 +67,11 @@ export const idpayProvider: PaymentGatewayAdapter = {
       maxDelayMs: 5000,
     })
 
-    if (data.status === 100 || data.status === 101 || data.status === 200) {
+    if (
+      data.status === IDPAY.PAYMENT_SUCCESS_1 ||
+      data.status === IDPAY.PAYMENT_SUCCESS_2 ||
+      data.status === IDPAY.PAYMENT_SUCCESS_3
+    ) {
       return {
         success: true,
         transactionId: data.track_id?.toString(),

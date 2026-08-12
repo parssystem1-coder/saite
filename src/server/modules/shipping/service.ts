@@ -1,6 +1,7 @@
 import 'server-only'
 import { shippingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { ShippingEvents } from '@/server/shared/event-types'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
 
 /** TTL برای shipping rates — 5 دقیقه */
@@ -20,7 +21,7 @@ function buildRatesCacheKey(opts: Parameters<typeof shippingRepository.findShipp
 export const shippingService = {
   async createShipment(data: Parameters<typeof shippingRepository.createShipment>[0]) {
     const shipment = await shippingRepository.createShipment(data)
-    await eventBus.publish('shipment.created', {
+    await eventBus.publish(ShippingEvents.created, {
       shipmentId: shipment.id,
       orderId: shipment.orderId,
       carrier: shipment.carrier,
@@ -30,7 +31,7 @@ export const shippingService = {
 
   async updateStatus(id: string, status: string, extra?: { shippedAt?: Date; deliveredAt?: Date; trackingNumber?: string }) {
     const shipment = await shippingRepository.updateShipmentStatus(id, status, extra)
-    await eventBus.publish('shipment.status_changed', {
+    await eventBus.publish(ShippingEvents.statusChanged, {
       shipmentId: shipment.id,
       orderId: shipment.orderId,
       status: shipment.status,

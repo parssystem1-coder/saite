@@ -3,6 +3,7 @@ import { writeFile, mkdir, unlink } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
+import { extensionForMime } from '@/server/upload/mime'
 
 const UPLOAD_SUBDIR = 'public/uploads'
 const PUBLIC_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -24,14 +25,10 @@ export const localDiskProvider = {
     const dir = join(process.cwd(), UPLOAD_SUBDIR, folder)
     if (!existsSync(dir)) await mkdir(dir, { recursive: true })
 
-    const mimeToExt: Record<string, string> = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/webp': 'webp',
-      'image/gif': 'gif',
-      'application/pdf': 'pdf',
-    }
-    const ext = mimeToExt[opts.mimetype] || opts.filename.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'bin'
+    const ext =
+      extensionForMime(opts.mimetype) ||
+      opts.filename.split('.').pop()?.replace(/[^a-z0-9]/gi, '') ||
+      'bin'
     const key = `${randomUUID()}.${ext}`
     const path = join(dir, key)
 

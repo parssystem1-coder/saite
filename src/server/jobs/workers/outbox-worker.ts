@@ -5,6 +5,11 @@ import { redis } from '@/server/shared/redis'
 import { prisma } from '@/server/shared/db'
 import { financeService } from '@/server/modules/finance/service'
 import { commsService } from '@/server/communications/service'
+import {
+  OrderEvents,
+  FinanceEvents,
+  ShippingEvents,
+} from '@/server/shared/event-types'
 
 /**
  * زنجیرهٔ مالی/اطلاع‌رسانی پس از پرداخت موفق سفارش.
@@ -82,12 +87,12 @@ export const outboxWorker = new Worker(
 
     try {
       switch (event.type) {
-        case 'order.created': {
+        case OrderEvents.created: {
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] order.created order=${orderId}`)
           break
         }
-        case 'order.status_changed': {
+        case OrderEvents.statusChanged: {
           const orderId = payload.orderId as string
           const to = payload.to as string
           const from = payload.from as string
@@ -99,14 +104,14 @@ export const outboxWorker = new Worker(
           }
           break
         }
-        case 'order.paid': {
+        case OrderEvents.paid: {
           // سازگاری عقب‌رو — همان منطق order.status_changed با to=paid
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] order.paid (legacy) order=${orderId}`)
           await handlePaidOrder(orderId)
           break
         }
-        case 'invoice.created': {
+        case FinanceEvents.created: {
           const orderId = payload.orderId as string
           const amount = payload.amount as number
           const customerId = payload.customerId as string
@@ -128,12 +133,12 @@ export const outboxWorker = new Worker(
           }
           break
         }
-        case 'invoice.paid': {
+        case FinanceEvents.paid: {
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] invoice.paid order=${orderId}`)
           break
         }
-        case 'shipment.status_changed': {
+        case ShippingEvents.statusChanged: {
           const orderId = payload.orderId as string
           const status = payload.status as string
           logger.info(

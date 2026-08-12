@@ -5,6 +5,7 @@ import { MAX_LINES, MAX_QUANTITY_PER_LINE } from '@/server/shared/constants'
 import { ordersRepository } from './repository'
 import { assertValidTransition } from './state-machine'
 import { eventBus } from '@/server/shared/event-bus'
+import { OrderEvents } from '@/server/shared/event-types'
 import { inventoryRepository } from '@/server/modules/inventory/repository'
 import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
 import { NotFoundError, ValidationError } from '@/server/shared/errors'
@@ -122,7 +123,7 @@ export const ordersService = {
 
       await tx.outboxEvent.create({
         data: {
-          type: 'order.created',
+          type: OrderEvents.created,
           payload: { orderId: createdOrder.id, customerId: input.customerId } as any,
           aggregateId: createdOrder.id,
         },
@@ -147,7 +148,7 @@ export const ordersService = {
     const updated = await ordersRepository.updateStatus(orderId, newStatus)
     if (newStatus === 'paid') await inventoryRepository.confirmOrder(orderId)
     if (newStatus === 'cancelled') await inventoryRepository.releaseOrder(orderId)
-    await eventBus.publish('order.status_changed', { orderId, from: order.status, to: newStatus, actorId })
+    await eventBus.publish(OrderEvents.statusChanged, { orderId, from: order.status, to: newStatus, actorId })
     return updated
   },
 }

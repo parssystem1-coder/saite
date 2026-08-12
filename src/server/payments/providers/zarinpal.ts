@@ -2,6 +2,7 @@ import type { PaymentGatewayAdapter } from '@/lib/payments/provider-contract'
 import type { PaymentProvider } from '@/types/payment'
 import { fetchJson, HttpError } from '@/server/shared/fetch'
 import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
+import { ZARINPAL } from '@/server/payments/status-codes'
 
 const ZARINPAL_API = 'https://api.zarinpal.com/pg/v4/payment'
 const ZARINPAL_SANDBOX_API = 'https://sandbox.zarinpal.com/pg/v4/payment'
@@ -34,7 +35,7 @@ export const zarinpalProvider: PaymentGatewayAdapter = {
       maxDelayMs: 5000,
     })
 
-    if (data.data?.code !== 100) {
+    if (data.data?.code !== ZARINPAL.REQUEST_OK) {
       throw new Error(`Zarinpal error: ${data.errors?.message || 'unknown'}`)
     }
 
@@ -67,7 +68,7 @@ export const zarinpalProvider: PaymentGatewayAdapter = {
       maxDelayMs: 5000,
     })
 
-    if (data.data?.code === 100 || data.data?.code === 101) {
+    if (data.data?.code === ZARINPAL.REQUEST_OK || data.data?.code === ZARINPAL.ALREADY_VERIFIED) {
       return {
         success: true,
         transactionId: data.data.ref_id?.toString(),

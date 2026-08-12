@@ -1,11 +1,12 @@
 import 'server-only'
 import { contentRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { ContentEvents } from '@/server/shared/event-types'
 
 export const contentService = {
   async createPage(data: Parameters<typeof contentRepository.createPage>[0]) {
     const page = await contentRepository.createPage(data)
-    await eventBus.publish('page.created', { pageId: page.id, slug: page.slug })
+    await eventBus.publish(ContentEvents.pageCreated, { pageId: page.id, slug: page.slug })
     return page
   },
 
@@ -23,18 +24,18 @@ export const contentService = {
 
   async updatePage(id: string, data: Parameters<typeof contentRepository.updatePage>[1]) {
     const page = await contentRepository.updatePage(id, data)
-    await eventBus.publish('page.updated', { pageId: page.id, slug: page.slug })
+    await eventBus.publish(ContentEvents.pageUpdated, { pageId: page.id, slug: page.slug })
     return page
   },
 
   async deletePage(id: string) {
     await contentRepository.deletePage(id)
-    await eventBus.publish('page.deleted', { pageId: id })
+    await eventBus.publish(ContentEvents.pageDeleted, { pageId: id })
   },
 
   async createPost(data: Parameters<typeof contentRepository.createPost>[0]) {
     const post = await contentRepository.createPost(data)
-    await eventBus.publish('post.created', { postId: post.id, slug: post.slug })
+    await eventBus.publish(ContentEvents.postCreated, { postId: post.id, slug: post.slug })
     return post
   },
 
@@ -52,18 +53,18 @@ export const contentService = {
 
   async updatePost(id: string, data: Parameters<typeof contentRepository.updatePost>[1]) {
     const post = await contentRepository.updatePost(id, data)
-    await eventBus.publish('post.updated', { postId: post.id, slug: post.slug })
+    await eventBus.publish(ContentEvents.postUpdated, { postId: post.id, slug: post.slug })
     return post
   },
 
   async deletePost(id: string) {
     await contentRepository.deletePost(id)
-    await eventBus.publish('post.deleted', { postId: id })
+    await eventBus.publish(ContentEvents.postDeleted, { postId: id })
   },
 
   async createMenuItem(data: Parameters<typeof contentRepository.createMenuItem>[0]) {
     const item = await contentRepository.createMenuItem(data)
-    await eventBus.publish('menu_item.created', { menuItemId: item.id, label: item.label })
+    await eventBus.publish(ContentEvents.menuItemCreated, { menuItemId: item.id, label: item.label })
     return item
   },
 
@@ -77,12 +78,12 @@ export const contentService = {
 
   async updateMenuItem(id: string, data: Parameters<typeof contentRepository.updateMenuItem>[1]) {
     const item = await contentRepository.updateMenuItem(id, data)
-    await eventBus.publish('menu_item.updated', { menuItemId: item.id, label: item.label })
+    await eventBus.publish(ContentEvents.menuItemUpdated, { menuItemId: item.id, label: item.label })
     return item
   },
 
   async deleteMenuItem(id: string) {
     await contentRepository.deleteMenuItem(id)
-    await eventBus.publish('menu_item.deleted', { menuItemId: id })
+    await eventBus.publish(ContentEvents.menuItemDeleted, { menuItemId: id })
   },
 }
