@@ -2,6 +2,7 @@ import { zarinpalProvider } from './providers/zarinpal'
 import { idpayProvider } from './providers/idpay'
 import { mockPaymentProvider } from './providers/mock'
 import type { PaymentGatewayAdapter } from '@/lib/payments/provider-contract'
+import type { PaymentProvider, PaymentProviderCode } from '@/types/payment'
 import { ServiceUnavailableError } from '@/server/shared/errors'
 
 /**
@@ -10,14 +11,82 @@ import { ServiceUnavailableError } from '@/server/shared/errors'
  * mock فقط برای توسعه و تست است. موفق نشان دادن پرداخت در production
  * وقتی credential واقعی جا افتاده، به سفارش/فاکتور جعلی منتهی می‌شود.
  */
-export function resolvePaymentProvider(): PaymentGatewayAdapter {
-  if (process.env.ZARINPAL_MERCHANT_ID) return zarinpalProvider
-  if (process.env.IDPAY_API_KEY) return idpayProvider
 
-  if (process.env.NODE_ENV !== 'production') return mockPaymentProvider
+/** جفت adapter + provider — چون adapter ها به یک PaymentProvider نیاز دارند */
+export interface ResolvedPayment {
+  adapter: PaymentGatewayAdapter
+  provider: PaymentProvider
+}
 
+const isSandbox = process.env.PAYMENT_SANDBOX === 'true'
+
+/** ساخت PaymentProvider از متغیرهای محیطی — برای پاس به adapter ها */
+export function buildProviderFromEnv(code: PaymentProviderCode): PaymentProvider {
+  const now = new Date().toISOString()
+  const environment = isSandbox ? 'sandbox' : 'production'
+  const isZarinpal = code === 'zarinpal'
+  return {
+    id: code,
+    name: isZarinpal ? 'زرین‌پال' : 'IDPay',
+    code,
+    environment,
+    active: true,
+    priority: 1,
+    merchantId: isZarinpal ? process.env.ZARINPAL_MERCHANT_ID : undefined,
+    apiKeySecretRef: isZarinpal ? undefined : process.env.IDPAY_API_KEY,
+    callbackUrl: '',
+    supportsRefund: false,
+    supportsPartialRefund: false,
+    supportsVerify: true,
+    currency: 'IRR',
+    minAmount: 1000,
+    timeoutSeconds: 30,
+    healthStatus: 'unknown',
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+/**
+ * انتخاب provider برای شروع پرداخت — fail-closed در production.
+ * اولویت: زرین‌پال → IDPay → mock (فقط غیر-production).
+ */
+export function resolvePaymentProviderForCreate(): ResolvedPayment {
+  if (process.env.ZARINPAL_MERCHANT_ID) {
+    return { adapter: zarinpalProvider, provider: buildProviderFromEnv('zarinpal') }
+  }
+  if (process.env.IDPAY_API_KEY) {
+    return { adapter: idpayProvider, provider: buildProviderFromEnv('idpay') }
+  }
+  if (process.env.NODE_ENV !== 'production') {
+    return { adapter: mockPaymentProvider, provider: buildProviderFromEnv('zarinpal') }
+  }
   throw new ServiceUnavailableError(
     'درگاه پرداخت پیکربندی نشده است',
     'PAYMENT_PROVIDER_NOT_CONFIGURED'
   )
+}
+
+/**
+ * انتخاب provider بر اساس کد مشخص — برای webhook ها که مسیرشان به یک
+ * درگاه خاص وابسته است. fail-closed: بدون credential، خطا می‌دهد.
+ */
+export function resolvePaymentProviderByCode(code: string): ResolvedPayment {
+  if (code === 'idpay') {
+    if (!process.env.IDPAY_API_KEY) {
+      throw new ServiceUnavailableError('IDPay پیکربندی نشده است', 'PAYMENT_PROVIDER_NOT_CONFIGURED')
+    }
+    return { adapter: idpayProvider, provider: buildProviderFromEnv('idpay') }
+  }
+
+  // پیش‌فرض: زرین‌پال
+  if (!process.env.ZARINPAL_MERCHANT_ID) {
+    throw new ServiceUnavailableError('زرین‌پال پیکربندی نشده است', 'PAYMENT_PROVIDER_NOT_CONFIGURED')
+  }
+  return { adapter: zarinpalProvider, provider: buildProviderFromEnv('zarinpal') }
+}
+
+// backward-compat — قبلاً فقط adapter برمی‌گشت
+export function resolvePaymentProvider(): PaymentGatewayAdapter {
+  return resolvePaymentProviderForCreate().adapter
 }
