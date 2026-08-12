@@ -15,9 +15,11 @@ export interface CostTrackInput {
 }
 
 export async function trackCost(input: CostTrackInput) {
-  // fire-and-forget بدون queueMicrotask — مستقیم با .catch تا process قبل از microtask نمیرد
-  prisma.aiUsageLog
-    .create({
+  // ردیابی هزینه هرگز نباید مسیر اصلی چت/سئو را بشکند.
+  // try/catch (و نه .catch خام) تا تشرهای همگام — مثل پروکسی
+  // بدون-DB در زمان توسعه — هم پوشش داده شوند.
+  try {
+    await prisma.aiUsageLog.create({
       data: {
         feature: input.feature,
         promptVersion: input.promptVersion,
@@ -31,7 +33,7 @@ export async function trackCost(input: CostTrackInput) {
         gitSha: process.env.GIT_SHA || 'unknown',
       },
     })
-    .catch((err: unknown) => {
-      logger.error({ err, feature: input.feature }, '[CostTracker] Failed to log')
-    })
+  } catch (err: unknown) {
+    logger.error({ err, feature: input.feature }, '[CostTracker] Failed to log')
+  }
 }

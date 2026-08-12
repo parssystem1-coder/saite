@@ -37,3 +37,5 @@ export const UPLOAD_MAX_SIZE_MB = Number(process.env.UPLOAD_MAX_SIZE_MB ?? '10')
 
 // ── AI ────────────────────────────────────────────────────
 export const AI_TIMEOUT_MS = 10_000
+/** سقف کلی یک پاسخ استریم (چت مشاور) — جلوگیری از اتصال بازمانده */
+export const AI_STREAM_TIMEOUT_MS = 45_000
