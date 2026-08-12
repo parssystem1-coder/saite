@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { marketingService } from '@/server/modules/marketing/service'
 import { consumeRateLimit, getClientKey } from '@/lib/auth/server/rate-limit'
 import { getCustomerSession } from '@/server/auth/customer-session'
+import { handleServiceError } from '@/server/shared/http-utils'
+import { couponValidateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 /**
  * Validate coupon — Security Model:
@@ -36,7 +38,7 @@ export async function POST(req: NextRequest) {
   const customerId = session?.sub // اگر session نباشد، undefined
 
   try {
-    const body = await req.json()
+    const body = parseWithSchema(couponValidateSchema, await parseJsonBody(req))
     const result = await marketingService.validateCoupon(body.code, {
       orderAmount: body.orderAmount,
       customerId: customerId || body.customerId || 'anonymous', // ← از session یا body
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json(result)
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Validation failed'
-    return NextResponse.json({ error: message, code: 'COUPON_VALIDATION_ERROR' }, { status: 400 })
+    // CouponValidationError / ValidationError → 400 با code مناسب؛ خطای ناشناخته → 500
+    return handleServiceError(err)
   }
 }

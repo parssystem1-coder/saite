@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ordersService } from '@/server/modules/orders/service'
 import { getCustomerSession } from '@/server/auth/customer-session'
 import { handleServiceError, checkMutationRateLimit } from '@/server/shared/http-utils'
+import { createOrderSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     const session = await getCustomerSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
 
-    const body = await req.json()
+    const body = parseWithSchema(createOrderSchema, await parseJsonBody(req))
     const order = await ordersService.create({
       customerId: session.sub,
       items: body.items,

@@ -3,6 +3,7 @@ import { shippingService } from '@/server/modules/shipping/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError } from '@/server/shared/http-utils'
 import { NotFoundError } from '@/server/shared/errors'
+import { shipmentUpdateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!guard.ok) return guard.response
 
     const { id } = await params
-    const body = await req.json()
+    const body = parseWithSchema(shipmentUpdateSchema, await parseJsonBody(req))
     const shipment = await shippingService.updateStatus(id, body.status, body)
     return NextResponse.json(shipment)
   } catch (err) {
