@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
-import { handleServiceError, parseNumberParam, parsePagination, checkMutationRateLimit } from '@/server/shared/http-utils'
+import { handleServiceError, parsePagination, checkMutationRateLimit } from '@/server/shared/http-utils'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import type { ProductListQuery } from '@/lib/api-types'
-import type { CategorySlug } from '@/types/product'
+import {
+  productListFilterSchema,
+  productCreateSchema,
+  parseWithSchema,
+  parseJsonBody,
+} from '@/server/shared/validation'
+
+// برای پشتیبانی featured/bestSeller (سازگار با src/lib/api.ts) بدون شکستن contract
+interface FeaturedListQuery extends ProductListQuery {
+  isFeatured?: boolean
+  isBestSeller?: boolean
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -18,36 +29,38 @@ export async function GET(req: NextRequest) {
 
     if (featured || bestSeller) {
       const { perPage } = parsePagination(searchParams, 20)
-      const query: ProductListQuery = {
+      const query: FeaturedListQuery = {
         category: undefined,
         perPage: Math.min(perPage, 20),
         page: 1,
-      } as unknown as ProductListQuery
+      }
       // isFeatured/isBestSeller را به‌صورت dynamic به query اضافه می‌کنیم تا contract نشکند
-      if (featured) (query as unknown as Record<string, unknown>).isFeatured = true
-      if (bestSeller) (query as unknown as Record<string, unknown>).isBestSeller = true
+      if (featured) query.isFeatured = true
+      if (bestSeller) query.isBestSeller = true
 
       const result = await productsService.getList(query)
       return NextResponse.json(result.items)
     }
 
     const { page, perPage } = parsePagination(searchParams)
-
-    const category = searchParams.get('category')
-    const sort = searchParams.get('sort')
+    // فیلترها با Zod اعتبارسنجی می‌شوند؛ صفحه‌بندی جدا parse شد تا رفتار موجود حفظ شود
+    const filters = parseWithSchema(productListFilterSchema, Object.fromEntries(searchParams))
 
     const query: ProductListQuery = {
-      q: searchParams.get('q') || undefined,
-      category: (category && category !== 'all' ? category : undefined) as CategorySlug | undefined,
-      subCategory: searchParams.get('subCategory') || undefined,
-      brand: searchParams.get('brand') || undefined,
-      technology: searchParams.get('technology') || undefined,
-      usage: searchParams.get('usage') || undefined,
-      color: searchParams.get('color') || undefined,
-      inStock: searchParams.get('inStock') === 'true',
-      minPrice: parseNumberParam(searchParams.get('minPrice'), 'minPrice'),
-      maxPrice: parseNumberParam(searchParams.get('maxPrice'), 'maxPrice'),
-      sort: (sort || undefined) as ProductListQuery['sort'],
+      q: filters.q,
+      category:
+        filters.category && filters.category !== 'all'
+          ? (filters.category as ProductListQuery['category'])
+          : undefined,
+      subCategory: filters.subCategory,
+      brand: filters.brand,
+      technology: filters.technology,
+      usage: filters.usage,
+      color: filters.color,
+      inStock: filters.inStock,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sort: filters.sort,
       page,
       perPage,
     }
@@ -61,13 +74,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitResponse = checkMutationRateLimit(req, 'product-create', 20, 60_000)
+    const rateLimitResponse = await checkMutationRateLimit(req, 'product-create', 20, 60_000)
     if (rateLimitResponse) return rateLimitResponse
 
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response
 
-    const body = await req.json()
+    const body = parseWithSchema(productCreateSchema, await parseJsonBody(req))
     const product = await productsService.create(body, guard.admin.id)
     return NextResponse.json(product, { status: 201 })
   } catch (err) {

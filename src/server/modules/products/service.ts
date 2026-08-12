@@ -1,6 +1,7 @@
 import 'server-only'
 import { productsRepository, type CreateProductData, type UpdateProductData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { ProductEvents } from '@/server/shared/event-types'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
 import { NotFoundError } from '@/server/shared/errors'
 import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
@@ -74,7 +75,7 @@ export const productsService = {
 
   async create(input: unknown, actorId: string) {
     const product = await productsRepository.create(input as CreateProductData)
-    await eventBus.publish('product.created', { productId: product.id, actorId })
+    await eventBus.publish(ProductEvents.created, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
     await cacheInvalidateByPrefix('products:list')
@@ -84,7 +85,7 @@ export const productsService = {
 
   async update(id: string, input: unknown, actorId: string) {
     const product = await productsRepository.update(id, input as UpdateProductData)
-    await eventBus.publish('product.updated', { productId: product.id, actorId })
+    await eventBus.publish(ProductEvents.updated, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
     await cacheInvalidateByPrefix('products:list')
@@ -94,7 +95,7 @@ export const productsService = {
 
   async delete(id: string, actorId: string) {
     await productsRepository.delete(id)
-    await eventBus.publish('product.deleted', { productId: id, actorId })
+    await eventBus.publish(ProductEvents.deleted, { productId: id, actorId })
 
     // Invalidate cache لیست محصولات
     await cacheInvalidateByPrefix('products:list')

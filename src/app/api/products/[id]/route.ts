@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
 import { handleServiceError } from '../_utils'
 import { requirePermission } from '@/lib/auth/server/require-role'
+import { productUpdateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!guard.ok) return guard.response
 
     const { id } = await params
-    const body = await req.json()
+    const body = parseWithSchema(productUpdateSchema, await parseJsonBody(req))
     const product = await productsService.update(id, body, guard.admin.id)
     return NextResponse.json(product)
   } catch (err) {

@@ -3,6 +3,7 @@ import 'server-only'
 import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { MarketingEvents } from '@/server/shared/event-types'
 import { CouponValidationError } from '@/server/shared/errors'
 
 // Re-export برای backward compatibility
@@ -11,7 +12,7 @@ export { CouponValidationError }
 export const marketingService = {
   async createCoupon(data: Parameters<typeof marketingRepository.createCoupon>[0]) {
     const coupon = await marketingRepository.createCoupon(data)
-    await eventBus.publish('coupon.created', { couponId: coupon.id, code: coupon.code })
+    await eventBus.publish(MarketingEvents.couponCreated, { couponId: coupon.id, code: coupon.code })
     return coupon
   },
 
@@ -126,7 +127,7 @@ export const marketingService = {
       // outbox برای سازگاری با dispatcher (اختیاری — eventBus هم publish می‌کند)
       await tx.outboxEvent.create({
         data: {
-          type: 'coupon.applied',
+          type: MarketingEvents.couponApplied,
           payload: {
             couponId: result.coupon.id,
             code: result.coupon.code,
@@ -139,7 +140,7 @@ export const marketingService = {
       })
     })
 
-    await eventBus.publish('coupon.applied', {
+    await eventBus.publish(MarketingEvents.couponApplied, {
       couponId: result.coupon.id,
       code: result.coupon.code,
       orderId,
@@ -158,7 +159,7 @@ export const marketingService = {
 
   async createCampaign(data: Parameters<typeof marketingRepository.createCampaign>[0]) {
     const campaign = await marketingRepository.createCampaign(data)
-    await eventBus.publish('campaign.created', { campaignId: campaign.id, name: campaign.name })
+    await eventBus.publish(MarketingEvents.campaignCreated, { campaignId: campaign.id, name: campaign.name })
     return campaign
   },
 

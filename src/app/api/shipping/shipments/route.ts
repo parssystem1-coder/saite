@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { shippingService } from '@/server/modules/shipping/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError, parseLimit } from '@/server/shared/http-utils'
+import { shipmentCreateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
     const guard = await requirePermission('orders:write')
     if (!guard.ok) return guard.response
 
-    const body = await req.json()
+    const body = parseWithSchema(shipmentCreateSchema, await parseJsonBody(req))
     const shipment = await shippingService.createShipment(body)
     return NextResponse.json(shipment, { status: 201 })
   } catch (err) {

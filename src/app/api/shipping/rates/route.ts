@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { shippingService } from '@/server/modules/shipping/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError } from '@/server/shared/http-utils'
+import { shippingRateCreateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     const guard = await requirePermission('settings:write')
     if (!guard.ok) return guard.response
 
-    const body = await req.json()
+    const body = parseWithSchema(shippingRateCreateSchema, await parseJsonBody(req))
     const rate = await shippingService.createShippingRate(body)
     return NextResponse.json(rate, { status: 201 })
   } catch (err) {

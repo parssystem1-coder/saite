@@ -1,14 +1,20 @@
 import 'server-only'
+import { randomUUID } from 'crypto'
 import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
+import { FinanceEvents } from '@/server/shared/event-types'
 import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
 
+/**
+ * شمارهٔ فاکتور با entropy بالا — جلوگیری از برخورد در ستون @unique.
+ * فرمت: INV-YYYYMMDD-<12hex> — UUID بخشی برای فضای نمونهٔ بسیار بزرگ.
+ */
 function generateInvoiceNumber(): string {
   const now = new Date()
   const y = now.getFullYear()
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
-  const rand = Math.floor(1000 + Math.random() * 9000)
+  const rand = randomUUID().replace(/-/g, '').slice(0, 12)
   return `INV-${y}${m}${d}-${rand}`
 }
 
@@ -38,7 +44,7 @@ export const financeService = {
       dueDate: new Date(Date.now() + INVOICE_DUE_DAYS * 24 * 60 * 60 * 1000),
     })
 
-    await eventBus.publish('invoice.created', {
+    await eventBus.publish(FinanceEvents.created, {
       invoiceId: invoice.id,
       invoiceNumber: invoice.invoiceNumber,
       orderId: order.id,
@@ -75,7 +81,7 @@ export const financeService = {
       })
     }
 
-    await eventBus.publish('invoice.paid', {
+    await eventBus.publish(FinanceEvents.paid, {
       invoiceId,
       orderId: invoice.orderId,
       amount: invoice.totalAmount,
@@ -98,7 +104,7 @@ export const financeService = {
       metadata: { reason },
     })
 
-    await eventBus.publish('invoice.refunded', {
+    await eventBus.publish(FinanceEvents.refunded, {
       invoiceId,
       orderId: invoice.orderId,
       amount,

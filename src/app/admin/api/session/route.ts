@@ -132,7 +132,7 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
     مهاجم می‌توانست با بدنه‌های غول‌پیکر سرور را مشغول کند بدون
     اینکه شمارنده‌ای بالا برود.
   */
-  const limit = consumeRateLimit(
+  const limit = await consumeRateLimit(
     rateLimitKey,
     SERVER_RATE_LIMIT.maxAttempts,
     SERVER_RATE_LIMIT.windowMs
@@ -173,7 +173,7 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
     سطل دوم: این حساب، از هر جای دنیا. مهاجم با botnet سطل IP را
     دور می‌زند اما این یکی مشترک است.
   */
-  const accountLimit = consumeRateLimit(
+  const accountLimit = await consumeRateLimit(
     usernameKey,
     USERNAME_RATE_LIMIT.maxAttempts,
     USERNAME_RATE_LIMIT.windowMs
@@ -237,8 +237,8 @@ export async function POST(request: Request): Promise<NextResponse<AdminLoginRes
   }
 
   // ورود موفق: هر دو شمارنده آزاد می‌شوند
-  resetRateLimit(rateLimitKey)
-  resetRateLimit(usernameKey)
+  await resetRateLimit(rateLimitKey)
+  await resetRateLimit(usernameKey)
   // نقش از ADMIN_PROFILE می‌آید که خودش از ADMIN_ROLE env خوانده شده است.
   await createAdminSession(ADMIN_PROFILE.id, ADMIN_PROFILE.role)
   recordAuditEvent({ event: 'login-success', ip: clientKey, username, userAgent })

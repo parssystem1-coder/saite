@@ -35,90 +35,85 @@ afterEach(() => {
 })
 
 describe('نسخهٔ حافظه‌ای', () => {
-  it('ذخیره و بازیابی می‌کند', () => {
+  it('ذخیره و بازیابی می‌کند', async () => {
     const store = createMemoryStore()
-    store.set('ip-1', { count: 3, resetAt: Date.now() + 60_000 })
-    expect(store.get('ip-1')?.count).toBe(3)
+    await store.set('ip-1', { count: 3, resetAt: Date.now() + 60_000 })
+    expect((await store.get('ip-1'))?.count).toBe(3)
   })
 
-  it('حذف کار می‌کند', () => {
+  it('حذف کار می‌کند', async () => {
     const store = createMemoryStore()
-    store.set('ip-1', { count: 1, resetAt: Date.now() + 60_000 })
-    store.delete('ip-1')
-    expect(store.get('ip-1')).toBeUndefined()
+    await store.set('ip-1', { count: 1, resetAt: Date.now() + 60_000 })
+    await store.delete('ip-1')
+    expect(await store.get('ip-1')).toBeUndefined()
   })
 
-  it('sweep منقضی‌ها را پاک می‌کند', () => {
+  it('sweep منقضی‌ها را پاک می‌کند', async () => {
     const store = createMemoryStore()
     const now = Date.now()
-    store.set('old', { count: 5, resetAt: now - 1000 })
-    store.set('fresh', { count: 2, resetAt: now + 60_000 })
+    await store.set('old', { count: 5, resetAt: now - 1000 })
+    await store.set('fresh', { count: 2, resetAt: now + 60_000 })
 
-    store.sweep(now)
+    await store.sweep(now)
 
-    expect(store.get('old')).toBeUndefined()
-    expect(store.get('fresh')?.count).toBe(2)
+    expect(await store.get('old')).toBeUndefined()
+    expect((await store.get('fresh'))?.count).toBe(2)
   })
 })
 
 describe('🔑 نسخهٔ فایل‌محور — پایداری', () => {
-  it('پس از ساخت دوباره، مقدار باقی می‌ماند', () => {
-    /*
-      این همان سناریوی ری‌استارت سرور است: نمونهٔ جدید باید
-      شمارندهٔ قبلی را ببیند.
-    */
+  it('پس از ساخت دوباره، مقدار باقی می‌ماند', async () => {
     const first = createFileStore(filePath)
-    first.set('attacker-ip', { count: 10, resetAt: Date.now() + 900_000 })
+    await first.set('attacker-ip', { count: 10, resetAt: Date.now() + 900_000 })
 
     const second = createFileStore(filePath)
-    expect(second.get('attacker-ip')?.count).toBe(10)
+    expect((await second.get('attacker-ip'))?.count).toBe(10)
   })
 
-  it('🔑 قفل پس از ری‌استارت باقی می‌ماند', () => {
+  it('🔑 قفل پس از ری‌استارت باقی می‌ماند', async () => {
     const before = createFileStore(filePath)
-    before.set('blocked', { count: 99, resetAt: Date.now() + 900_000 })
+    await before.set('blocked', { count: 99, resetAt: Date.now() + 900_000 })
 
     // شبیه‌سازی ری‌استارت: نمونهٔ کاملاً تازه
     const after = createFileStore(filePath)
-    expect(after.get('blocked')?.count).toBe(99)
+    expect((await after.get('blocked'))?.count).toBe(99)
   })
 
-  it('رکورد منقضی پس از بارگذاری نادیده گرفته می‌شود', () => {
+  it('رکورد منقضی پس از بارگذاری نادیده گرفته می‌شود', async () => {
     const first = createFileStore(filePath)
-    first.set('expired', { count: 10, resetAt: Date.now() - 1000 })
+    await first.set('expired', { count: 10, resetAt: Date.now() - 1000 })
 
     const second = createFileStore(filePath)
-    expect(second.get('expired')).toBeUndefined()
+    expect(await second.get('expired')).toBeUndefined()
   })
 
-  it('حذف روی دیسک هم اعمال می‌شود', () => {
+  it('حذف روی دیسک هم اعمال می‌شود', async () => {
     const first = createFileStore(filePath)
-    first.set('key', { count: 5, resetAt: Date.now() + 60_000 })
-    first.delete('key')
+    await first.set('key', { count: 5, resetAt: Date.now() + 60_000 })
+    await first.delete('key')
 
-    expect(createFileStore(filePath).get('key')).toBeUndefined()
+    expect(await createFileStore(filePath).get('key')).toBeUndefined()
   })
 
-  it('clear همه را پاک می‌کند', () => {
+  it('clear همه را پاک می‌کند', async () => {
     const store = createFileStore(filePath)
-    store.set('a', { count: 1, resetAt: Date.now() + 60_000 })
-    store.set('b', { count: 2, resetAt: Date.now() + 60_000 })
-    store.clear()
+    await store.set('a', { count: 1, resetAt: Date.now() + 60_000 })
+    await store.set('b', { count: 2, resetAt: Date.now() + 60_000 })
+    await store.clear()
 
-    expect(createFileStore(filePath).get('a')).toBeUndefined()
+    expect(await createFileStore(filePath).get('a')).toBeUndefined()
   })
 })
 
 describe('🔑 مقاومت در برابر خرابی', () => {
-  it('فایل خراب باعث خطا نمی‌شود', () => {
+  it('فایل خراب باعث خطا نمی‌شود', async () => {
     writeFileSync(filePath, 'this is not json at all', 'utf8')
 
     const store = createFileStore(filePath)
-    expect(() => store.get('anything')).not.toThrow()
-    expect(store.get('anything')).toBeUndefined()
+    await expect(store.get('anything')).resolves.toBeUndefined()
   })
 
-  it('رکورد بدشکل رد می‌شود', () => {
+  it('رکورد بدشکل رد می‌شود', async () => {
     writeFileSync(
       filePath,
       JSON.stringify({
@@ -130,12 +125,12 @@ describe('🔑 مقاومت در برابر خرابی', () => {
     )
 
     const store = createFileStore(filePath)
-    expect(store.get('valid')?.count).toBe(3)
-    expect(store.get('missingFields')).toBeUndefined()
-    expect(store.get('wrongTypes')).toBeUndefined()
+    expect((await store.get('valid'))?.count).toBe(3)
+    expect(await store.get('missingFields')).toBeUndefined()
+    expect(await store.get('wrongTypes')).toBeUndefined()
   })
 
-  it('🔑 مسیر غیرقابل‌نوشتن ورود را نمی‌شکند', () => {
+  it('🔑 مسیر غیرقابل‌نوشتن ورود را نمی‌شکند', async () => {
     /*
       روی بعضی محیط‌های serverless دیسک فقط-خواندنی است.
       محدودیت نرخ باید به حالت حافظه‌ای برگردد، نه اینکه
@@ -146,14 +141,14 @@ describe('🔑 مقاومت در برابر خرابی', () => {
     */
     writeFileSync(filePath, '{}', 'utf8')
     const store = createFileStore(join(filePath, 'nested', 'rate-limit.json'))
-    expect(() => store.set('k', { count: 1, resetAt: Date.now() + 1000 })).not.toThrow()
+    await expect(store.set('k', { count: 1, resetAt: Date.now() + 1000 })).resolves.toBeUndefined()
     // همچنان در حافظه کار می‌کند
-    expect(store.get('k')?.count).toBe(1)
+    expect((await store.get('k'))?.count).toBe(1)
   })
 
-  it('فایل موقت پس از نوشتن باقی نمی‌ماند', () => {
+  it('فایل موقت پس از نوشتن باقی نمی‌ماند', async () => {
     const store = createFileStore(filePath)
-    store.set('key', { count: 1, resetAt: Date.now() + 60_000 })
+    await store.set('key', { count: 1, resetAt: Date.now() + 60_000 })
 
     // نوشتن اتمیک است: temp → rename
     expect(() => readFileSync(filePath, 'utf8')).not.toThrow()

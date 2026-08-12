@@ -9,7 +9,7 @@ type Reason = (typeof reasons)[number]
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const rateLimited = checkMutationRateLimit(req, 'inventory-adjust', 30, 60_000)
+    const rateLimited = await checkMutationRateLimit(req, 'inventory-adjust', 30, 60_000)
     if (rateLimited) return rateLimited
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response

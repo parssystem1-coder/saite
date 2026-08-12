@@ -16,8 +16,8 @@ import {
  * به سقف بخورد.
  */
 
-beforeEach(() => {
-  __resetAllRateLimits()
+beforeEach(async () => {
+  await __resetAllRateLimits()
 })
 
 describe('کلید نام کاربری', () => {
@@ -40,16 +40,16 @@ describe('کلید نام کاربری', () => {
 })
 
 describe('سقف حساب', () => {
-  it('🔑 حملهٔ توزیع‌شده را می‌گیرد', () => {
+  it('🔑 حملهٔ توزیع‌شده را می‌گیرد', async () => {
     const key = getUsernameKey('admin')
     const { maxAttempts, windowMs } = USERNAME_RATE_LIMIT
 
     // هر تلاش از یک IP متفاوت می‌آید، پس سطل IP هرگز پر نمی‌شود
     for (let i = 0; i < maxAttempts; i++) {
-      expect(consumeRateLimit(key, maxAttempts, windowMs).allowed).toBe(true)
+      expect((await consumeRateLimit(key, maxAttempts, windowMs)).allowed).toBe(true)
     }
 
-    expect(consumeRateLimit(key, maxAttempts, windowMs).allowed).toBe(false)
+    expect((await consumeRateLimit(key, maxAttempts, windowMs)).allowed).toBe(false)
   })
 
   it('سقف حساب از سقف IP سخاوتمندانه‌تر است', () => {
@@ -58,21 +58,23 @@ describe('سقف حساب', () => {
     expect(USERNAME_RATE_LIMIT.windowMs).toBeGreaterThanOrEqual(60 * 60_000)
   })
 
-  it('قفل یک حساب، حساب دیگر را قفل نمی‌کند', () => {
+  it('قفل یک حساب، حساب دیگر را قفل نمی‌کند', async () => {
     const admin = getUsernameKey('admin')
     for (let i = 0; i <= USERNAME_RATE_LIMIT.maxAttempts; i++) {
-      consumeRateLimit(admin, USERNAME_RATE_LIMIT.maxAttempts, USERNAME_RATE_LIMIT.windowMs)
+      await consumeRateLimit(admin, USERNAME_RATE_LIMIT.maxAttempts, USERNAME_RATE_LIMIT.windowMs)
     }
 
     expect(
-      consumeRateLimit(admin, USERNAME_RATE_LIMIT.maxAttempts, USERNAME_RATE_LIMIT.windowMs)
+      (await consumeRateLimit(admin, USERNAME_RATE_LIMIT.maxAttempts, USERNAME_RATE_LIMIT.windowMs))
         .allowed
     ).toBe(false)
     expect(
-      consumeRateLimit(
-        getUsernameKey('other'),
-        USERNAME_RATE_LIMIT.maxAttempts,
-        USERNAME_RATE_LIMIT.windowMs
+      (
+        await consumeRateLimit(
+          getUsernameKey('other'),
+          USERNAME_RATE_LIMIT.maxAttempts,
+          USERNAME_RATE_LIMIT.windowMs
+        )
       ).allowed
     ).toBe(true)
   })

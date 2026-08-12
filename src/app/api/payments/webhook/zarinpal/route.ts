@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/server/shared/db'
-import { zarinpalProvider } from '@/server/payments/providers/zarinpal'
+import { resolvePaymentProviderByCode } from '@/server/payments/gateway'
 import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
 import { logger } from '@/server/shared/logger'
@@ -53,26 +53,10 @@ export async function GET(req: NextRequest) {
 
   try {
     // ── Layer 3: Verify with Zarinpal API ──
-    const verifyResult = await zarinpalProvider.verifyPayment(
-      {
-        id: 'zarinpal',
-        name: 'Zarinpal',
-        code: 'zarinpal',
-        environment: process.env.PAYMENT_SANDBOX === 'true' ? 'sandbox' : 'production',
-        active: true,
-        priority: 1,
-        merchantId: process.env.ZARINPAL_MERCHANT_ID || '',
-        callbackUrl: '',
-        supportsRefund: false,
-        supportsPartialRefund: false,
-        supportsVerify: true,
-        currency: 'IRR',
-        minAmount: 1000,
-        timeoutSeconds: 30,
-        healthStatus: 'unknown',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
+    // resolve از گیتوی → fail-closed: بدون credential زارین‌پال، verify انجام نمی‌شود
+    const { adapter: verifyAdapter, provider: verifyProvider } = resolvePaymentProviderByCode('zarinpal')
+    const verifyResult = await verifyAdapter.verifyPayment(
+      verifyProvider,
       authority,
       existing.amount // ← Amount از DB، نه از callback
     )

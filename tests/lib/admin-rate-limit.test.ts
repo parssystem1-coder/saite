@@ -15,65 +15,65 @@ import {
  * حدس خودکار رمز را می‌گیرد.
  */
 
-beforeEach(() => {
-  __resetAllRateLimits()
+beforeEach(async () => {
+  await __resetAllRateLimits()
   vi.useRealTimers()
 })
 
 describe('شمارش تلاش', () => {
-  it('تا سقف مجاز اجازه می‌دهد', () => {
+  it('تا سقف مجاز اجازه می‌دهد', async () => {
     for (let i = 0; i < 5; i++) {
-      expect(consumeRateLimit('ip-1', 5, 60_000).allowed).toBe(true)
+      expect((await consumeRateLimit('ip-1', 5, 60_000)).allowed).toBe(true)
     }
   })
 
-  it('🔑 پس از سقف، مسدود می‌کند', () => {
-    for (let i = 0; i < 5; i++) consumeRateLimit('ip-1', 5, 60_000)
+  it('🔑 پس از سقف، مسدود می‌کند', async () => {
+    for (let i = 0; i < 5; i++) await consumeRateLimit('ip-1', 5, 60_000)
 
-    const result = consumeRateLimit('ip-1', 5, 60_000)
+    const result = await consumeRateLimit('ip-1', 5, 60_000)
     expect(result.allowed).toBe(false)
     expect(result.retryAfterSeconds).toBeGreaterThan(0)
   })
 
-  it('تلاش‌های باقی‌مانده درست شمرده می‌شود', () => {
-    expect(consumeRateLimit('ip-1', 3, 60_000).remaining).toBe(2)
-    expect(consumeRateLimit('ip-1', 3, 60_000).remaining).toBe(1)
-    expect(consumeRateLimit('ip-1', 3, 60_000).remaining).toBe(0)
+  it('تلاش‌های باقی‌مانده درست شمرده می‌شود', async () => {
+    expect((await consumeRateLimit('ip-1', 3, 60_000)).remaining).toBe(2)
+    expect((await consumeRateLimit('ip-1', 3, 60_000)).remaining).toBe(1)
+    expect((await consumeRateLimit('ip-1', 3, 60_000)).remaining).toBe(0)
   })
 
-  it('🔑 هر IP سطل جداگانه دارد', () => {
-    for (let i = 0; i < 5; i++) consumeRateLimit('ip-1', 5, 60_000)
+  it('🔑 هر IP سطل جداگانه دارد', async () => {
+    for (let i = 0; i < 5; i++) await consumeRateLimit('ip-1', 5, 60_000)
 
     // مسدود شدن یک کاربر نباید بقیه را قفل کند
-    expect(consumeRateLimit('ip-1', 5, 60_000).allowed).toBe(false)
-    expect(consumeRateLimit('ip-2', 5, 60_000).allowed).toBe(true)
+    expect((await consumeRateLimit('ip-1', 5, 60_000)).allowed).toBe(false)
+    expect((await consumeRateLimit('ip-2', 5, 60_000)).allowed).toBe(true)
   })
 })
 
 describe('پنجرهٔ زمانی', () => {
-  it('پس از پایان پنجره دوباره باز می‌شود', () => {
-    for (let i = 0; i < 5; i++) consumeRateLimit('ip-1', 5, 60_000)
-    expect(consumeRateLimit('ip-1', 5, 60_000).allowed).toBe(false)
+  it('پس از پایان پنجره دوباره باز می‌شود', async () => {
+    for (let i = 0; i < 5; i++) await consumeRateLimit('ip-1', 5, 60_000)
+    expect((await consumeRateLimit('ip-1', 5, 60_000)).allowed).toBe(false)
 
     vi.useFakeTimers()
     vi.setSystemTime(Date.now() + 61_000)
 
-    expect(consumeRateLimit('ip-1', 5, 60_000).allowed).toBe(true)
+    expect((await consumeRateLimit('ip-1', 5, 60_000)).allowed).toBe(true)
     vi.useRealTimers()
   })
 })
 
 describe('بازنشانی پس از ورود موفق', () => {
-  it('🔑 ورود موفق شمارنده را آزاد می‌کند', () => {
-    for (let i = 0; i < 4; i++) consumeRateLimit('ip-1', 5, 60_000)
+  it('🔑 ورود موفق شمارنده را آزاد می‌کند', async () => {
+    for (let i = 0; i < 4; i++) await consumeRateLimit('ip-1', 5, 60_000)
 
     /*
       سناریو: کاربر واقعی چهار بار رمز را اشتباه زده، بار پنجم
       درست وارد می‌شود. نباید دفعهٔ بعد با یک اشتباه قفل شود.
     */
-    resetRateLimit('ip-1')
+    await resetRateLimit('ip-1')
 
-    expect(consumeRateLimit('ip-1', 5, 60_000).remaining).toBe(4)
+    expect((await consumeRateLimit('ip-1', 5, 60_000)).remaining).toBe(4)
   })
 })
 
@@ -89,8 +89,6 @@ describe('استخراج شناسهٔ کلاینت', () => {
   })
 
   it('بدون هدر، کلید ثابت می‌دهد — نه undefined', () => {
-    // اگر undefined برمی‌گشت، همهٔ درخواست‌ها یک سطل مشترک
-    // نامعتبر می‌گرفتند و rate limit بی‌اثر می‌شد
     expect(getClientKey(new Headers())).toBe('unknown-client')
   })
 

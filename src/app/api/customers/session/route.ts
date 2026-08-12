@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const clientKey = getClientKey(req.headers)
   const ipKey = `customer-login:${clientKey}`
 
-  const ipLimit = consumeRateLimit(ipKey, CUSTOMER_IP_LIMIT.maxAttempts, CUSTOMER_IP_LIMIT.windowMs)
+  const ipLimit = await consumeRateLimit(ipKey, CUSTOMER_IP_LIMIT.maxAttempts, CUSTOMER_IP_LIMIT.windowMs)
   if (!ipLimit.allowed) {
     const res = NextResponse.json({ error: 'درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.' }, { status: 429 })
     res.headers.set('Retry-After', String(ipLimit.retryAfterSeconds))
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   const normalizedEmail = email.trim().toLowerCase()
   const emailKey = getUsernameKey(normalizedEmail)
 
-  const emailLimit = consumeRateLimit(emailKey, CUSTOMER_EMAIL_LIMIT.maxAttempts, CUSTOMER_EMAIL_LIMIT.windowMs)
+  const emailLimit = await consumeRateLimit(emailKey, CUSTOMER_EMAIL_LIMIT.maxAttempts, CUSTOMER_EMAIL_LIMIT.windowMs)
   if (!emailLimit.allowed) {
     await delay(FAILURE_DELAY_MS)
     const res = NextResponse.json({ error: 'درخواست‌های شما بیش از حد مجاز است. لطفاً بعداً تلاش کنید.' }, { status: 429 })

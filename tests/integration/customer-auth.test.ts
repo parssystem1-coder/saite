@@ -35,38 +35,38 @@ describe('POST /api/customers/session — Authentication Security', () => {
     passwordHash: 'hashed-password',
   }
 
-  it('Q1-6a: Rate limit IP — بیش از 10 تلاش در 15 دقیقه → 429', () => {
-    vi.mocked(consumeRateLimit).mockReturnValue({
+  it('Q1-6a: Rate limit IP — بیش از 10 تلاش در 15 دقیقه → 429', async () => {
+    vi.mocked(consumeRateLimit).mockResolvedValue({
       allowed: false,
       remaining: 0,
       retryAfterSeconds: 300,
     })
 
-    const limit = consumeRateLimit('ip:127.0.0.1', 10, 15 * 60 * 1000)
+    const limit = await consumeRateLimit('ip:127.0.0.1', 10, 15 * 60 * 1000)
     expect(limit.allowed).toBe(false)
     expect(limit.retryAfterSeconds).toBe(300)
   })
 
-  it('Q1-6b: Rate limit IP — تلاش مجاز', () => {
-    vi.mocked(consumeRateLimit).mockReturnValue({
+  it('Q1-6b: Rate limit IP — تلاش مجاز', async () => {
+    vi.mocked(consumeRateLimit).mockResolvedValue({
       allowed: true,
       remaining: 5,
       retryAfterSeconds: 0,
     })
 
-    const limit = consumeRateLimit('ip:127.0.0.1', 10, 15 * 60 * 1000)
+    const limit = await consumeRateLimit('ip:127.0.0.1', 10, 15 * 60 * 1000)
     expect(limit.allowed).toBe(true)
     expect(limit.remaining).toBe(5)
   })
 
-  it('Q1-6c: Rate limit Email — بیش از 30 تلاش در 1 ساعت → 429', () => {
-    vi.mocked(consumeRateLimit).mockReturnValue({
+  it('Q1-6c: Rate limit Email — بیش از 30 تلاش در 1 ساعت → 429', async () => {
+    vi.mocked(consumeRateLimit).mockResolvedValue({
       allowed: false,
       remaining: 0,
       retryAfterSeconds: 1800,
     })
 
-    const limit = consumeRateLimit('user:test@example.com', 30, 60 * 60 * 1000)
+    const limit = await consumeRateLimit('user:test@example.com', 30, 60 * 60 * 1000)
     expect(limit.allowed).toBe(false)
     expect(limit.retryAfterSeconds).toBe(1800)
   })

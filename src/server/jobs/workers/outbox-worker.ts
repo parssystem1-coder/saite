@@ -5,6 +5,76 @@ import { redis } from '@/server/shared/redis'
 import { prisma } from '@/server/shared/db'
 import { financeService } from '@/server/modules/finance/service'
 import { commsService } from '@/server/communications/service'
+import {
+  OrderEvents,
+  FinanceEvents,
+  ShippingEvents,
+} from '@/server/shared/event-types'
+
+/**
+ * زنجیرهٔ مالی/اطلاع‌رسانی پس از پرداخت موفق سفارش.
+ *
+ * فقط یک منبع واحد — هم از `order.status_changed (to=paid)` و هم از
+ * `order.paid` (legacy) فراخوانی می‌شود تا منطق تکراری نماند:
+ *   ۱. یافتن referenceId از PaymentIntent موفق
+ *   ۲. صدور فاکتور (idempotent)
+ *   ۳. علامت‌گذاری فاکتور به‌عنوان پرداخت‌شده + ثبت Transaction (idempotent)
+ *   ۴. ایمیل تأیید سفارش
+ *
+ * هر مرحله جدا try/catch دارد تا خطای یک مرحله، مراحل دیگر را نسوزاند
+ * و کل job را (و در نتیجه retry دوبارهٔ همهٔ مراحل) نکشد.
+ */
+async function handlePaidOrder(orderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  })
+  if (!order) {
+    logger.warn(`[OutboxWorker] order ${orderId} not found`)
+    return
+  }
+
+  // ── یافتن referenceId از PaymentIntent موفق ──
+  let referenceId: string | undefined
+  try {
+    const paymentIntent = await prisma.paymentIntent.findFirst({
+      where: { orderId, status: 'succeeded' },
+      orderBy: { createdAt: 'desc' },
+      select: { transactionId: true },
+    })
+    referenceId = paymentIntent?.transactionId ?? undefined
+  } catch (e) {
+    logger.error({ err: e, orderId }, '[OutboxWorker] findPaymentIntent failed')
+  }
+
+  // ── صدور فاکتور + علامت‌گذاری پرداخت‌شده (هر دو idempotent) ──
+  try {
+    const invoice = await financeService.createInvoiceFromOrder({
+      id: order.id,
+      customerId: order.customerId,
+      totalAmount: order.totalAmount,
+      currency: order.currency,
+    })
+    await financeService.markInvoicePaid(invoice.id, referenceId)
+    logger.info({ orderId, invoiceId: invoice.id, referenceId }, '[OutboxWorker] invoice created+paid')
+  } catch (e) {
+    logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice/markPaid failed')
+  }
+
+  // ── ایمیل تأیید — اگر مشتری ایمیل دارد ──
+  try {
+    const customer = await prisma.customer.findUnique({ where: { id: order.customerId } })
+    if (customer?.email) {
+      await commsService.sendOrderConfirmation({
+        to: customer.email,
+        orderId: order.id,
+        totalAmount: order.totalAmount,
+      })
+    }
+  } catch (e) {
+    logger.error({ err: e, orderId }, '[OutboxWorker] sendOrderConfirmation failed')
+  }
+}
 
 export const outboxWorker = new Worker(
   'outbox',
@@ -17,114 +87,31 @@ export const outboxWorker = new Worker(
 
     try {
       switch (event.type) {
-        case 'order.created': {
+        case OrderEvents.created: {
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] order.created order=${orderId}`)
           break
         }
-        case 'order.status_changed': {
+        case OrderEvents.statusChanged: {
           const orderId = payload.orderId as string
           const to = payload.to as string
           const from = payload.from as string
           logger.info(`[OutboxWorker] order.status_changed order=${orderId} ${from}→${to}`)
 
-          // فقط گذار به paid زنجیره مالی/انبار/ایمیل را می‌سازد
+          // فقط گذار به paid زنجیرهٔ مالی/ایمیل را می‌سازد
           if (to === 'paid') {
-            const order = await prisma.order.findUnique({
-              where: { id: orderId },
-              include: { items: true },
-            })
-            if (!order) {
-              logger.warn(`[OutboxWorker] order ${orderId} not found for status_changed`)
-              break
-            }
-
-            // ── یافتن referenceId از PaymentIntent موفق ──
-            let referenceId: string | undefined
-            try {
-              const paymentIntent = await prisma.paymentIntent.findFirst({
-                where: { orderId, status: 'succeeded' },
-                orderBy: { createdAt: 'desc' },
-                select: { transactionId: true },
-              })
-              referenceId = paymentIntent?.transactionId ?? undefined
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] findPaymentIntent failed')
-            }
-
-            // ۱) صدور فاکتور (idempotent — اگر قبلاً ساخته شده باشد برمی‌گردد)
-            try {
-              const invoice = await financeService.createInvoiceFromOrder({
-                id: order.id,
-                customerId: order.customerId,
-                totalAmount: order.totalAmount,
-                currency: order.currency,
-              })
-              logger.info({ orderId, invoiceId: invoice.id }, '[OutboxWorker] invoice created')
-
-              // ۱.۱) علامت‌گذاری فاکتور به‌عنوان پرداخت‌شده + ثبت Transaction
-              // idempotent: اگر فاکتور قبلاً paid باشد، بدون تغییر برمی‌گردد
-              await financeService.markInvoicePaid(invoice.id, referenceId)
-              logger.info({ orderId, invoiceId: invoice.id, referenceId }, '[OutboxWorker] invoice marked paid')
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice/markPaid failed')
-            }
-
-            // موجودی هنگام ساخت سفارش به‌صورت اتمیک رزرو و هنگام paid در
-            // همان transaction گذار سفارش confirm شده است؛ worker نباید دوباره رزرو کند.
-            // ۳) ایمیل تأیید — اگر مشتری ایمیل دارد
-            try {
-              const customer = await prisma.customer.findUnique({ where: { id: order.customerId } })
-              if (customer?.email) {
-                await commsService.sendOrderConfirmation({
-                  to: customer.email,
-                  orderId: order.id,
-                  totalAmount: order.totalAmount,
-                })
-              }
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] sendOrderConfirmation failed')
-            }
+            await handlePaidOrder(orderId)
           }
           break
         }
-        case 'order.paid': {
+        case OrderEvents.paid: {
           // سازگاری عقب‌رو — همان منطق order.status_changed با to=paid
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] order.paid (legacy) order=${orderId}`)
-          const order = await prisma.order.findUnique({
-            where: { id: orderId },
-            include: { items: true },
-          })
-          if (order) {
-            let referenceId: string | undefined
-            try {
-              const paymentIntent = await prisma.paymentIntent.findFirst({
-                where: { orderId, status: 'succeeded' },
-                orderBy: { createdAt: 'desc' },
-                select: { transactionId: true },
-              })
-              referenceId = paymentIntent?.transactionId ?? undefined
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] findPaymentIntent (legacy) failed')
-            }
-
-            try {
-              const invoice = await financeService.createInvoiceFromOrder({
-                id: order.id,
-                customerId: order.customerId,
-                totalAmount: order.totalAmount,
-                currency: order.currency,
-              })
-              await financeService.markInvoicePaid(invoice.id, referenceId)
-              logger.info({ orderId, invoiceId: invoice.id }, '[OutboxWorker] invoice created+paid (legacy)')
-            } catch (e) {
-              logger.error({ err: e, orderId }, '[OutboxWorker] createInvoice (legacy) failed')
-            }
-          }
+          await handlePaidOrder(orderId)
           break
         }
-        case 'invoice.created': {
+        case FinanceEvents.created: {
           const orderId = payload.orderId as string
           const amount = payload.amount as number
           const customerId = payload.customerId as string
@@ -146,12 +133,12 @@ export const outboxWorker = new Worker(
           }
           break
         }
-        case 'invoice.paid': {
+        case FinanceEvents.paid: {
           const orderId = payload.orderId as string
           logger.info(`[OutboxWorker] invoice.paid order=${orderId}`)
           break
         }
-        case 'shipment.status_changed': {
+        case ShippingEvents.statusChanged: {
           const orderId = payload.orderId as string
           const status = payload.status as string
           logger.info(

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ordersService } from '@/server/modules/orders/service'
 import { getCustomerSession } from '@/server/auth/customer-session'
 import { handleServiceError, checkMutationRateLimit } from '@/server/shared/http-utils'
+import { createOrderSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,13 +23,13 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Rate-limit برای جلوگیری از abuse
-    const rateLimitResponse = checkMutationRateLimit(req, 'order-create', 10, 60_000)
+    const rateLimitResponse = await checkMutationRateLimit(req, 'order-create', 10, 60_000)
     if (rateLimitResponse) return rateLimitResponse
 
     const session = await getCustomerSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 })
 
-    const body = await req.json()
+    const body = parseWithSchema(createOrderSchema, await parseJsonBody(req))
     const order = await ordersService.create({
       customerId: session.sub,
       items: body.items,

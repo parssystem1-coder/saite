@@ -113,14 +113,14 @@ export function parseLimit(
  *
  * @returns null اگر مجاز است، یا NextResponse با 429 اگر محدود شده
  */
-export function checkMutationRateLimit(
+export async function checkMutationRateLimit(
   req: NextRequest,
   prefix: string,
   maxAttempts = 30,
   windowMs = 60_000
-): NextResponse | null {
+): Promise<NextResponse | null> {
   const clientKey = getClientKey(req.headers)
-  const limit = consumeRateLimit(`mutation:${prefix}:${clientKey}`, maxAttempts, windowMs)
+  const limit = await consumeRateLimit(`mutation:${prefix}:${clientKey}`, maxAttempts, windowMs)
 
   if (!limit.allowed) {
     logger.warn({ prefix, clientKey }, 'Mutation rate limit exceeded')
