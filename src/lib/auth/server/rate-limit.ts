@@ -3,55 +3,54 @@ import 'server-only'
 import {
   createFileStore,
   createMemoryStore,
+  createResilientRedisStore,
   DEFAULT_RATE_LIMIT_PATH,
   type RateLimitStore,
 } from '@/lib/auth/server/rate-limit-store'
+import { redis } from '@/server/shared/redis'
 
 /**
  * محدودیت نرخ ورود — سمت سرور.
  *
  * ── تفاوت با `useLoginThrottle` ───────────────────────────────
  * آن hook در حافظهٔ کامپوننت است: با رفرش صفحه پاک می‌شود و با
- * curl اصلاً وجود ندارد. فقط تجربهٔ کاربر را بهتر می‌کند.
+ * curl اصلاً وجود ندارد. این ماژول واقعاً محدود می‌کند.
  *
- * این ماژول واقعاً محدود می‌کند، چون مهاجم به وضعیت سرور دسترسی
- * ندارد.
+ * ── انتخاب ذخیره‌گاه ──────────────────────────────────────────
+ *   NODE_ENV=test                        → حافظه‌ای (سریع، ایزوله)
+ *   RATE_LIMIT_STORE=redis (+ Redis)     → Redis (مشترک بین instance ها)
+ *   پیش‌فرض                              → فایل (پایدار روی یک instance)
  *
- * ══════════════════════════════════════════════════════════════
- *  🆕 چرا فقط محدودیت بر اساس IP کافی نبود
- * ══════════════════════════════════════════════════════════════
- * سقف ۱۰ تلاش در ۱۵ دقیقه **به ازای هر IP** است. مهاجمی که یک
- * botnet یا حتی یک لیست پروکسی ارزان دارد، از هزار IP هزار بار
- * تلاش می‌کند و هیچ‌کدام به سقف نمی‌خورند. حساب مدیر یکی است، اما
- * سطل‌ها هزارتا.
- *
- * حالا دو سطل موازی داریم:
- *
- *   sail per-IP        →  ۱۰ تلاش / ۱۵ دقیقه   (جلوی یک مهاجم)
- *   sail per-username  →  ۳۰ تلاش / ۱ ساعت     (جلوی حملهٔ توزیع‌شده)
- *
- * سطل نام کاربری سخاوتمندانه‌تر است چون یک مدیر واقعی که رمزش را
- * فراموش کرده نباید با ۱۰ تلاش برای یک ساعت قفل شود. عدد طوری
- * انتخاب شده که برای انسان بی‌آزار و برای اسکریپت کشنده باشد.
- *
- * ⚠️ اثر جانبی پذیرفته‌شده: مهاجم می‌تواند با ۳۰ تلاش عمدی، مدیر
- *    واقعی را یک ساعت قفل کند (denial of service روی حساب). این
- *    را آگاهانه پذیرفته‌ایم چون بدیلش — نداشتن سقف — بدتر است.
- *    راه فرار مدیر: مسیر `/admin/recover`.
+ * اگر Redis در دسترس نباشد، به‌صورت fail-open به فایل/حافظه
+ * برمی‌گردیم تا محدودیت نرخ ورود را کاملاً نشکند.
  */
 
-const store: RateLimitStore =
-  process.env.NODE_ENV === 'test'
-    ? createMemoryStore()
-    : createFileStore(DEFAULT_RATE_LIMIT_PATH)
+function pickStore(): { store: RateLimitStore; reset: () => Promise<void> } {
+  if (process.env.NODE_ENV === 'test') {
+    const store = createMemoryStore()
+    return { store, reset: async () => store.clear() }
+  }
+
+  if (process.env.RATE_LIMIT_STORE === 'redis') {
+    // fail-open: اگر Redis پایین باشد به حافظهٔ درون-process برمی‌گردد
+    const store = createResilientRedisStore(redis)
+    return { store, reset: async () => store.clear() }
+  }
+
+  const store = createFileStore(DEFAULT_RATE_LIMIT_PATH)
+  return { store, reset: async () => store.clear() }
+}
+
+const { store, reset } = pickStore()
 
 /** هر چند عملیات یک‌بار سطل‌های منقضی پاک شوند */
 const SWEEP_INTERVAL = 64
 let operationCount = 0
 
-function maybeSweep(now: number): void {
+function maybeSweep(now: number): Promise<void> {
   operationCount += 1
-  if (operationCount % SWEEP_INTERVAL === 0) store.sweep(now)
+  if (operationCount % SWEEP_INTERVAL === 0) return store.sweep(now)
+  return Promise.resolve()
 }
 
 /** سقف تلاش برای یک حساب، مستقل از اینکه از کجا می‌آید */
@@ -76,23 +75,23 @@ export interface RateLimitResult {
  * @param maxAttempts سقف تلاش در پنجره
  * @param windowMs طول پنجره به میلی‌ثانیه
  */
-export function consumeRateLimit(
+export async function consumeRateLimit(
   key: string,
   maxAttempts: number,
   windowMs: number
-): RateLimitResult {
+): Promise<RateLimitResult> {
   const now = Date.now()
-  maybeSweep(now)
+  await maybeSweep(now)
 
-  const existing = store.get(key)
+  const existing = await store.get(key)
 
   if (!existing || existing.resetAt <= now) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
+    await store.set(key, { count: 1, resetAt: now + windowMs })
     return { allowed: true, remaining: maxAttempts - 1, retryAfterSeconds: 0 }
   }
 
   const next = { count: existing.count + 1, resetAt: existing.resetAt }
-  store.set(key, next)
+  await store.set(key, next)
 
   if (next.count > maxAttempts) {
     return {
@@ -110,13 +109,13 @@ export function consumeRateLimit(
 }
 
 /** صفر کردن شمارنده پس از ورود موفق */
-export function resetRateLimit(key: string): void {
-  store.delete(key)
+export async function resetRateLimit(key: string): Promise<void> {
+  await store.delete(key)
 }
 
 /** فقط برای تست — پاک‌کردن کامل وضعیت */
-export function __resetAllRateLimits(): void {
-  store.clear()
+export async function __resetAllRateLimits(): Promise<void> {
+  await reset()
 }
 
 /**
@@ -124,27 +123,19 @@ export function __resetAllRateLimits(): void {
  *
  * پشت پراکسی (Vercel، Cloudflare، nginx) آدرس واقعی در هدر است.
  * اگر هیچ‌کدام نبود، یک کلید ثابت برمی‌گردانیم — یعنی همهٔ
- * درخواست‌های بدون IP یک سطل مشترک دارند. این محافظه‌کارانه است
- * و در بدترین حالت کمی سخت‌گیرتر عمل می‌کند.
+ * درخواست‌های بدون IP یک سطل مشترک دارند.
  *
  * ══════════════════════════════════════════════════════════════
- *  🆕 هشدار: `x-forwarded-for` قابل جعل است
+ *  هشدار: `x-forwarded-for` قابل جعل است
  * ══════════════════════════════════════════════════════════════
- * هر کسی می‌تواند این هدر را در درخواستش بگذارد. اگر برنامه
- * مستقیم روی اینترنت باشد (بدون پراکسی)، مهاجم با عوض کردن یک
- * هدر، هر بار سطل جدید می‌گیرد و محدودیت نرخ عملاً بی‌اثر است.
- *
- * وقتی پراکسی هست، **اولین** عنصر لیست همان چیزی است که کلاینت
- * ادعا کرده و باز هم جعلی است؛ IP قابل اعتماد، عنصر nاُم از
- * **راست** است که n تعداد پراکسی‌های تحت کنترل شماست.
+ * وقتی پراکسی هست، اولین عنصر لیست چیزی است که کلاینت ادعا کرده و
+ * باز هم جعلی است؛ IP قابل اعتماد، عنصر nاُم از راست است که n
+ * تعداد پراکسی‌های تحت کنترل شماست.
  *
  * پیکربندی:
  *   TRUSTED_PROXY_HOPS=1   → پشت یک پراکسی (nginx یا Cloudflare)
  *   TRUSTED_PROXY_HOPS=2   → Cloudflare + nginx
  *   (تعریف نشده)           → رفتار قبلی: اولین عنصر
- *
- * پیش‌فرض عمداً عوض نشد تا استقرارهای فعلی نشکنند، اما اگر پشت
- * پراکسی هستید حتماً تنظیمش کنید.
  */
 export function getClientKey(headers: Headers): string {
   const forwarded = headers.get('x-forwarded-for')

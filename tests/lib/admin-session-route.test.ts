@@ -49,9 +49,9 @@ function logoutRequest(): Request {
   return new Request('http://localhost:3000/admin/api/session', { method: 'DELETE' })
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   recorded.length = 0
-  __resetAllRateLimits()
+  await __resetAllRateLimits()
 })
 
 describe('ورود موفق', () => {

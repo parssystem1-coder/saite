@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Rate-limit برای جلوگیری از abuse
-    const rateLimitResponse = checkMutationRateLimit(req, 'order-create', 10, 60_000)
+    const rateLimitResponse = await checkMutationRateLimit(req, 'order-create', 10, 60_000)
     if (rateLimitResponse) return rateLimitResponse
 
     const session = await getCustomerSession()

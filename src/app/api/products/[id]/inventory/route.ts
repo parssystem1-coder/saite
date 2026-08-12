@@ -7,7 +7,7 @@ import { ValidationError } from '@/server/shared/errors'
 /** Admin-only stock count endpoint. It never allows on-hand below active reservations. */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const limited = checkMutationRateLimit(req, 'inventory-set', 30, 60_000)
+    const limited = await checkMutationRateLimit(req, 'inventory-set', 30, 60_000)
     if (limited) return limited
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response

@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitResponse = checkMutationRateLimit(req, 'product-create', 20, 60_000)
+    const rateLimitResponse = await checkMutationRateLimit(req, 'product-create', 20, 60_000)
     if (rateLimitResponse) return rateLimitResponse
 
     const guard = await requirePermission('catalog:write')

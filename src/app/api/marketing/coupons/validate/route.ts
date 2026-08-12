@@ -23,7 +23,7 @@ import { couponValidateSchema, parseWithSchema, parseJsonBody } from '@/server/s
 export async function POST(req: NextRequest) {
   // ── Rate limit ──
   const clientKey = getClientKey(req.headers)
-  const limit = consumeRateLimit(`coupon-validate:${clientKey}`, 20, 60_000)
+  const limit = await consumeRateLimit(`coupon-validate:${clientKey}`, 20, 60_000)
   if (!limit.allowed) {
     const res = NextResponse.json(
       { error: 'درخواست بیش از حد مجاز است.', code: 'RATE_LIMIT_EXCEEDED' },

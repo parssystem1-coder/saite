@@ -25,7 +25,7 @@ export const runtime = 'nodejs'
  */
 export async function POST(req: NextRequest) {
   try {
-    const rateLimitResponse = checkMutationRateLimit(req, 'payment-init', 10, 60_000)
+    const rateLimitResponse = await checkMutationRateLimit(req, 'payment-init', 10, 60_000)
     if (rateLimitResponse) return rateLimitResponse
 
     const session = await getCustomerSession()

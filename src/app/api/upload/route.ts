@@ -80,7 +80,7 @@ function validateMagicBytes(buffer: Buffer, mime: string): boolean {
 
 export async function POST(req: NextRequest) {
   // Rate-limit برای upload (سخت‌گیرانه‌تر چون هزینه‌بر است)
-  const rateLimitResponse = checkMutationRateLimit(req, 'upload', 5, 60_000)
+  const rateLimitResponse = await checkMutationRateLimit(req, 'upload', 5, 60_000)
   if (rateLimitResponse) return rateLimitResponse
 
   const guard = await requirePermission('content:write')
