@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  emptyProductSeoCurrent,
   isSafeCanonicalUrl,
   listEmptySeoFields,
   pickEmptyOnlySuggestion,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/seo/product-seo-suggestion'
 
 const filled = {
+  ...emptyProductSeoCurrent(),
   seoTitle: 'عنوان فعلی سئو برای محصول نمونه فروشگاهی',
   seoDescription: 'توضیح متای فعلی که به اندازه کافی بلند است تا خالی محسوب نشود و امتیاز را بسازد.',
   focusKeyword: 'پرینتر اچ پی',
@@ -82,13 +84,14 @@ describe('sanitizeProductSeoSuggestion', () => {
 describe('emptyOnly helpers', () => {
   it('فیلدهای خالی را فهرست می‌کند', () => {
     const empty = listEmptySeoFields({
-      seoTitle: '',
-      seoDescription: '',
+      ...emptyProductSeoCurrent(),
       focusKeyword: 'کلمه',
-      canonicalUrl: '',
-      faqs: [],
     })
-    expect(empty).toEqual(['seoTitle', 'seoDescription', 'canonicalUrl', 'faqs'])
+    expect(empty).toContain('seoTitle')
+    expect(empty).toContain('seoDescription')
+    expect(empty).toContain('canonicalUrl')
+    expect(empty).toContain('faqs')
+    expect(empty).not.toContain('focusKeyword')
   })
 
   it('از پیشنهاد فقط فیلدهای خالی را نگه می‌دارد', () => {

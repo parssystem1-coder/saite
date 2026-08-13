@@ -137,6 +137,9 @@ export default function ProductEditor({ initialValue, onSave, onPublish }: Produ
               faqs={faqs}
               onFaqsChange={setFaqs}
               attributes={attributes}
+              onAttributesChange={setAttributes}
+              images={images}
+              onImagesChange={setImages}
             />
           )}
         </main>

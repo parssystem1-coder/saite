@@ -1,6 +1,9 @@
 import 'server-only'
 import { callChat } from '@/server/ai/gateway'
+import { BRANDS, CATEGORIES } from '@/lib/constants'
+import { normalizeProductSeoSuggestion } from '@/lib/seo/product-seo-normalize'
 import {
+  hasProductSeoSeed,
   listEmptySeoFields,
   pickEmptyOnlySuggestion,
   suggestionHasContent,
@@ -8,6 +11,7 @@ import {
   type ProductSeoSuggestion,
 } from '@/lib/seo/product-seo-suggestion'
 import { ValidationError } from '@/server/shared/errors'
+import { lookupKeywordInsight } from '@/server/seo-tools/gateway'
 import { parseProductSeoOutput } from './output'
 import {
   PRODUCT_SEO_FEATURE,
@@ -25,15 +29,18 @@ export interface GenerateProductSeoInput {
   productName: string
   nameEn: string
   category: string
+  subCategory: string
   brand: string
   model: string
   series: string
   slug: string
+  sku: string
   shortDescription: string
   longDescription: string
   specs: unknown
   packId?: string
   keywordHints?: string[]
+  imageCount?: number
 }
 
 export interface GenerateProductSeoResult {
@@ -51,15 +58,43 @@ function serializeSpecs(specs: unknown): string {
   }
 }
 
+async function resolveKeywordHints(input: GenerateProductSeoInput): Promise<string> {
+  const provided = (input.keywordHints ?? []).map((hint) => hint.trim()).filter(Boolean).slice(0, 8)
+  if (provided.length > 0) return provided.join('، ')
+
+  const seed =
+    input.current.focusKeyword.trim() ||
+    input.productName.trim() ||
+    `${input.brand} ${input.model}`.trim()
+  if (!seed) return ''
+
+  try {
+    const insight = await lookupKeywordInsight(seed)
+    return insight.related.slice(0, 8).join('، ')
+  } catch {
+    return ''
+  }
+}
+
 export async function generateProductSeoSuggestion(
   input: GenerateProductSeoInput
 ): Promise<GenerateProductSeoResult> {
+  if (
+    !hasProductSeoSeed({
+      name: input.productName,
+      brand: input.brand,
+      model: input.model,
+      focusKeyword: input.current.focusKeyword,
+    })
+  ) {
+    throw new ValidationError(
+      { seo: 'دادهٔ شروع کافی نیست' },
+      'برای محصول جدید حداقل نام، یا برند و مدل را در تب پایه وارد کنید.'
+    )
+  }
+
   const packId = resolveProductSeoPromptPackId(input.packId)
-  const keywordHints = (input.keywordHints ?? [])
-    .map((hint) => hint.trim())
-    .filter(Boolean)
-    .slice(0, 8)
-    .join('، ')
+  const keywordHints = await resolveKeywordHints(input)
 
   const emptyFields = listEmptySeoFields(input.current)
   if (input.emptyOnly && emptyFields.length === 0) {
@@ -78,10 +113,12 @@ export async function generateProductSeoSuggestion(
       productName: input.productName,
       nameEn: input.nameEn,
       category: input.category,
+      subCategory: input.subCategory,
       brand: input.brand,
       model: input.model,
       series: input.series,
       slug: input.slug,
+      sku: input.sku,
       focusKeyword: input.current.focusKeyword,
       seoTitle: input.current.seoTitle,
       seoDescription: input.current.seoDescription,
@@ -98,10 +135,13 @@ export async function generateProductSeoSuggestion(
       emptyOnly: input.emptyOnly,
       emptyFields: emptyFields.join(','),
       keywordHints,
+      imageCount: input.imageCount ?? 0,
+      allowedCategories: CATEGORIES.map((item) => item.slug).join(', '),
+      allowedBrands: BRANDS.map((item) => item.displayName).join(', '),
     },
   })
 
-  const parsed = parseProductSeoOutput(raw)
+  const parsed = normalizeProductSeoSuggestion(parseProductSeoOutput(raw))
   const suggestion = input.emptyOnly ? pickEmptyOnlySuggestion(parsed, input.current) : parsed
 
   if (!suggestionHasContent(suggestion)) {

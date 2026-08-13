@@ -9,14 +9,9 @@ import {
   parseProductSeoImport,
   productSeoPackFilename,
 } from '@/lib/seo/product-seo-pack'
+import { emptyProductSeoCurrent, SEO_SUGGESTION_KEYS } from '@/lib/seo/product-seo-suggestion'
 
-const currentEmpty = {
-  seoTitle: '',
-  seoDescription: '',
-  focusKeyword: '',
-  canonicalUrl: '',
-  faqs: [] as Array<{ question: string; answer: string }>,
-}
+const currentEmpty = emptyProductSeoCurrent()
 
 const validSuggestion = {
   seoTitle: 'پرینتر اچ پی M402 | خرید و قیمت روز',
@@ -56,13 +51,7 @@ describe('buildProductSeoPack', () => {
     expect(pack.exportedAt).toBe('2026-08-13T10:00:00.000Z')
     expect(pack.product.name).toBe('پرینتر اچ پی M402')
     expect(pack.targets.seoTitle.max).toBe(PRODUCT_SEO_TARGETS.seoTitle.max)
-    expect(pack.emptyFields).toEqual([
-      'seoTitle',
-      'seoDescription',
-      'focusKeyword',
-      'canonicalUrl',
-      'faqs',
-    ])
+    expect(pack.emptyFields).toEqual([...SEO_SUGGESTION_KEYS])
     expect(pack.instructionsText).toMatch(/فقط یک شیء JSON برگردان/)
     expect(pack.instructionsText).toContain(PRODUCT_SEO_FILE_TYPE)
     expect(pack.instructionsText).toContain('schemaVersion')

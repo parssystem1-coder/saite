@@ -8,6 +8,7 @@ import {
   SEO_DESCRIPTION_MAX,
   SEO_SUGGESTION_KEYS,
   SEO_TITLE_MAX,
+  emptyProductSeoCurrent,
   listEmptySeoFields,
   productSeoSuggestionSchema,
   sanitizeProductSeoSuggestion,
@@ -94,7 +95,7 @@ export type ProductSeoPackInput = {
   shortDescription?: string
   longDescription?: string
   specs?: unknown
-  current: ProductSeoCurrentFields
+  current: Partial<ProductSeoCurrentFields>
   emptyOnly: boolean
   promptPackId?: string
   keywordHints?: string[]
@@ -143,9 +144,20 @@ export function summarizeProductSpecs(specs: unknown, maxEntries = SPEC_ENTRY_MA
   return entries.join('؛ ')
 }
 
+function resolvePackCurrent(current: Partial<ProductSeoCurrentFields>): ProductSeoCurrentFields {
+  return {
+    ...emptyProductSeoCurrent(),
+    ...current,
+    faqs: current.faqs ?? [],
+    attributes: current.attributes ?? [],
+    imageAlts: current.imageAlts ?? [],
+  }
+}
+
 export function buildProductSeoInstructions(input: ProductSeoPackInput): string {
   const pack = getProductSeoPromptPack(input.promptPackId)
-  const emptyFields = listEmptySeoFields(input.current)
+  const resolvedCurrent = resolvePackCurrent(input.current)
+  const emptyFields = listEmptySeoFields(resolvedCurrent)
   const emptyHint =
     input.emptyOnly && emptyFields.length > 0
       ? `فقط همین فیلدهای خالی را پر کن و بقیه را در suggestion نگذار: ${emptyFields.join('، ')}.`
@@ -164,13 +176,13 @@ export function buildProductSeoInstructions(input: ProductSeoPackInput): string 
     `توضیح کوتاه: ${(input.shortDescription ?? '').trim() || '—'}`,
     `توضیح بلند: ${(input.longDescription ?? '').trim().slice(0, LONG_DESCRIPTION_MAX) || '—'}`,
     `مشخصات: ${summarizeProductSpecs(input.specs) || '—'}`,
-    `عنوان سئوی فعلی: ${input.current.seoTitle.trim() || '(خالی)'}`,
-    `توضیح متای فعلی: ${input.current.seoDescription.trim() || '(خالی)'}`,
-    `کلمهٔ کلیدی فعلی: ${input.current.focusKeyword.trim() || '(خالی)'}`,
-    `canonical فعلی: ${input.current.canonicalUrl.trim() || '(خالی)'}`,
+    `عنوان سئوی فعلی: ${resolvedCurrent.seoTitle.trim() || '(خالی)'}`,
+    `توضیح متای فعلی: ${resolvedCurrent.seoDescription.trim() || '(خالی)'}`,
+    `کلمهٔ کلیدی فعلی: ${resolvedCurrent.focusKeyword.trim() || '(خالی)'}`,
+    `canonical فعلی: ${resolvedCurrent.canonicalUrl.trim() || '(خالی)'}`,
     `FAQ فعلی: ${
-      input.current.faqs.length > 0
-        ? input.current.faqs.map((faq) => `${faq.question} → ${faq.answer}`).join(' | ')
+      resolvedCurrent.faqs.length > 0
+        ? resolvedCurrent.faqs.map((faq) => `${faq.question} → ${faq.answer}`).join(' | ')
         : '(خالی)'
     }`,
   ]
@@ -201,7 +213,8 @@ export function buildProductSeoInstructions(input: ProductSeoPackInput): string 
     `- canonicalUrl: حداکثر ${CANONICAL_URL_MAX} نویسه؛ javascript: و data: ممنوع`,
     `- faqs: ${FAQ_MIN} تا ${FAQ_MAX} مورد؛ سؤال ≤${FAQ_QUESTION_MAX}؛ جواب ≤${FAQ_ANSWER_MAX}`,
     'قواعد محتوا: فارسی معیار، بدون اغراق پزشکی/درمانی، بدون لینک خارجی، بدون تگ HTML.',
-    'کلید خارج از suggestion ممنوع است (مثلاً description یا price ننویس).',
+    'کلید خارج از suggestion ممنوع است (مثلاً description یا price یا stock ننویس).',
+    'برای محصول جدید name، nameEn، slug، shortDescription، longDescription، seoTitle، seoDescription، focusKeyword و faqs را هم می‌توانی بدهی.',
     pack.extraRules ? `بستهٔ پرامپت (${pack.id}): ${pack.extraRules}` : `بستهٔ پرامپت: ${pack.id}`,
     input.keywordHints && input.keywordHints.length > 0
       ? `کلمات مرتبط پیشنهادی ابزار سئو (فقط راهنما): ${input.keywordHints.join('، ')}`
@@ -218,7 +231,8 @@ export function buildProductSeoPack(
   input: ProductSeoPackInput,
   now: Date = new Date()
 ): ProductSeoPack {
-  const emptyFields = listEmptySeoFields(input.current)
+  const resolvedCurrent = resolvePackCurrent(input.current)
+  const emptyFields = listEmptySeoFields(resolvedCurrent)
   return {
     fileType: PRODUCT_SEO_FILE_TYPE,
     schemaVersion: PRODUCT_SEO_SCHEMA_VERSION,
@@ -234,11 +248,11 @@ export function buildProductSeoPack(
       shortDescription: (input.shortDescription ?? '').trim(),
       longDescription: (input.longDescription ?? '').trim().slice(0, LONG_DESCRIPTION_MAX),
       specs: summarizeProductSpecs(input.specs),
-      seoTitle: input.current.seoTitle.trim(),
-      seoDescription: input.current.seoDescription.trim(),
-      focusKeyword: input.current.focusKeyword.trim(),
-      canonicalUrl: input.current.canonicalUrl.trim(),
-      faqs: input.current.faqs.map((faq) => ({
+      seoTitle: resolvedCurrent.seoTitle.trim(),
+      seoDescription: resolvedCurrent.seoDescription.trim(),
+      focusKeyword: resolvedCurrent.focusKeyword.trim(),
+      canonicalUrl: resolvedCurrent.canonicalUrl.trim(),
+      faqs: resolvedCurrent.faqs.map((faq) => ({
         question: faq.question.trim(),
         answer: faq.answer.trim(),
       })),

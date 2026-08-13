@@ -7,6 +7,7 @@ import { PRODUCT_SEO_IMPORT_MAX_CHARS, SEO_PACK_ERRORS } from '@/lib/seo/product
 import { parseJsonBody, parseWithSchema } from '@/server/shared/validation'
 import { handleServiceError } from '@/server/shared/http-utils'
 import { ValidationError } from '@/server/shared/errors'
+import { emptyProductSeoCurrent } from '@/lib/seo/product-seo-suggestion'
 
 /**
  * POST /api/admin/products/seo/import
@@ -72,10 +73,8 @@ export async function POST(req: NextRequest) {
       rawText: body.rawText,
       emptyOnly: body.emptyOnly,
       current: {
-        seoTitle: body.current.seoTitle,
-        seoDescription: body.current.seoDescription,
-        focusKeyword: body.current.focusKeyword,
-        canonicalUrl: body.current.canonicalUrl,
+        ...emptyProductSeoCurrent(),
+        ...body.current,
         faqs: body.faqs,
       },
     })

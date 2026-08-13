@@ -2,14 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { ValidationError } from '@/server/shared/errors'
 import { importProductSeoSuggestion } from '@/server/ai/features/product-seo/import'
 import { PRODUCT_SEO_FILE_TYPE } from '@/lib/seo/product-seo-pack'
+import { emptyProductSeoCurrent } from '@/lib/seo/product-seo-suggestion'
 
-const emptyCurrent = {
-  seoTitle: '',
-  seoDescription: '',
-  focusKeyword: '',
-  canonicalUrl: '',
-  faqs: [] as Array<{ question: string; answer: string }>,
-}
+const emptyCurrent = emptyProductSeoCurrent()
 
 const suggestion = {
   seoTitle: 'پرینتر اچ پی M402 | خرید و قیمت روز',

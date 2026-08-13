@@ -132,6 +132,19 @@ describe('POST /api/admin/products/seo/generate', () => {
     expect(body.error).toMatch(/قابل‌خواندن|هم‌خوان/)
   })
 
+  it('بدون نام و برند و مدل → ۴۰۰', async () => {
+    mockedSession.mockResolvedValue(admin('operator'))
+    const res = await POST(
+      request({
+        emptyOnly: false,
+        draft: { name: '', brand: '', model: '' },
+        faqs: [],
+      })
+    )
+    expect(res.status).toBe(400)
+    expect(mockedChat).not.toHaveBeenCalled()
+  })
+
   it('prompt injection → ۴۰۰ و مدل صدا نمی‌شود', async () => {
     mockedSession.mockResolvedValue(admin('admin'))
     const res = await POST(

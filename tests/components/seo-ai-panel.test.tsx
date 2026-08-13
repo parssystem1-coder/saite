@@ -22,18 +22,15 @@ describe('SeoAiPanel', () => {
     const set = vi.fn()
     renderWithProviders(
       <SeoAiPanel
-        draft={{ ...INITIAL_DRAFT, seoTitle: '', seoDescription: '' }}
+        draft={{ ...INITIAL_DRAFT, name: 'پرینتر اچ پی M402', seoTitle: '', seoDescription: '' }}
         set={set}
         faqs={INITIAL_FAQS}
         onFaqsChange={vi.fn()}
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'تولید خودکار' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تکمیل حرفه‌ای محصول' }))
     await waitFor(() => expect(screen.getByText('عنوان سئو')).toBeInTheDocument())
-
-    const applyButtons = screen.getAllByRole('button', { name: 'اعمال' })
-    fireEvent.click(applyButtons[0]!)
     expect(set).toHaveBeenCalledWith('seoTitle', suggestion.seoTitle)
 
     vi.unstubAllGlobals()
@@ -49,9 +46,14 @@ describe('SeoAiPanel', () => {
     )
 
     renderWithProviders(
-      <SeoAiPanel draft={INITIAL_DRAFT} set={vi.fn()} faqs={INITIAL_FAQS} onFaqsChange={vi.fn()} />
+      <SeoAiPanel
+        draft={{ ...INITIAL_DRAFT, name: 'پرینتر اچ پی' }}
+        set={vi.fn()}
+        faqs={INITIAL_FAQS}
+        onFaqsChange={vi.fn()}
+      />
     )
-    fireEvent.click(screen.getByRole('button', { name: 'تولید خودکار' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تکمیل حرفه‌ای محصول' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('سقف تولید سئو')
     vi.unstubAllGlobals()
   })
@@ -119,12 +121,17 @@ describe('SeoAiPanel', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     renderWithProviders(
-      <SeoAiPanel draft={INITIAL_DRAFT} set={vi.fn()} faqs={INITIAL_FAQS} onFaqsChange={vi.fn()} />
+      <SeoAiPanel
+        draft={{ ...INITIAL_DRAFT, name: 'پرینتر اچ پی' }}
+        set={vi.fn()}
+        faqs={INITIAL_FAQS}
+        onFaqsChange={vi.fn()}
+      />
     )
     fireEvent.change(screen.getByLabelText('بستهٔ پرامپت'), {
       target: { value: 'product-seo.commercial.v1' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'تولید خودکار' }))
+    fireEvent.click(screen.getByRole('button', { name: 'تکمیل حرفه‌ای محصول' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { packId: string }
     expect(body.packId).toBe('product-seo.commercial.v1')
