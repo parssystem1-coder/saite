@@ -3,6 +3,7 @@ import { prisma } from '@/server/shared/db'
 import { resolvePaymentProviderByCode } from '@/server/payments/gateway'
 import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
+import { OrderEvents } from '@/server/shared/event-types'
 import { logger } from '@/server/shared/logger'
 
 /**
@@ -64,6 +65,12 @@ export async function GET(req: NextRequest) {
     // ── Layer 4: Atomic state update — جلوگیری از race condition ──
     // استفاده از $transaction + updateMany با where condition
     // اگر دو request هم‌زمان بیایند، فقط یکی موفق می‌شود
+    //
+    // ⚠️ حیاتی: در همان تراکنش، OutboxEvent «order.paid» هم ثبت می‌شود.
+    // اگر transitionState پایین‌تر (پس از commit) شکست بخورد یا process بمیرد،
+    // درخواست بعدی به شاخهٔ «Already verified» می‌رود و بدون این رویداد جبرانی،
+    // پولِ گرفته‌شده هرگز به سفارش paid تبدیل نمی‌شد. worker outbox این رویداد
+    // را با retry پردازش می‌کند و handlePaidOrder کاملاً idempotent است.
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const updateResult = await prisma.$transaction(async (tx: any) => {
       const txResult = await tx.paymentIntent.updateMany({
@@ -78,6 +85,15 @@ export async function GET(req: NextRequest) {
           failureMessage: verifyResult.success ? null : verifyResult.message,
         },
       })
+      if (txResult.count > 0 && verifyResult.success) {
+        await tx.outboxEvent.create({
+          data: {
+            type: OrderEvents.paid,
+            payload: { orderId: existing.orderId, authority } as any,
+            aggregateId: existing.orderId,
+          },
+        })
+      }
       return txResult
     })
 
@@ -110,7 +126,16 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * مقصد بازگشت کاربر پس از پرداخت.
+ *
+ * صفحهٔ عمومی `/orders/[id]` هنوز وجود ندارد؛ هدایت به آن یعنی ۴۰۴ درست
+ * بعد از پرداخت موفق. تا زمان ساخت آن صفحه، به داشبورد مشتری (سفارش‌های من)
+ * هدایت می‌کنیم و وضعیت پرداخت را در query می‌گذاریم تا UI پیام مناسب نشان دهد.
+ */
 function orderStatusUrl(orderId: string, status?: string) {
-  const base = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/orders/${orderId}`
-  return status ? `${base}?status=${status}` : base
+  const base = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard`
+  const params = new URLSearchParams({ orderId })
+  if (status) params.set('payment', status)
+  return `${base}?${params.toString()}`
 }
