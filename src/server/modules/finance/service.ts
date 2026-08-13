@@ -4,6 +4,7 @@ import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { FinanceEvents } from '@/server/shared/event-types'
 import { INVOICE_DUE_DAYS, TAX_RATE } from '@/server/shared/constants'
+import { NotFoundError } from '@/server/shared/errors'
 
 /**
  * شمارهٔ فاکتور با entropy بالا — جلوگیری از برخورد در ستون @unique.
@@ -57,7 +58,7 @@ export const financeService = {
 
   async markInvoicePaid(invoiceId: string, referenceId?: string) {
     const existing = await financeRepository.findInvoiceById(invoiceId)
-    if (!existing) throw new Error('Invoice not found')
+    if (!existing) throw new NotFoundError('فاکتور یافت نشد')
 
     // ── Idempotency: اگر فاکتور قبلاً paid شده، بدون تغییر برگردان ──
     if (existing.status === 'paid') {
@@ -92,7 +93,7 @@ export const financeService = {
 
   async recordRefund(invoiceId: string, amount: number, reason?: string) {
     const invoice = await financeRepository.findInvoiceById(invoiceId)
-    if (!invoice) throw new Error('Invoice not found')
+    if (!invoice) throw new NotFoundError('فاکتور یافت نشد')
 
     await financeRepository.createTransaction({
       invoiceId,
