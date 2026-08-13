@@ -33,8 +33,8 @@ export function CookieBanner() {
             کوکی و آمار بازدید
           </p>
           <p className="mt-1 text-xs leading-6 text-muted-foreground">
-            کوکی‌های ضروری برای سبد و ورود لازم‌اند. آمار بازدید (GA4) فقط پس از رضایت شما بارگذاری
-            می‌شود.{' '}
+            کوکی‌های ضروری برای سبد و ورود لازم‌اند. آمار بازدید (GA4 یا Tag Manager) فقط پس از رضایت
+            شما بارگذاری می‌شود.{' '}
             <Link href="/privacy" className="text-primary underline-offset-2 hover:underline">
               سیاست حریم خصوصی
             </Link>

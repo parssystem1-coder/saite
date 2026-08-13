@@ -61,8 +61,9 @@ const IMAGE_HOSTS = ['https://images.unsplash.com']
 
 export type CspOptions = {
   /**
-   * اجازهٔ میزبان‌های رسمی GA4 در صفحات عمومی.
+   * اجازهٔ میزبان‌های رسمی GA4/GTM در صفحات عمومی.
    * پنل ادمین این را نمی‌گذارد — اسکریپت تحلیل آنجا بار نمی‌شود.
+   * iframe GTM (ns.html) عمداً باز نمی‌شود — frame-src 'none' می‌ماند.
    */
   allowAnalytics?: boolean
 }

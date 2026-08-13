@@ -26,7 +26,7 @@ function pushGtag(measurementId: string): void {
  * - فقط اگر شناسه معتبر باشد
  * - فقط پس از رضایت analytics
  * - بدون اسکریپت inline: پیکربندی در onLoad باندل خودمان اجرا می‌شود
- * - GTM اینجا نیست (فاز ۴)
+ * - اگر GTM فعال باشد این کامپوننت اصلاً رندر نمی‌شود (اولویت با gtm.js)
  */
 export function Ga4Script({ measurementId }: { measurementId: string }) {
   const [allowed, setAllowed] = useState(false)

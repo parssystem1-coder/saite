@@ -63,11 +63,12 @@ describe('Content-Security-Policy', () => {
     expect(csp).not.toContain('https://www.googletagmanager.com')
   })
 
-  it('با allowAnalytics میزبان رسمی GA4 در script/connect هست و frame-src همچنان none است', () => {
+  it('با allowAnalytics میزبان رسمی GA4/GTM در script/connect هست و frame-src همچنان none است', () => {
     const csp = buildContentSecurityPolicy(false, undefined, { allowAnalytics: true })
     expect(csp).toContain('https://www.googletagmanager.com')
     expect(csp).toContain('https://www.google-analytics.com')
     expect(csp).toContain("frame-src 'none'")
+    expect(csp).not.toContain('ns.html')
   })
 })
 

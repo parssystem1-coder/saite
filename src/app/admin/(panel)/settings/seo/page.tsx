@@ -66,13 +66,25 @@ export default function SeoConnectionsPage() {
               <td className="p-4">
                 <b>Google Analytics 4</b>
                 <small className="mt-1 block text-xs text-muted-foreground">
-                  اسنیپت رسمی پس از رضایت کوکی — بدون GTM
+                  اسنیپت مستقیم gtag پس از رضایت — اگر GTM متصل باشد تزریق نمی‌شود
                 </small>
               </td>
               <td className="p-4">
                 <StatusBadge ok={status.ga4Configured} />
               </td>
               <td className="p-4 text-xs text-muted-foreground">متغیر محیطی GA4_MEASUREMENT_ID</td>
+            </tr>
+            <tr className="border-t border-border">
+              <td className="p-4">
+                <b>Google Tag Manager</b>
+                <small className="mt-1 block text-xs text-muted-foreground">
+                  فقط gtm.js رسمی پس از رضایت — بدون iframe و بدون HTML سفارشی
+                </small>
+              </td>
+              <td className="p-4">
+                <StatusBadge ok={status.gtmConfigured} />
+              </td>
+              <td className="p-4 text-xs text-muted-foreground">متغیر محیطی GTM_CONTAINER_ID</td>
             </tr>
             <tr className="border-t border-border">
               <td className="p-4">
@@ -113,9 +125,10 @@ export default function SeoConnectionsPage() {
       <section className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm">
         <b className="text-amber-200">قانون امنیتی</b>
         <p className="mt-2 text-muted-foreground">
-          کلید API و توکن تأیید هرگز با پیشوند NEXT_PUBLIC ساخته نمی‌شوند، در پاسخ API برنمی‌گردند و
-          در این صفحه دیده نمی‌شوند. بدون حساب، بررسی کلمهٔ کلیدی با stub کار می‌کند. GTM در فاز بعد
-          اضافه می‌شود.
+          کلید API، توکن تأیید و شناسهٔ کانتینر هرگز با پیشوند NEXT_PUBLIC ساخته نمی‌شوند، در پاسخ
+          API برنمی‌گردند و در این صفحه دیده نمی‌شوند. بدون حساب، بررسی کلمهٔ کلیدی با stub کار
+          می‌کند. GTM فقط از مسیر رسمی gtm.js و پس از رضایت کوکی بار می‌شود؛ iframe noscript عمداً
+          غیرفعال است.
         </p>
       </section>
     </div>

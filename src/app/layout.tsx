@@ -6,8 +6,8 @@ import { buildOrganizationLd, buildWebSiteLd } from '@/lib/seo/organization-ld'
 import { SITE } from '@/lib/constants'
 import { vazirmatn } from '@/lib/fonts'
 import {
-  getGa4MeasurementIdForInjection,
   getGoogleSiteVerificationToken,
+  getPublicAnalyticsInjection,
 } from '@/lib/seo/google-connections'
 import './globals.css'
 
@@ -95,9 +95,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <JsonLd data={[buildOrganizationLd(), buildWebSiteLd()]} />
         <Providers>
           {/* هدر/فوتر فروشگاه در ناحیهٔ /admin رندر نمی‌شوند */}
-          <StorefrontChrome ga4MeasurementId={getGa4MeasurementIdForInjection()}>
-            {children}
-          </StorefrontChrome>
+          <StorefrontChrome {...getPublicAnalyticsInjection()}>{children}</StorefrontChrome>
         </Providers>
       </body>
     </html>

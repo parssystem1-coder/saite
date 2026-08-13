@@ -10,6 +10,7 @@ import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { SkipLink } from '@/components/layout/skip-link'
 import { CookieBanner } from '@/components/consent/cookie-banner'
 import { Ga4Script } from '@/components/analytics/ga4-script'
+import { GtmScript } from '@/components/analytics/gtm-script'
 import { isFloatingChromeHidden } from '@/lib/layout/floating-chrome'
 import { cn } from '@/lib/utils'
 
@@ -32,9 +33,11 @@ import { cn } from '@/lib/utils'
 export function StorefrontChrome({
   children,
   ga4MeasurementId = '',
+  gtmContainerId = '',
 }: {
   children: React.ReactNode
   ga4MeasurementId?: string
+  gtmContainerId?: string
 }) {
   const pathname = usePathname()
   const isAdminArea = isFloatingChromeHidden(pathname)
@@ -65,7 +68,11 @@ export function StorefrontChrome({
       <ChatWidget />
       <MobileBottomNav />
       <CookieBanner />
-      <Ga4Script measurementId={ga4MeasurementId} />
+      {gtmContainerId ? (
+        <GtmScript containerId={gtmContainerId} />
+      ) : (
+        <Ga4Script measurementId={ga4MeasurementId} />
+      )}
     </>
   )
 }
