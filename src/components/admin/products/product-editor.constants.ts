@@ -8,6 +8,7 @@ export const PRODUCT_TABS: Array<{ id: TabKey; label: string }> = [
   { id: 'content', label: 'محتوا' },
   { id: 'seo', label: 'سئو و اسکیما' },
   { id: 'logistics', label: 'خدمات و ارتباطات' },
+  { id: 'seo-ai', label: 'دستیار سئو (AI)' },
 ];
 
 export const INITIAL_DRAFT: ProductDraft = {

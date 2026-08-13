@@ -11,6 +11,10 @@ import type {
   StreamingChatProvider,
   StreamChatMessage,
 } from './stream-types'
+import {
+  renderProductSeoPrompt,
+  toProductSeoPromptVars,
+} from './features/product-seo/prompt'
 
 export interface ChatOptions {
   feature: string
@@ -170,10 +174,7 @@ export async function callEmbedding(text: string) {
 
 function renderPrompt(feature: string, variables: Record<string, unknown>): string {
   const templates: Record<string, (vars: Record<string, unknown>) => string> = {
-    'product-seo': (vars) => `شما دستیار سئوی فروشگاه فارسی هستید...
-محصول: ${vars.productName}
-دسته: ${vars.category}
-مشخصات: ${JSON.stringify(vars.specs)}`,
+    'product-seo': (vars) => renderProductSeoPrompt(toProductSeoPromptVars(vars)),
     'support-chat': (vars) => `شما دستیار پشتیبانی فروشگاه Saite هستید...
 سؤال مشتری: ${vars.question}`,
     'admin-assist': (vars) => `شما دستیار مدیر فروشگاه Saite هستید...

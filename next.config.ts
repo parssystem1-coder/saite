@@ -61,7 +61,7 @@ const nextConfig: NextConfig = {
           روی مسیرهای دیگر، این هدرها اعمال می‌شوند.
         */
         source: '/:path((?!_next/static).*)',
-        headers: buildSecurityHeaders(),
+        headers: buildSecurityHeaders(undefined, undefined, { allowAnalytics: true }),
       },
     ]
   },

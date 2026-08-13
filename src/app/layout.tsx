@@ -5,12 +5,18 @@ import { JsonLd } from '@/components/seo/json-ld'
 import { buildOrganizationLd, buildWebSiteLd } from '@/lib/seo/organization-ld'
 import { SITE } from '@/lib/constants'
 import { vazirmatn } from '@/lib/fonts'
+import {
+  getGa4MeasurementIdForInjection,
+  getGoogleSiteVerificationToken,
+} from '@/lib/seo/google-connections'
 import './globals.css'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+const googleVerification = getGoogleSiteVerificationToken()
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  ...(googleVerification ? { verification: { google: googleVerification } } : {}),
   title: {
     default: `${SITE.fullName} | پرینتر، اسکنر، کپی و قطعات یدکی`,
     template: `%s | ${SITE.name}`,
@@ -89,7 +95,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <JsonLd data={[buildOrganizationLd(), buildWebSiteLd()]} />
         <Providers>
           {/* هدر/فوتر فروشگاه در ناحیهٔ /admin رندر نمی‌شوند */}
-          <StorefrontChrome>{children}</StorefrontChrome>
+          <StorefrontChrome ga4MeasurementId={getGa4MeasurementIdForInjection()}>
+            {children}
+          </StorefrontChrome>
         </Providers>
       </body>
     </html>

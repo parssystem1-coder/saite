@@ -17,5 +17,6 @@ describe('ProductEditor', () => {
     expect(screen.getByRole('tab', { name: /محتوا/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /سئو و اسکیما/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /خدمات و ارتباطات/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /دستیار سئو \(AI\)/i })).toBeInTheDocument()
   })
 })

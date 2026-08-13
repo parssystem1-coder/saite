@@ -57,6 +57,18 @@ describe('Content-Security-Policy', () => {
     // وگرنه next/image با unsplash بی‌صدا خالی می‌ماند
     expect(buildContentSecurityPolicy(false)).toContain('https://images.unsplash.com')
   })
+
+  it('بدون allowAnalytics میزبان GA4 در CSP عمومی نیست', () => {
+    const csp = buildContentSecurityPolicy(false)
+    expect(csp).not.toContain('https://www.googletagmanager.com')
+  })
+
+  it('با allowAnalytics میزبان رسمی GA4 در script/connect هست و frame-src همچنان none است', () => {
+    const csp = buildContentSecurityPolicy(false, undefined, { allowAnalytics: true })
+    expect(csp).toContain('https://www.googletagmanager.com')
+    expect(csp).toContain('https://www.google-analytics.com')
+    expect(csp).toContain("frame-src 'none'")
+  })
 })
 
 describe('هدرهای عمومی', () => {
@@ -103,5 +115,11 @@ describe('هدرهای ناحیهٔ admin', () => {
     const common = buildSecurityHeaders(false).map((header) => header.key)
     const admin = buildAdminHeaders(false).map((header) => header.key)
     for (const key of common) expect(admin).toContain(key)
+  })
+
+  it('میزبان GA4 را به پنل ادمین اضافه نمی‌کند', () => {
+    const csp = headerValue(buildAdminHeaders(false), 'Content-Security-Policy') ?? ''
+    expect(csp).not.toContain('googletagmanager')
+    expect(csp).not.toContain('google-analytics')
   })
 })

@@ -41,6 +41,7 @@ describe('filterAdminNavByRole', () => {
     expect(system?.children?.some((c) => c.id === 'settings')).toBe(false)
     expect(system?.children?.some((c) => c.id === 'shipping-settings')).toBe(false)
     expect(system?.children?.some((c) => c.id === 'payment-settings')).toBe(false)
+    expect(system?.children?.some((c) => c.id === 'seo-connections')).toBe(false)
     // اما راهنما می‌ماند
     expect(system?.children?.some((c) => c.id === 'help')).toBe(true)
   })

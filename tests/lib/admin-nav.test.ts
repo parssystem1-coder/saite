@@ -32,6 +32,7 @@ describe('admin nav', () => {
     expect(hrefs).toContain('/admin/finance/invoices')
     expect(hrefs).toContain('/admin/content/article-categories')
     expect(hrefs).toContain('/admin/pages/new')
+    expect(hrefs).toContain('/admin/settings/seo')
   })
 
   it('finds leaf by href', () => {

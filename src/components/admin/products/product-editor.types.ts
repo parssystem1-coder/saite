@@ -5,7 +5,8 @@ export type TabKey =
   | 'media'
   | 'content'
   | 'seo'
-  | 'logistics';
+  | 'logistics'
+  | 'seo-ai';
 
 export type ProductCondition = 'new' | 'used' | 'refurbished' | 'stock';
 export type StockStatus = 'in_stock' | 'out_of_stock' | 'on_request' | 'pre_order' | 'coming_soon';

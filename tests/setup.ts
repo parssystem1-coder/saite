@@ -26,6 +26,12 @@ vi.mock('next/image', () => ({
 /**
  * next/link → <a> برای assert روی href
  */
+vi.mock('next/script', () => ({
+  default: function MockScript() {
+    return null
+  },
+}))
+
 vi.mock('next/link', () => ({
   default: function MockLink({
     children,
