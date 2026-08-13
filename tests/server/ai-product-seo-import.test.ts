@@ -34,6 +34,26 @@ describe('importProductSeoSuggestion', () => {
     expect(result.suggestion.seoTitle).toBe(suggestion.seoTitle)
   })
 
+  it('فیلدهای هویت و مشخصات را هم می‌پذیرد', () => {
+    const result = importProductSeoSuggestion({
+      rawText: JSON.stringify({
+        fileType: PRODUCT_SEO_FILE_TYPE,
+        schemaVersion: 1,
+        suggestion: {
+          ...suggestion,
+          name: 'پرینتر اچ پی M402',
+          sku: 'HP-M402',
+          attributes: [{ group: 'عملکرد', name: 'سرعت چاپ', value: '38', unit: 'ppm' }],
+        },
+      }),
+      emptyOnly: false,
+      current: emptyCurrent,
+    })
+    expect(result.suggestion.name).toBe('پرینتر اچ پی M402')
+    expect(result.suggestion.sku).toBe('HP-M402')
+    expect(result.suggestion.attributes?.[0]?.name).toBe('سرعت چاپ')
+  })
+
   it('emptyOnly فیلد پر را حذف می‌کند', () => {
     expect(() =>
       importProductSeoSuggestion({

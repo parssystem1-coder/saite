@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  currentFieldsToSuggestion,
   emptyProductSeoCurrent,
   isSafeCanonicalUrl,
   listEmptySeoFields,
@@ -105,5 +106,37 @@ describe('emptyOnly helpers', () => {
     expect(picked.seoTitle).toBeUndefined()
     expect(picked.focusKeyword).toBeUndefined()
     expect(suggestionHasContent(picked)).toBe(false)
+  })
+})
+
+describe('currentFieldsToSuggestion', () => {
+  it('فیلدهای پر allowlist را برای ایمپورت برمی‌گرداند', () => {
+    const suggestion = currentFieldsToSuggestion({
+      ...emptyProductSeoCurrent(),
+      name: 'پرینتر اچ پی M402',
+      slug: 'hp-m402',
+      sku: 'HP-M402',
+      attributes: [{ group: 'عملکرد', name: 'حافظه', value: '256', unit: 'MB' }],
+      imageAlts: ['نما از جلو'],
+    })
+    expect(suggestion.name).toBe('پرینتر اچ پی M402')
+    expect(suggestion.sku).toBe('HP-M402')
+    expect(suggestion.attributes?.[0]).toEqual({
+      group: 'عملکرد',
+      name: 'حافظه',
+      value: '256',
+      unit: 'MB',
+    })
+    expect(suggestion.imageAlts).toEqual(['نما از جلو'])
+  })
+
+  it('نامک نامعتبر را از suggestion حذف می‌کند', () => {
+    const suggestion = currentFieldsToSuggestion({
+      ...emptyProductSeoCurrent(),
+      name: 'پرینتر',
+      slug: 'پرینتر فارسی',
+    })
+    expect(suggestion.name).toBe('پرینتر')
+    expect(suggestion.slug).toBeUndefined()
   })
 })

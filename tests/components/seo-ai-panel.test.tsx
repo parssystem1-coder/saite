@@ -58,7 +58,7 @@ describe('SeoAiPanel', () => {
     vi.unstubAllGlobals()
   })
 
-  it('دانلود فایل سئو JSON نسخه‌دار می‌سازد', () => {
+  it('دانلود فایل سئو JSON نسخه‌دار می‌سازد', async () => {
     const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:seo')
     const revokeObjectURL = vi.fn()
     const originalCreate = URL.createObjectURL
@@ -68,7 +68,7 @@ describe('SeoAiPanel', () => {
 
     renderWithProviders(
       <SeoAiPanel
-        draft={{ ...INITIAL_DRAFT, slug: 'hp-m402' }}
+        draft={{ ...INITIAL_DRAFT, name: 'پرینتر اچ پی M402', slug: 'hp-m402', sku: 'HP-M402' }}
         set={vi.fn()}
         faqs={INITIAL_FAQS}
         onFaqsChange={vi.fn()}
@@ -78,6 +78,17 @@ describe('SeoAiPanel', () => {
     expect(createObjectURL).toHaveBeenCalled()
     const blob = createObjectURL.mock.calls[0]?.[0] as Blob
     expect(blob.type).toContain('application/json')
+    const pack = JSON.parse(await blob.text()) as {
+      suggestion?: { name?: string; sku?: string }
+      expectedResponse: { suggestion: Record<string, unknown> }
+      product: { attributes: unknown[]; imageAlts: unknown[] }
+    }
+    expect(pack.suggestion?.name).toBe('پرینتر اچ پی M402')
+    expect(pack.suggestion?.sku).toBe('HP-M402')
+    expect(pack.expectedResponse.suggestion).toHaveProperty('attributes')
+    expect(pack.expectedResponse.suggestion).toHaveProperty('imageAlts')
+    expect(pack.product.attributes).toEqual([])
+    expect(JSON.stringify(pack)).not.toMatch(/priceToman|costToman|iranCode/)
     URL.createObjectURL = originalCreate
     URL.revokeObjectURL = originalRevoke
   })
@@ -108,6 +119,10 @@ describe('SeoAiPanel', () => {
       '/api/admin/products/seo/import',
       expect.objectContaining({ method: 'POST' })
     )
+    const importBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+      current: { name?: string; attributes?: unknown[]; imageAlts?: unknown[] }
+    }
+    expect(importBody.current).toMatchObject({ name: '', attributes: [], imageAlts: [] })
     expect(screen.getByText(/منبع: فایل ایمپورت‌شده/)).toBeInTheDocument()
 
     vi.unstubAllGlobals()

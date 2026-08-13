@@ -111,6 +111,13 @@ export const productSeoSuggestionSchema = z
 
 export type ProductSeoSuggestion = z.infer<typeof productSeoSuggestionSchema>
 
+export type ProductSeoAttributeCurrent = {
+  group?: string
+  name: string
+  value: string
+  unit?: string
+}
+
 export type ProductSeoCurrentFields = {
   name: string
   nameEn: string
@@ -128,9 +135,61 @@ export type ProductSeoCurrentFields = {
   focusKeyword: string
   canonicalUrl: string
   faqs: ReadonlyArray<{ question: string; answer: string }>
-  attributes: ReadonlyArray<{ name: string; value: string }>
+  attributes: ReadonlyArray<ProductSeoAttributeCurrent>
   imageAlts: ReadonlyArray<string>
 }
+
+const SUGGESTION_TEXT_KEYS = [
+  'name',
+  'nameEn',
+  'slug',
+  'sku',
+  'series',
+  'model',
+  'category',
+  'subCategory',
+  'brand',
+  'shortDescription',
+  'longDescription',
+  'seoTitle',
+  'seoDescription',
+  'focusKeyword',
+  'canonicalUrl',
+] as const
+
+export const productSeoFaqSnapshotSchema = z.object({
+  question: z.string().max(200),
+  answer: z.string().max(800),
+})
+
+export const productSeoAttributeSnapshotSchema = z.object({
+  group: z.string().max(80).optional().default(''),
+  name: z.string().max(80),
+  value: z.string().max(120),
+  unit: z.string().max(24).optional().default(''),
+})
+
+/** اسنپ‌شات پیش‌نویس برای generate/import — قیمت و خدمات اینجا نیستند. */
+export const productSeoCurrentSnapshotSchema = z.object({
+  name: z.string().max(PRODUCT_NAME_MAX).optional().default(''),
+  nameEn: z.string().max(PRODUCT_NAME_EN_MAX).optional().default(''),
+  slug: z.string().max(120).optional().default(''),
+  sku: z.string().max(80).optional().default(''),
+  series: z.string().max(100).optional().default(''),
+  model: z.string().max(100).optional().default(''),
+  category: z.string().max(80).optional().default(''),
+  subCategory: z.string().max(80).optional().default(''),
+  brand: z.string().max(100).optional().default(''),
+  shortDescription: z.string().max(SHORT_DESCRIPTION_MAX).optional().default(''),
+  longDescription: z.string().max(LONG_DESCRIPTION_MAX).optional().default(''),
+  seoTitle: z.string().max(120).optional().default(''),
+  seoDescription: z.string().max(300).optional().default(''),
+  focusKeyword: z.string().max(120).optional().default(''),
+  canonicalUrl: z.string().max(CANONICAL_URL_MAX).optional().default(''),
+  faqs: z.array(productSeoFaqSnapshotSchema).max(20).optional().default([]),
+  attributes: z.array(productSeoAttributeSnapshotSchema).max(30).optional().default([]),
+  imageAlts: z.array(z.string().max(IMAGE_ALT_MAX)).max(IMAGE_ALT_COUNT_MAX).optional().default([]),
+})
 
 /** نشانی canonical: خالی، مسیر داخلی، یا http(s). نه javascript: و نه //. */
 export function isSafeCanonicalUrl(value: string): boolean {
@@ -232,6 +291,54 @@ export function pickEmptyOnlySuggestion(
     else Object.assign(next, { [key]: suggestion[key] })
   }
   return next
+}
+
+/**
+ * پیش‌نویس فعلی → suggestion قابل ایمپورت.
+ * فقط فیلدهای allowlist و فقط اگر از اسکیما رد شوند.
+ * قیمت، موجودی و شناسه‌های تجاری اینجا ساخته نمی‌شوند.
+ */
+export function currentFieldsToSuggestion(current: ProductSeoCurrentFields): ProductSeoSuggestion {
+  const raw: ProductSeoSuggestion = {}
+  for (const key of SUGGESTION_TEXT_KEYS) {
+    const value = current[key].trim()
+    if (value) Object.assign(raw, { [key]: value })
+  }
+
+  const faqs = current.faqs
+    .filter(isCompleteFaq)
+    .slice(0, FAQ_MAX)
+    .map((faq) => ({ question: faq.question.trim(), answer: faq.answer.trim() }))
+  if (faqs.length >= FAQ_MIN) raw.faqs = faqs
+
+  const attributes = current.attributes
+    .filter((item) => item.name.trim() && item.value.trim())
+    .slice(0, ATTRIBUTE_MAX)
+    .map((item) => ({
+      group: (item.group ?? '').trim() || 'عمومی',
+      name: item.name.trim(),
+      value: item.value.trim(),
+      unit: (item.unit ?? '').trim(),
+    }))
+  if (attributes.length > 0) raw.attributes = attributes
+
+  const imageAlts = current.imageAlts
+    .map((item) => item.trim())
+    .filter((item) => item.length >= 3)
+    .slice(0, IMAGE_ALT_COUNT_MAX)
+  if (imageAlts.length > 0) raw.imageAlts = imageAlts
+
+  const sanitized = sanitizeProductSeoSuggestion(raw)
+  const accepted: ProductSeoSuggestion = {}
+  for (const key of SEO_SUGGESTION_KEYS) {
+    if (sanitized[key] === undefined) continue
+    const trial = { [key]: sanitized[key] } as ProductSeoSuggestion
+    const parsed = productSeoSuggestionSchema.safeParse(trial)
+    if (parsed.success && parsed.data[key] !== undefined) {
+      Object.assign(accepted, { [key]: parsed.data[key] })
+    }
+  }
+  return accepted
 }
 
 export function suggestionHasContent(suggestion: ProductSeoSuggestion): boolean {

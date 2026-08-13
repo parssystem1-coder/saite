@@ -198,7 +198,12 @@ export function SeoAiPanel({
     focusKeyword: draft.focusKeyword,
     canonicalUrl: draft.canonicalUrl,
     faqs: faqs.map((faq) => ({ question: faq.question, answer: faq.answer })),
-    attributes: attributes.map((item) => ({ name: item.name, value: item.value })),
+    attributes: attributes.map((item) => ({
+      group: item.group,
+      name: item.name,
+      value: item.value,
+      unit: item.unit,
+    })),
     imageAlts: images.map((image) => image.alt),
   })
 
@@ -329,10 +334,12 @@ export function SeoAiPanel({
       name: draft.name,
       nameEn: draft.nameEn,
       slug: draft.slug,
+      sku: draft.sku,
       brand: draft.brand,
       series: draft.series,
       model: draft.model,
       category: draft.category,
+      subCategory: draft.subCategory,
       shortDescription: draft.shortDescription,
       longDescription: draft.longDescription,
       specs: specsFromAttributes(attributes),
@@ -340,6 +347,7 @@ export function SeoAiPanel({
       emptyOnly,
       promptPackId: packId,
       keywordHints: insight?.related ?? [],
+      imageCount: images.length,
     })
     downloadJson(productSeoPackFilename(draft.slug), pack)
   }

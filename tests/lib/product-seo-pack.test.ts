@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  PRODUCT_SEO_EXCLUDED_KEYS,
   PRODUCT_SEO_FILE_TYPE,
   PRODUCT_SEO_IMPORT_MAX_CHARS,
   PRODUCT_SEO_SCHEMA_VERSION,
@@ -50,14 +51,78 @@ describe('buildProductSeoPack', () => {
     expect(pack.schemaVersion).toBe(1)
     expect(pack.exportedAt).toBe('2026-08-13T10:00:00.000Z')
     expect(pack.product.name).toBe('پرینتر اچ پی M402')
+    expect(pack.product.sku).toBe('')
+    expect(pack.product.attributes).toEqual([])
+    expect(pack.product.imageAlts).toEqual([])
+    expect(pack.allowlist).toEqual(SEO_SUGGESTION_KEYS)
+    expect(pack.suggestion?.name).toBe('پرینتر اچ پی M402')
     expect(pack.targets.seoTitle.max).toBe(PRODUCT_SEO_TARGETS.seoTitle.max)
-    expect(pack.emptyFields).toEqual([...SEO_SUGGESTION_KEYS])
+    expect(pack.emptyFields).not.toContain('name')
+    expect(pack.emptyFields).toContain('seoTitle')
+    expect(pack.emptyFields).toContain('attributes')
+    expect(pack.emptyFields).toContain('imageAlts')
     expect(pack.instructionsText).toMatch(/فقط یک شیء JSON برگردان/)
     expect(pack.instructionsText).toContain(PRODUCT_SEO_FILE_TYPE)
     expect(pack.instructionsText).toContain('schemaVersion')
+    expect(pack.instructionsText).toMatch(/nameEn/)
+    expect(pack.instructionsText).toMatch(/attributes/)
+    expect(pack.instructionsText).toMatch(/قیمت، موجودی/)
     expect(pack.expectedResponse.fileType).toBe(PRODUCT_SEO_FILE_TYPE)
+    expect(pack.expectedResponse.suggestion).toHaveProperty('name')
+    expect(pack.expectedResponse.suggestion).toHaveProperty('attributes')
+    expect(pack.expectedResponse.suggestion).toHaveProperty('imageAlts')
     expect(pack.promptPackId).toBe('product-seo.v1')
-    expect(JSON.stringify(pack)).not.toMatch(/costToman|priceToman/)
+    const serialized = JSON.stringify(pack)
+    for (const key of PRODUCT_SEO_EXCLUDED_KEYS) {
+      expect(serialized).not.toContain(`"${key}"`)
+    }
+  })
+
+  it('اکسپورت محصول پر را می‌توان دوباره ایمپورت کرد', () => {
+    const pack = buildProductSeoPack({
+      name: 'پرینتر اچ پی M402',
+      slug: 'hp-m402',
+      sku: 'HP-M402',
+      brand: 'HP',
+      current: {
+        ...currentEmpty,
+        name: 'پرینتر اچ پی M402',
+        nameEn: 'HP LaserJet Pro M402',
+        slug: 'hp-m402',
+        sku: 'HP-M402',
+        brand: 'HP',
+        model: 'M402',
+        category: 'printer',
+        shortDescription: 'پرینتر لیزری اداری مناسب دفتر کوچک.',
+        seoTitle: 'پرینتر اچ پی M402 | خرید و قیمت روز',
+        seoDescription:
+          'خرید پرینتر اچ پی M402 با گارانتی اصالت کالا و مشاوره تخصصی در فروشگاه ماشین‌های اداری سایت. مشخصات فنی و قیمت به‌روز.',
+        focusKeyword: 'پرینتر اچ پی M402',
+        canonicalUrl: '/products/hp-m402',
+        faqs: [
+          { question: 'گارانتی دارد؟', answer: 'بله، اصالت کالا تضمین می‌شود.' },
+          { question: 'ارسال چند روزه است؟', answer: 'معمولاً یک روز کاری.' },
+        ],
+        attributes: [{ group: 'عملکرد', name: 'سرعت چاپ', value: '38', unit: 'ppm' }],
+        imageAlts: ['پرینتر اچ پی M402 نمای جلو'],
+      },
+      emptyOnly: false,
+    })
+
+    expect(pack.product.sku).toBe('HP-M402')
+    expect(pack.product.attributes[0]?.name).toBe('سرعت چاپ')
+    expect(pack.suggestion?.faqs).toHaveLength(2)
+    expect(pack.suggestion?.attributes?.[0]?.unit).toBe('ppm')
+    expect(pack.suggestion?.imageAlts?.[0]).toMatch(/M402/)
+
+    const parsed = parseProductSeoImport(JSON.stringify(pack))
+    expect(parsed.ok).toBe(true)
+    if (parsed.ok) {
+      expect(parsed.value.name).toBe('پرینتر اچ پی M402')
+      expect(parsed.value.sku).toBe('HP-M402')
+      expect(parsed.value.attributes).toHaveLength(1)
+      expect(parsed.value.imageAlts).toEqual(['پرینتر اچ پی M402 نمای جلو'])
+    }
   })
 
   it('دستور بستهٔ سازمانی را در فایل اکسپورت می‌آورد', () => {
@@ -123,12 +188,13 @@ describe('parseProductSeoImport', () => {
     if (parsed.ok) expect(parsed.value.focusKeyword).toBe('پرینتر اچ پی M402')
   })
 
-  it('فایل خام اکسپورت بدون suggestion را رد می‌کند', () => {
+  it('اکسپورت محصول کاملاً خالی را بدون suggestion رد می‌کند', () => {
     const pack = buildProductSeoPack({
-      name: 'پرینتر',
+      name: '',
       current: currentEmpty,
       emptyOnly: true,
     })
+    expect(pack.suggestion).toBeUndefined()
     const parsed = parseProductSeoImport(JSON.stringify(pack))
     expect(parsed).toEqual({ ok: false, message: SEO_PACK_ERRORS.noSuggestion })
   })

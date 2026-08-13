@@ -7,7 +7,11 @@ import { PRODUCT_SEO_IMPORT_MAX_CHARS, SEO_PACK_ERRORS } from '@/lib/seo/product
 import { parseJsonBody, parseWithSchema } from '@/server/shared/validation'
 import { handleServiceError } from '@/server/shared/http-utils'
 import { ValidationError } from '@/server/shared/errors'
-import { emptyProductSeoCurrent } from '@/lib/seo/product-seo-suggestion'
+import {
+  emptyProductSeoCurrent,
+  productSeoCurrentSnapshotSchema,
+  productSeoFaqSnapshotSchema,
+} from '@/lib/seo/product-seo-suggestion'
 
 /**
  * POST /api/admin/products/seo/import
@@ -20,21 +24,11 @@ export const runtime = 'nodejs'
 
 const SEO_IMPORT_LIMIT = { max: 10, windowMs: 60_000 }
 
-const faqSnapshotSchema = z.object({
-  question: z.string().max(200),
-  answer: z.string().max(800),
-})
-
 const importBodySchema = z.object({
   rawText: z.string().min(1).max(PRODUCT_SEO_IMPORT_MAX_CHARS),
   emptyOnly: z.boolean().optional().default(true),
-  current: z.object({
-    seoTitle: z.string().max(120).optional().default(''),
-    seoDescription: z.string().max(300).optional().default(''),
-    focusKeyword: z.string().max(120).optional().default(''),
-    canonicalUrl: z.string().max(500).optional().default(''),
-  }),
-  faqs: z.array(faqSnapshotSchema).max(20).optional().default([]),
+  current: productSeoCurrentSnapshotSchema.optional(),
+  faqs: z.array(productSeoFaqSnapshotSchema).max(20).optional().default([]),
 })
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -69,13 +63,14 @@ export async function POST(req: NextRequest) {
     }
 
     const body = parseWithSchema(importBodySchema, rawBody)
+    const snapshot = body.current ?? emptyProductSeoCurrent()
     const result = importProductSeoSuggestion({
       rawText: body.rawText,
       emptyOnly: body.emptyOnly,
       current: {
         ...emptyProductSeoCurrent(),
-        ...body.current,
-        faqs: body.faqs,
+        ...snapshot,
+        faqs: snapshot.faqs.length > 0 ? snapshot.faqs : body.faqs,
       },
     })
 

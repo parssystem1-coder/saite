@@ -49,10 +49,24 @@ const payload = {
     suggestion,
   }),
   current: {
+    name: '',
+    nameEn: '',
+    slug: '',
+    sku: '',
+    series: '',
+    model: '',
+    category: '',
+    subCategory: '',
+    brand: '',
+    shortDescription: '',
+    longDescription: '',
     seoTitle: '',
     seoDescription: '',
     focusKeyword: '',
     canonicalUrl: '',
+    faqs: [],
+    attributes: [],
+    imageAlts: [],
   },
   faqs: [],
 }
@@ -95,6 +109,35 @@ describe('POST /api/admin/products/seo/import', () => {
     expect(body.suggestion.seoTitle).toContain('پرینتر')
     expect(body.promptVersion).toBe('import:v1')
     expect(body.source).toBe('file')
+  })
+
+  it('فایل کامل هویت و مشخصات را برای diff برمی‌گرداند', async () => {
+    mockedSession.mockResolvedValue(admin('operator'))
+    const res = await POST(
+      request({
+        ...payload,
+        emptyOnly: false,
+        rawText: JSON.stringify({
+          fileType: PRODUCT_SEO_FILE_TYPE,
+          schemaVersion: 1,
+          suggestion: {
+            ...suggestion,
+            name: 'پرینتر اچ پی M402',
+            sku: 'HP-M402',
+            attributes: [{ group: 'عملکرد', name: 'سرعت چاپ', value: '38', unit: 'ppm' }],
+            imageAlts: ['پرینتر اچ پی M402 نمای جلو'],
+          },
+        }),
+      })
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      suggestion: { name?: string; sku?: string; attributes?: unknown[]; imageAlts?: string[] }
+    }
+    expect(body.suggestion.name).toBe('پرینتر اچ پی M402')
+    expect(body.suggestion.sku).toBe('HP-M402')
+    expect(body.suggestion.attributes).toHaveLength(1)
+    expect(body.suggestion.imageAlts).toEqual(['پرینتر اچ پی M402 نمای جلو'])
   })
 
   it('فایل بدون schemaVersion → ۴۰۰', async () => {
