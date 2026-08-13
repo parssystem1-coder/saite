@@ -200,6 +200,51 @@ export const shippingRateCreateSchema = z.object({
   estimatedDays: z.number().int().min(0).optional(),
 })
 
+// ── محتوا (Content) ────────────────────────────────────────
+
+const slugSchema = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[a-z0-9\u0600-\u06FF]+(?:-[a-z0-9\u0600-\u06FF]+)*$/i, 'slug نامعتبر است')
+
+export const pageCreateSchema = z.object({
+  slug: slugSchema,
+  title: z.string().min(1).max(300),
+  content: z.string().min(1).max(200_000),
+  metaTitle: z.string().max(300).optional(),
+  metaDescription: z.string().max(500).optional(),
+  isPublished: z.boolean().optional(),
+  publishedAt: isoDate.nullable().optional(),
+})
+
+export const pageUpdateSchema = pageCreateSchema.partial()
+
+export const postCreateSchema = z.object({
+  slug: slugSchema,
+  title: z.string().min(1).max(300),
+  excerpt: z.string().max(1000).optional(),
+  content: z.string().min(1).max(200_000),
+  coverImage: z.string().max(500).optional(),
+  tags: z.array(z.string().max(50)).max(30).optional(),
+  metaTitle: z.string().max(300).optional(),
+  metaDescription: z.string().max(500).optional(),
+  authorName: z.string().max(100).optional(),
+  isPublished: z.boolean().optional(),
+  publishedAt: isoDate.nullable().optional(),
+})
+
+export const postUpdateSchema = postCreateSchema.partial()
+
+export const menuItemCreateSchema = z.object({
+  label: z.string().min(1).max(100),
+  url: z.string().min(1).max(500),
+  parentId: z.string().max(100).nullable().optional(),
+  order: z.number().int().min(0).optional(),
+  location: z.enum(['header', 'footer', 'sidebar']).optional(),
+  active: z.boolean().optional(),
+})
+
 // ── helper ها ──────────────────────────────────────────────
 
 /**
