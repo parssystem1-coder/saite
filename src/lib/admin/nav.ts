@@ -366,6 +366,15 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         planned: ['افزودن و ویرایش درگاه', 'اعتبارسنجی و انتخاب خودکار'],
         requiredPermission: 'settings:write',
       },
+      {
+        id: 'seo-connections',
+        label: 'اتصالات سئو',
+        href: '/admin/settings/seo',
+        icon: 'settings',
+        description: 'وضعیت اتصال Search Console، GA4، GTM و ابزارهای سئو — بدون نمایش کلید',
+        planned: ['Search Console', 'GA4', 'GTM', 'Ahrefs/SEMrush'],
+        requiredPermission: 'settings:write',
+      },
     ],
   },
 ]

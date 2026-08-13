@@ -14,6 +14,7 @@ import { MediaPanel } from './panels/MediaPanel'
 import { ContentPanel } from './panels/ContentPanel'
 import { SeoPanel } from './panels/SeoPanel'
 import { LogisticsPanel } from './panels/LogisticsPanel'
+import { SeoAiPanel } from './panels/SeoAiPanel'
 import { createMockProductEditorAdapter } from '@/lib/product-editor/mock-adapter'
 
 export default function ProductEditor({ initialValue, onSave, onPublish }: ProductEditorProps) {
@@ -71,6 +72,10 @@ export default function ProductEditor({ initialValue, onSave, onPublish }: Produ
     content: draft.longDescription ? 0 : 1,
     seo: Object.values(checks).filter((value) => !value).length,
     logistics: 0,
+    'seo-ai':
+      Number(!draft.seoTitle.trim()) +
+      Number(!draft.seoDescription.trim()) +
+      Number(!draft.focusKeyword.trim()),
   }
 
   const save = async (publish = false) => {
@@ -125,6 +130,18 @@ export default function ProductEditor({ initialValue, onSave, onPublish }: Produ
             <SeoPanel draft={draft} set={set} faqs={faqs} onFaqsChange={setFaqs} schema={schema} />
           )}
           {activeTab === 'logistics' && <LogisticsPanel />}
+          {activeTab === 'seo-ai' && (
+            <SeoAiPanel
+              draft={draft}
+              set={set}
+              faqs={faqs}
+              onFaqsChange={setFaqs}
+              attributes={attributes}
+              onAttributesChange={setAttributes}
+              images={images}
+              onImagesChange={setImages}
+            />
+          )}
         </main>
         <ProductSidebar
           score={score}

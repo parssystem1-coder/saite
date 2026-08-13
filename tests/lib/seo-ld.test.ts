@@ -23,8 +23,10 @@ describe('buildProductLd', () => {
     )
     const offers = ld.offers as Record<string, unknown>
     expect(offers).toBeDefined()
-    expect(offers.price).toBe(4_850_000)
+    expect(offers.priceCurrency).toBe('IRR')
+    expect(offers.price).toBe('48500000')
     expect(offers.availability).toBe('https://schema.org/InStock')
+    expect(String(offers.availability)).not.toMatch(/\[|\]|\(/)
   })
 
   it('کالای استعلامی نباید offers داشته باشد', () => {

@@ -8,30 +8,32 @@ export const PRODUCT_TABS: Array<{ id: TabKey; label: string }> = [
   { id: 'content', label: 'محتوا' },
   { id: 'seo', label: 'سئو و اسکیما' },
   { id: 'logistics', label: 'خدمات و ارتباطات' },
+  { id: 'seo-ai', label: 'دستیار سئو (AI)' },
 ];
 
+/** محصول جدید — هویت و محتوا خالی؛ قیمت و خدمات را دستیار پر نمی‌کند. */
 export const INITIAL_DRAFT: ProductDraft = {
   name: '',
   nameEn: '',
   slug: '',
   sku: '',
-  mpn: 'C5J91A',
+  mpn: '',
   gtin: '',
   iranCode: '',
-  category: 'printer',
-  subCategory: 'laser-mono',
-  brand: 'HP',
-  series: 'LaserJet Pro',
-  model: 'M402dne',
+  category: '',
+  subCategory: '',
+  brand: '',
+  series: '',
+  model: '',
   condition: 'new',
-  priceToman: 72000000,
+  priceToman: '',
   salePriceToman: '',
   costToman: '',
   stockStatus: 'in_stock',
   stock: '',
   lowStockThreshold: 3,
   preparationDays: 1,
-  focusKeyword: 'پرینتر اچ پی M402dne',
+  focusKeyword: '',
   seoTitle: '',
   seoDescription: '',
   canonicalUrl: '',
@@ -42,23 +44,6 @@ export const INITIAL_DRAFT: ProductDraft = {
   customEmojis: [],
 };
 
-export const INITIAL_ATTRIBUTES: Attribute[] = [
-  { id: 'print-tech', group: 'چاپ و عملکرد', name: 'تکنولوژی چاپ', value: 'لیزری', unit: '', filterable: true, comparable: true, inSchema: true },
-  { id: 'print-type', group: 'چاپ و عملکرد', name: 'نوع چاپ', value: 'تک‌رنگ', unit: '', filterable: true, comparable: true, inSchema: true },
-  { id: 'speed', group: 'چاپ و عملکرد', name: 'سرعت چاپ A4', value: '38', unit: 'ppm', filterable: true, comparable: true, inSchema: true },
-  { id: 'resolution', group: 'چاپ و عملکرد', name: 'رزولوشن چاپ', value: '1200 × 1200', unit: 'dpi', filterable: false, comparable: true, inSchema: true },
-  { id: 'duplex', group: 'چاپ و عملکرد', name: 'چاپ دورو خودکار', value: 'دارد', unit: '', filterable: true, comparable: true, inSchema: true },
-  { id: 'network', group: 'اتصالات', name: 'اتصال شبکه', value: 'Gigabit Ethernet', unit: '', filterable: true, comparable: true, inSchema: true },
-  { id: 'wifi', group: 'اتصالات', name: 'وای‌فای', value: 'ندارد', unit: '', filterable: true, comparable: true, inSchema: true },
-  { id: 'paper-size', group: 'کاغذ', name: 'سایز چاپ', value: 'A4', unit: '', filterable: true, comparable: true, inSchema: true },
-];
+export const INITIAL_ATTRIBUTES: Attribute[] = [];
 
-export const INITIAL_FAQS: ProductFaq[] = [
-  {
-    id: 'faq-1',
-    question: 'آیا پرینتر HP M402dne وای‌فای دارد؟',
-    answer: 'خیر. این مدل از شبکه گیگابیت اترنت و USB استفاده می‌کند.',
-    visible: true,
-    inSchema: true,
-  },
-];
+export const INITIAL_FAQS: ProductFaq[] = [];

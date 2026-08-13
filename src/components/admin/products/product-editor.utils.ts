@@ -1,8 +1,10 @@
+import { tomanToRial } from '@/lib/money';
+import { buildProductOfferLd } from '@/lib/seo/product-offer';
 import type { Attribute, ProductDraft, ProductFaq, ProductImage, SeoChecks } from './product-editor.types';
 
-export const uid = () => Math.random().toString(36).slice(2, 10);
+export { tomanToRial };
 
-export const tomanToRial = (value: number | '') => value === '' ? 0 : value * 10;
+export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const wordCount = (value: string) => value.trim() ? value.trim().split(/\s+/).length : 0;
 
@@ -33,29 +35,34 @@ export const buildProductSchema = (
   draft: ProductDraft,
   attributes: Attribute[],
   images: ProductImage[],
-) => ({
-  '@context': 'https://schema.org/',
-  '@type': 'Product',
-  name: draft.name || undefined,
-  alternateName: draft.nameEn || undefined,
-  sku: draft.sku || undefined,
-  mpn: draft.mpn || undefined,
-  gtin13: draft.gtin || undefined,
-  brand: { '@type': 'Brand', name: draft.brand },
-  image: images.map(image => image.preview).filter(url => !url.startsWith('blob:')),
-  // blob: URLs فقط پیش‌نمایش جلسه هستند — نباید وارد JSON-LD منتشرشده شوند
-  description: draft.shortDescription || undefined,
-  additionalProperty: attributes
-    .filter(attribute => attribute.inSchema && attribute.name.trim())
-    .map(attribute => ({
-      '@type': 'PropertyValue',
-      name: attribute.name,
-      value: `${attribute.value}${attribute.unit ? ` ${attribute.unit}` : ''}`,
-    })),
-  offers: {
-    '@type': 'Offer',
-    priceCurrency: draft.priceCurrency,
-    price: String(tomanToRial(draft.salePriceToman || draft.priceToman)),
-    availability: `https://schema.org/${draft.stockStatus === 'in_stock' ? 'InStock' : 'OutOfStock'}`,
-  },
-});
+) => {
+  const offers = buildProductOfferLd({
+    priceToman: draft.priceToman,
+    salePriceToman: draft.salePriceToman,
+    stockStatus: draft.stockStatus,
+    condition: draft.condition,
+    url: draft.canonicalUrl.trim() || undefined,
+  });
+
+  return {
+    '@context': 'https://schema.org/',
+    '@type': 'Product',
+    name: draft.name || undefined,
+    alternateName: draft.nameEn || undefined,
+    sku: draft.sku || undefined,
+    mpn: draft.mpn || undefined,
+    gtin13: draft.gtin || undefined,
+    brand: { '@type': 'Brand', name: draft.brand },
+    // blob: URLs فقط پیش‌نمایش جلسه هستند — نباید وارد JSON-LD منتشرشده شوند
+    image: images.map(image => image.preview).filter(url => !url.startsWith('blob:')),
+    description: draft.shortDescription || undefined,
+    additionalProperty: attributes
+      .filter(attribute => attribute.inSchema && attribute.name.trim())
+      .map(attribute => ({
+        '@type': 'PropertyValue',
+        name: attribute.name,
+        value: `${attribute.value}${attribute.unit ? ` ${attribute.unit}` : ''}`,
+      })),
+    ...(offers ? { offers } : {}),
+  };
+};

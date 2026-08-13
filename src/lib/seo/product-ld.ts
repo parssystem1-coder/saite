@@ -1,5 +1,6 @@
-import { absoluteUrl } from '@/lib/seo/site-url'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
+import { buildProductOfferLd } from '@/lib/seo/product-offer'
+import { absoluteUrl } from '@/lib/seo/site-url'
 import { getRatingSummary, type Product } from '@/types/product'
 
 /** Product (+ optional Offer, AggregateRating, Review) schema.org */
@@ -42,21 +43,14 @@ export function buildProductLd(product: Product): Record<string, unknown> {
     }))
   }
 
-  if (product.priceType === 'fixed' && product.price !== undefined) {
-    ld.offers = {
-      '@type': 'Offer',
+  if (product.priceType === 'fixed') {
+    const offers = buildProductOfferLd({
+      priceToman: product.price,
+      stockStatus: product.stockStatus,
+      condition: product.condition,
       url: absoluteUrl(`/products/${product.slug}`),
-      priceCurrency: 'IRR',
-      price: product.price,
-      availability:
-        product.stockStatus === 'out_of_stock'
-          ? 'https://schema.org/OutOfStock'
-          : 'https://schema.org/InStock',
-      itemCondition:
-        product.condition === 'refurbished'
-          ? 'https://schema.org/RefurbishedCondition'
-          : 'https://schema.org/NewCondition',
-    }
+    })
+    if (offers) ld.offers = offers
   }
 
   return ld

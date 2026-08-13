@@ -1,3 +1,9 @@
+import {
+  GA4_CONNECT_ORIGINS,
+  GA4_IMG_ORIGINS,
+  GA4_SCRIPT_ORIGINS,
+} from './consent/analytics-consent'
+
 /**
  * هدرهای امنیتی HTTP — تنها منبع حقیقت.
  *
@@ -53,6 +59,15 @@ export interface HttpHeader {
 /** میزبان‌هایی که تصویر از آن‌ها مجاز است — با next.config هم‌راستا بماند */
 const IMAGE_HOSTS = ['https://images.unsplash.com']
 
+export type CspOptions = {
+  /**
+   * اجازهٔ میزبان‌های رسمی GA4/GTM در صفحات عمومی.
+   * پنل ادمین این را نمی‌گذارد — اسکریپت تحلیل آنجا بار نمی‌شود.
+   * iframe GTM (ns.html) عمداً باز نمی‌شود — frame-src 'none' می‌ماند.
+   */
+  allowAnalytics?: boolean
+}
+
 /**
  * پایهٔ API خارجی، اگر تعریف شده باشد.
  *
@@ -80,7 +95,8 @@ function externalApiOrigin(): string[] {
  */
 export function buildContentSecurityPolicy(
   isDev = process.env.NODE_ENV !== 'production',
-  nonce?: string
+  nonce?: string,
+  options: CspOptions = {}
 ): string {
   /*
     ── script-src ────────────────────────────────────────────────
@@ -106,6 +122,9 @@ export function buildContentSecurityPolicy(
     // eval فقط برای Fast Refresh در توسعه لازم است
     scriptSrc.push("'unsafe-eval'")
   }
+  if (options.allowAnalytics) {
+    scriptSrc.push(...GA4_SCRIPT_ORIGINS)
+  }
 
   const directives: Record<string, string[]> = {
     'default-src': ["'self'"],
@@ -121,12 +140,24 @@ export function buildContentSecurityPolicy(
     'script-src': scriptSrc,
     // Tailwind و framer-motion استایل inline تولید می‌کنند
     'style-src': ["'self'", "'unsafe-inline'"],
-    'img-src': ["'self'", 'data:', 'blob:', ...IMAGE_HOSTS],
+    'img-src': [
+      "'self'",
+      'data:',
+      'blob:',
+      ...IMAGE_HOSTS,
+      ...(options.allowAnalytics ? GA4_IMG_ORIGINS : []),
+    ],
     'font-src': ["'self'", 'data:'],
     'connect-src': isDev
       ? // websocket برای hot reload
-        ["'self'", 'ws:', 'wss:', ...externalApiOrigin()]
-      : ["'self'", ...externalApiOrigin()],
+        [
+          "'self'",
+          'ws:',
+          'wss:',
+          ...externalApiOrigin(),
+          ...(options.allowAnalytics ? GA4_CONNECT_ORIGINS : []),
+        ]
+      : ["'self'", ...externalApiOrigin(), ...(options.allowAnalytics ? GA4_CONNECT_ORIGINS : [])],
     'manifest-src': ["'self'"],
     'media-src': ["'self'"],
     'worker-src': ["'self'", 'blob:'],
@@ -154,10 +185,11 @@ export function buildContentSecurityPolicy(
  */
 export function buildSecurityHeaders(
   isDev = process.env.NODE_ENV !== 'production',
-  nonce?: string
+  nonce?: string,
+  options: CspOptions = {}
 ): HttpHeader[] {
   const headers: HttpHeader[] = [
-    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy(isDev, nonce) },
+    { key: 'Content-Security-Policy', value: buildContentSecurityPolicy(isDev, nonce, options) },
     // پشتیبان CSP برای مرورگرهای قدیمی که frame-ancestors را نمی‌فهمند
     { key: 'X-Frame-Options', value: 'DENY' },
     // جلوگیری از حدس نوع فایل — پایهٔ حملهٔ آپلود تصویرِ حاوی اسکریپت
