@@ -4,7 +4,6 @@ import { prisma } from '@/server/shared/db'
 import { MAX_LINES, MAX_QUANTITY_PER_LINE } from '@/server/shared/constants'
 import { ordersRepository } from './repository'
 import { assertValidTransition } from './state-machine'
-import { eventBus } from '@/server/shared/event-bus'
 import { OrderEvents } from '@/server/shared/event-types'
 import { inventoryRepository } from '@/server/modules/inventory/repository'
 import { PAYMENT_INTENT_TTL_MS } from '@/server/shared/constants'
@@ -145,10 +144,35 @@ export const ordersService = {
       order.status as import('./state-machine').OrderState,
       newStatus as import('./state-machine').OrderState
     )
-    const updated = await ordersRepository.updateStatus(orderId, newStatus)
-    if (newStatus === 'paid') await inventoryRepository.confirmOrder(orderId)
-    if (newStatus === 'cancelled') await inventoryRepository.releaseOrder(orderId)
-    await eventBus.publish(OrderEvents.statusChanged, { orderId, from: order.status, to: newStatus, actorId })
-    return updated
+
+    // ── گذار اتمیک: status + inventory + outbox در یک تراکنش ────────────
+    // پیش از این سه عمل جدا بودند؛ اگر پس از updateStatus('paid') کسر موجودی
+    // شکست می‌خورد، وضعیت paid ثبت شده بود ولی موجودی کم نشده و رویدادی هم
+    // publish نشده بود. updateMany شرطی (where status=from) هم دو درخواست
+    // هم‌زمان را به یک برنده محدود می‌کند (optimistic state check).
+    return prisma.$transaction(async (tx: any) => {
+      const res = await tx.order.updateMany({
+        where: { id: orderId, status: order.status },
+        data: { status: newStatus },
+      })
+      if (res.count !== 1) {
+        // درخواست موازی زودتر گذار زده — همان قرارداد قبلی: خطای گذار نامعتبر
+        const { InvalidStateTransitionError } = await import('./state-machine')
+        throw new InvalidStateTransitionError(order.status, newStatus)
+      }
+
+      if (newStatus === 'paid') await inventoryRepository.confirmOrderInTx(tx, orderId)
+      if (newStatus === 'cancelled') await inventoryRepository.releaseOrderInTx(tx, orderId, 'released')
+
+      await tx.outboxEvent.create({
+        data: {
+          type: OrderEvents.statusChanged,
+          payload: { orderId, from: order.status, to: newStatus, actorId } as any,
+          aggregateId: orderId,
+        },
+      })
+
+      return tx.order.findUnique({ where: { id: orderId } })
+    })
   },
 }
