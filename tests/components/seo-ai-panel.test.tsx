@@ -55,4 +55,59 @@ describe('SeoAiPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('سقف تولید سئو')
     vi.unstubAllGlobals()
   })
+
+  it('دانلود فایل سئو JSON نسخه‌دار می‌سازد', () => {
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:seo')
+    const revokeObjectURL = vi.fn()
+    const originalCreate = URL.createObjectURL
+    const originalRevoke = URL.revokeObjectURL
+    URL.createObjectURL = createObjectURL
+    URL.revokeObjectURL = revokeObjectURL
+
+    renderWithProviders(
+      <SeoAiPanel
+        draft={{ ...INITIAL_DRAFT, slug: 'hp-m402' }}
+        set={vi.fn()}
+        faqs={INITIAL_FAQS}
+        onFaqsChange={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'دانلود فایل سئو' }))
+    expect(createObjectURL).toHaveBeenCalled()
+    const blob = createObjectURL.mock.calls[0]?.[0] as Blob
+    expect(blob.type).toContain('application/json')
+    URL.createObjectURL = originalCreate
+    URL.revokeObjectURL = originalRevoke
+  })
+
+  it('ایمپورت را به پنل diff می‌برد و خودکار اعمال نمی‌کند', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ suggestion, promptVersion: 'import:v1', source: 'file' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const set = vi.fn()
+    renderWithProviders(
+      <SeoAiPanel
+        draft={{ ...INITIAL_DRAFT, seoTitle: '' }}
+        set={set}
+        faqs={INITIAL_FAQS}
+        onFaqsChange={vi.fn()}
+      />
+    )
+
+    const file = new File([JSON.stringify({ suggestion })], 'seo.json', { type: 'application/json' })
+    fireEvent.change(screen.getByLabelText('ایمپورت فایل سئو'), { target: { files: [file] } })
+
+    await waitFor(() => expect(screen.getByText('عنوان سئو')).toBeInTheDocument())
+    expect(set).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/products/seo/import',
+      expect.objectContaining({ method: 'POST' })
+    )
+    expect(screen.getByText(/منبع: فایل ایمپورت‌شده/)).toBeInTheDocument()
+
+    vi.unstubAllGlobals()
+  })
 })

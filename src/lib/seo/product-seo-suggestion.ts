@@ -150,3 +150,18 @@ export const SEO_FIELD_LABELS: Record<SeoSuggestionKey, string> = {
 export function stripMarkup(value: string): string {
   return value.replace(/<[^>]*>/g, '').replace(/&lt;|&gt;|&amp;/g, ' ').trim()
 }
+
+/** پاکسازی متن پیشنهاد پس از zod — HTML تفسیر نمی‌شود. */
+export function sanitizeProductSeoSuggestion(value: ProductSeoSuggestion): ProductSeoSuggestion {
+  return {
+    seoTitle: value.seoTitle !== undefined ? stripMarkup(value.seoTitle) : undefined,
+    seoDescription:
+      value.seoDescription !== undefined ? stripMarkup(value.seoDescription) : undefined,
+    focusKeyword: value.focusKeyword !== undefined ? stripMarkup(value.focusKeyword) : undefined,
+    canonicalUrl: value.canonicalUrl !== undefined ? stripMarkup(value.canonicalUrl) : undefined,
+    faqs: value.faqs?.map((faq) => ({
+      question: stripMarkup(faq.question),
+      answer: stripMarkup(faq.answer),
+    })),
+  }
+}

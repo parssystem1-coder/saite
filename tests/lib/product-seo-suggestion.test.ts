@@ -4,6 +4,7 @@ import {
   listEmptySeoFields,
   pickEmptyOnlySuggestion,
   productSeoSuggestionSchema,
+  sanitizeProductSeoSuggestion,
   suggestionHasContent,
 } from '@/lib/seo/product-seo-suggestion'
 
@@ -65,6 +66,16 @@ describe('productSeoSuggestionSchema', () => {
       ],
     })
     expect(result.success).toBe(true)
+  })
+})
+
+describe('sanitizeProductSeoSuggestion', () => {
+  it('تگ HTML را از پیشنهاد پاک می‌کند', () => {
+    const cleaned = sanitizeProductSeoSuggestion({
+      focusKeyword: '<iframe src="https://evil.test"></iframe>پرینتر اچ پی M402',
+    })
+    expect(cleaned.focusKeyword).toBe('پرینتر اچ پی M402')
+    expect(cleaned.focusKeyword).not.toMatch(/iframe|<|>/)
   })
 })
 

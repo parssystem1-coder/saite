@@ -131,7 +131,13 @@ export default function ProductEditor({ initialValue, onSave, onPublish }: Produ
           )}
           {activeTab === 'logistics' && <LogisticsPanel />}
           {activeTab === 'seo-ai' && (
-            <SeoAiPanel draft={draft} set={set} faqs={faqs} onFaqsChange={setFaqs} />
+            <SeoAiPanel
+              draft={draft}
+              set={set}
+              faqs={faqs}
+              onFaqsChange={setFaqs}
+              attributes={attributes}
+            />
           )}
         </main>
         <ProductSidebar

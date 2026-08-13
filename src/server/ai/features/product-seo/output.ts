@@ -1,9 +1,10 @@
 import 'server-only'
 import { z } from 'zod'
 import { ValidationError } from '@/server/shared/errors'
+import { tryExtractJsonObject } from '@/lib/seo/product-seo-pack'
 import {
   productSeoSuggestionSchema,
-  stripMarkup,
+  sanitizeProductSeoSuggestion,
   type ProductSeoSuggestion,
 } from '@/lib/seo/product-seo-suggestion'
 
@@ -15,38 +16,11 @@ export const PRODUCT_SEO_PARSE_ERROR =
  * JSON خراب = خطا؛ هرگز حدس نمی‌زنیم.
  */
 export function extractJsonObject(rawText: string): unknown {
-  const trimmed = rawText.trim()
-  if (!trimmed) {
+  const extracted = tryExtractJsonObject(rawText)
+  if (!extracted.ok) {
     throw new ValidationError({ seo: PRODUCT_SEO_PARSE_ERROR }, PRODUCT_SEO_PARSE_ERROR)
   }
-
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  const candidate = (fenced?.[1] ?? trimmed).trim()
-  const start = candidate.indexOf('{')
-  const end = candidate.lastIndexOf('}')
-  if (start === -1 || end <= start) {
-    throw new ValidationError({ seo: PRODUCT_SEO_PARSE_ERROR }, PRODUCT_SEO_PARSE_ERROR)
-  }
-
-  try {
-    return JSON.parse(candidate.slice(start, end + 1)) as unknown
-  } catch {
-    throw new ValidationError({ seo: PRODUCT_SEO_PARSE_ERROR }, PRODUCT_SEO_PARSE_ERROR)
-  }
-}
-
-function sanitizeSuggestion(value: ProductSeoSuggestion): ProductSeoSuggestion {
-  return {
-    seoTitle: value.seoTitle !== undefined ? stripMarkup(value.seoTitle) : undefined,
-    seoDescription:
-      value.seoDescription !== undefined ? stripMarkup(value.seoDescription) : undefined,
-    focusKeyword: value.focusKeyword !== undefined ? stripMarkup(value.focusKeyword) : undefined,
-    canonicalUrl: value.canonicalUrl !== undefined ? stripMarkup(value.canonicalUrl) : undefined,
-    faqs: value.faqs?.map((faq) => ({
-      question: stripMarkup(faq.question),
-      answer: stripMarkup(faq.answer),
-    })),
-  }
+  return extracted.value
 }
 
 /**
@@ -63,7 +37,7 @@ export function parseProductSeoOutput(rawText: string): ProductSeoSuggestion {
     )
   }
 
-  const sanitized = sanitizeSuggestion(result.data)
+  const sanitized = sanitizeProductSeoSuggestion(result.data)
   const again = productSeoSuggestionSchema.safeParse(sanitized)
   if (!again.success) {
     throw new ValidationError(
