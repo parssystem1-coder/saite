@@ -107,6 +107,22 @@ describe('POST /api/admin/products/seo/generate', () => {
     expect(chatArgs?.promptVersion).toBe('product-seo.v1')
   })
 
+  it('بستهٔ سازمانی را به گیتوی می‌فرستد', async () => {
+    mockedSession.mockResolvedValue(admin('operator'))
+    const res = await POST(request({ ...payload, packId: 'product-seo.commercial.v1' }))
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { promptVersion: string }
+    expect(body.promptVersion).toBe('product-seo.commercial.v1')
+    expect(mockedChat.mock.calls[0]?.[0]?.promptVersion).toBe('product-seo.commercial.v1')
+  })
+
+  it('بستهٔ نامعتبر → ۴۰۰', async () => {
+    mockedSession.mockResolvedValue(admin('admin'))
+    const res = await POST(request({ ...payload, packId: 'evil.v9' }))
+    expect(res.status).toBe(400)
+    expect(mockedChat).not.toHaveBeenCalled()
+  })
+
   it('JSON خراب مدل → خطای فارسی ۴۰۰', async () => {
     mockedSession.mockResolvedValue(admin('admin'))
     mockedChat.mockResolvedValue('متن آزاد بدون JSON')

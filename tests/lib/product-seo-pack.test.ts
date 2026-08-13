@@ -67,7 +67,19 @@ describe('buildProductSeoPack', () => {
     expect(pack.instructionsText).toContain(PRODUCT_SEO_FILE_TYPE)
     expect(pack.instructionsText).toContain('schemaVersion')
     expect(pack.expectedResponse.fileType).toBe(PRODUCT_SEO_FILE_TYPE)
+    expect(pack.promptPackId).toBe('product-seo.v1')
     expect(JSON.stringify(pack)).not.toMatch(/costToman|priceToman/)
+  })
+
+  it('دستور بستهٔ سازمانی را در فایل اکسپورت می‌آورد', () => {
+    const pack = buildProductSeoPack({
+      name: 'پرینتر',
+      current: currentEmpty,
+      emptyOnly: true,
+      promptPackId: 'product-seo.commercial.v1',
+    })
+    expect(pack.promptPackId).toBe('product-seo.commercial.v1')
+    expect(pack.instructionsText).toMatch(/سازمانی/)
   })
 
   it('نام فایل را فقط با اسلاگ امن می‌سازد', () => {

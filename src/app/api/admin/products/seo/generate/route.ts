@@ -6,6 +6,10 @@ import { detectInjection } from '@/server/ai/safety'
 import { generateProductSeoSuggestion } from '@/server/ai/features/product-seo/generate'
 import { parseJsonBody, parseWithSchema } from '@/server/shared/validation'
 import { handleServiceError } from '@/server/shared/http-utils'
+import {
+  DEFAULT_PRODUCT_SEO_PACK_ID,
+  PRODUCT_SEO_PROMPT_PACK_IDS,
+} from '@/lib/seo/product-seo-prompt-packs'
 
 /**
  * POST /api/admin/products/seo/generate
@@ -42,6 +46,8 @@ const generateBodySchema = z.object({
   }),
   faqs: z.array(faqSnapshotSchema).max(20).optional().default([]),
   specs: z.unknown().optional(),
+  packId: z.enum(PRODUCT_SEO_PROMPT_PACK_IDS).optional().default(DEFAULT_PRODUCT_SEO_PACK_ID),
+  keywordHints: z.array(z.string().max(80)).max(8).optional().default([]),
 })
 
 export async function POST(req: NextRequest) {
@@ -68,7 +74,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = parseWithSchema(generateBodySchema, await parseJsonBody(req))
 
-    if (detectInjection({ draft: body.draft, faqs: body.faqs })) {
+    if (detectInjection({ draft: body.draft, faqs: body.faqs, keywordHints: body.keywordHints })) {
       return NextResponse.json({ error: 'ورودی غیرمجاز شناسایی شد.', code: 'INVALID_INPUT' }, { status: 400 })
     }
 
@@ -92,6 +98,8 @@ export async function POST(req: NextRequest) {
       shortDescription: body.draft.shortDescription,
       longDescription: body.draft.longDescription,
       specs: body.specs ?? null,
+      packId: body.packId,
+      keywordHints: body.keywordHints,
     })
 
     return NextResponse.json({

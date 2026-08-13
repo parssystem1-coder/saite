@@ -12,7 +12,7 @@ import type {
   StreamChatMessage,
 } from './stream-types'
 import {
-  renderProductSeoPrompt,
+  renderProductSeoPromptByPack,
   toProductSeoPromptVars,
 } from './features/product-seo/prompt'
 
@@ -29,7 +29,7 @@ export async function callChat(opts: ChatOptions) {
     throw new ValidationError({ prompt: 'ورودی مشکوک به prompt injection شناسایی شد' }, 'ورودی غیرمجاز')
   }
 
-  const prompt = renderPrompt(opts.feature, opts.variables)
+  const prompt = renderPrompt(opts.feature, opts.variables, opts.promptVersion)
   const safePrompt = redactPII(prompt)
 
   const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY)
@@ -172,9 +172,14 @@ export async function callEmbedding(text: string) {
   return openaiEmbeddings.create(text)
 }
 
-function renderPrompt(feature: string, variables: Record<string, unknown>): string {
+function renderPrompt(
+  feature: string,
+  variables: Record<string, unknown>,
+  promptVersion?: string
+): string {
   const templates: Record<string, (vars: Record<string, unknown>) => string> = {
-    'product-seo': (vars) => renderProductSeoPrompt(toProductSeoPromptVars(vars)),
+    'product-seo': (vars) =>
+      renderProductSeoPromptByPack(promptVersion, toProductSeoPromptVars(vars)),
     'support-chat': (vars) => `شما دستیار پشتیبانی فروشگاه Saite هستید...
 سؤال مشتری: ${vars.question}`,
     'admin-assist': (vars) => `شما دستیار مدیر فروشگاه Saite هستید...

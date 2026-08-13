@@ -110,4 +110,58 @@ describe('SeoAiPanel', () => {
 
     vi.unstubAllGlobals()
   })
+
+  it('بستهٔ پرامپت را همراه تولید می‌فرستد', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ suggestion, promptVersion: 'product-seo.commercial.v1' }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderWithProviders(
+      <SeoAiPanel draft={INITIAL_DRAFT} set={vi.fn()} faqs={INITIAL_FAQS} onFaqsChange={vi.fn()} />
+    )
+    fireEvent.change(screen.getByLabelText('بستهٔ پرامپت'), {
+      target: { value: 'product-seo.commercial.v1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'تولید خودکار' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { packId: string }
+    expect(body.packId).toBe('product-seo.commercial.v1')
+    vi.unstubAllGlobals()
+  })
+
+  it('بررسی کلمهٔ کلیدی را نشان می‌دهد و draft را عوض نمی‌کند', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        insight: {
+          keyword: 'پرینتر اچ پی',
+          searchVolume: 900,
+          difficulty: 33,
+          related: ['خرید پرینتر اچ پی'],
+          source: 'mock',
+          mode: 'stub',
+        },
+      }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const set = vi.fn()
+    renderWithProviders(
+      <SeoAiPanel
+        draft={{ ...INITIAL_DRAFT, focusKeyword: 'پرینتر اچ پی' }}
+        set={set}
+        faqs={INITIAL_FAQS}
+        onFaqsChange={vi.fn()}
+      />
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'بررسی کلمهٔ کلیدی' }))
+    expect(await screen.findByText(/حجم تقریبی: ۹۰۰|حجم تقریبی: 900/)).toBeInTheDocument()
+    expect(set).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/products/seo/keyword',
+      expect.objectContaining({ method: 'POST' })
+    )
+    vi.unstubAllGlobals()
+  })
 })

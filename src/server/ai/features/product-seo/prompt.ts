@@ -7,6 +7,13 @@ import {
   SEO_DESCRIPTION_MAX,
   SEO_TITLE_MAX,
 } from '@/lib/seo/product-seo-suggestion'
+import {
+  DEFAULT_PRODUCT_SEO_PACK_ID,
+  getProductSeoPromptPack,
+  isProductSeoPromptPackId,
+  type ProductSeoPromptPackId,
+} from '@/lib/seo/product-seo-prompt-packs'
+import { ValidationError } from '@/server/shared/errors'
 
 export const PRODUCT_SEO_FEATURE = 'product-seo'
 export const PRODUCT_SEO_PROMPT_VERSION = 'product-seo.v1'
@@ -30,6 +37,7 @@ export interface ProductSeoPromptVars {
   faqs: string
   emptyOnly: boolean
   emptyFields: string
+  keywordHints: string
 }
 
 function asText(value: unknown, fallback = ''): string {
@@ -58,7 +66,16 @@ export function toProductSeoPromptVars(vars: Record<string, unknown>): ProductSe
     faqs: asText(vars.faqs),
     emptyOnly: vars.emptyOnly === true,
     emptyFields: asText(vars.emptyFields),
+    keywordHints: asText(vars.keywordHints),
   }
+}
+
+export function resolveProductSeoPromptPackId(packId?: string): ProductSeoPromptPackId {
+  const id = packId?.trim() || DEFAULT_PRODUCT_SEO_PACK_ID
+  if (!isProductSeoPromptPackId(id)) {
+    throw new ValidationError({ packId: 'بستهٔ پرامپت نامعتبر است' }, 'بستهٔ پرامپت نامعتبر است.')
+  }
+  return id
 }
 
 export function renderProductSeoPrompt(vars: ProductSeoPromptVars): string {
@@ -100,4 +117,20 @@ canonical فعلی: ${vars.canonicalUrl}
 توضیح بلند (خلاصه): ${vars.longDescription}
 مشخصات: ${vars.specs}
 سوالات فعلی: ${vars.faqs}`
+}
+
+export function renderProductSeoPromptByPack(
+  packId: string | undefined,
+  vars: ProductSeoPromptVars
+): string {
+  const pack = getProductSeoPromptPack(resolveProductSeoPromptPackId(packId))
+  const extras: string[] = []
+  if (pack.extraRules) extras.push(pack.extraRules)
+  if (vars.keywordHints.trim()) {
+    extras.push(
+      `دادهٔ کمکی ابزار سئو (فقط راهنما؛ عدد حجم/سختی را در متن محصول ننویس مگر لازم باشد):\n${vars.keywordHints}`
+    )
+  }
+  const base = renderProductSeoPrompt(vars)
+  return extras.length > 0 ? `${base}\n\n${extras.join('\n')}` : base
 }

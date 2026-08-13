@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { AdminPageHeader } from '@/components/admin/admin-page-header'
 import { getGoogleConnectionStatus } from '@/lib/seo/google-connections'
+import { getSeoToolConnectionStatus } from '@/lib/seo/seo-tool-connections'
 
 export const metadata: Metadata = {
   title: 'اتصالات سئو',
@@ -22,8 +23,15 @@ function StatusBadge({ ok }: { ok: boolean }) {
   )
 }
 
+function providerLabel(id: 'ahrefs' | 'semrush' | 'mock'): string {
+  if (id === 'ahrefs') return 'Ahrefs'
+  if (id === 'semrush') return 'SEMrush'
+  return 'نمونهٔ آزمایشی (stub)'
+}
+
 export default function SeoConnectionsPage() {
   const status = getGoogleConnectionStatus()
+  const tools = getSeoToolConnectionStatus()
 
   return (
     <div className="space-y-6">
@@ -66,6 +74,38 @@ export default function SeoConnectionsPage() {
               </td>
               <td className="p-4 text-xs text-muted-foreground">متغیر محیطی GA4_MEASUREMENT_ID</td>
             </tr>
+            <tr className="border-t border-border">
+              <td className="p-4">
+                <b>ابزارهای پولی سئو</b>
+                <small className="mt-1 block text-xs text-muted-foreground">
+                  kill-switch: {tools.enabled ? 'روشن' : 'خاموش'} — فعال: {providerLabel(tools.activeProvider)}
+                </small>
+              </td>
+              <td className="p-4">
+                <StatusBadge ok={tools.enabled && tools.activeProvider !== 'mock'} />
+              </td>
+              <td className="p-4 text-xs text-muted-foreground">SEO_TOOLS_ENABLED</td>
+            </tr>
+            <tr className="border-t border-border">
+              <td className="p-4">
+                <b>Ahrefs</b>
+                <small className="mt-1 block text-xs text-muted-foreground">Keywords Explorer — فقط وضعیت</small>
+              </td>
+              <td className="p-4">
+                <StatusBadge ok={tools.ahrefsConfigured} />
+              </td>
+              <td className="p-4 text-xs text-muted-foreground">متغیر محیطی AHREFS_API_KEY</td>
+            </tr>
+            <tr className="border-t border-border">
+              <td className="p-4">
+                <b>SEMrush</b>
+                <small className="mt-1 block text-xs text-muted-foreground">Phrase overview — فقط وضعیت</small>
+              </td>
+              <td className="p-4">
+                <StatusBadge ok={tools.semrushConfigured} />
+              </td>
+              <td className="p-4 text-xs text-muted-foreground">متغیر محیطی SEMRUSH_API_KEY</td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -74,8 +114,8 @@ export default function SeoConnectionsPage() {
         <b className="text-amber-200">قانون امنیتی</b>
         <p className="mt-2 text-muted-foreground">
           کلید API و توکن تأیید هرگز با پیشوند NEXT_PUBLIC ساخته نمی‌شوند، در پاسخ API برنمی‌گردند و
-          در این صفحه دیده نمی‌شوند. GTM و ابزارهای پولی (Ahrefs/SEMrush) در فازهای بعد با adapter
-          جدا اضافه می‌شوند.
+          در این صفحه دیده نمی‌شوند. بدون حساب، بررسی کلمهٔ کلیدی با stub کار می‌کند. GTM در فاز بعد
+          اضافه می‌شود.
         </p>
       </section>
     </div>

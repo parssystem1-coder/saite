@@ -16,6 +16,10 @@ import {
   type ProductSeoSuggestion,
   type SeoSuggestionKey,
 } from '@/lib/seo/product-seo-suggestion'
+import {
+  getProductSeoPromptPack,
+  type ProductSeoPromptPackId,
+} from '@/lib/seo/product-seo-prompt-packs'
 
 export const PRODUCT_SEO_FILE_TYPE = 'saite.product-seo' as const
 export const PRODUCT_SEO_SCHEMA_VERSION = 1 as const
@@ -64,6 +68,7 @@ export type ProductSeoPack = {
   targets: typeof PRODUCT_SEO_TARGETS
   emptyOnly: boolean
   emptyFields: SeoSuggestionKey[]
+  promptPackId: ProductSeoPromptPackId
   instructionsText: string
   expectedResponse: {
     fileType: typeof PRODUCT_SEO_FILE_TYPE
@@ -91,6 +96,8 @@ export type ProductSeoPackInput = {
   specs?: unknown
   current: ProductSeoCurrentFields
   emptyOnly: boolean
+  promptPackId?: string
+  keywordHints?: string[]
 }
 
 export type SeoPackParseResult<T> =
@@ -120,6 +127,8 @@ const PACK_ROOT_KNOWN = new Set<string>([
   'emptyFields',
   'instructionsText',
   'expectedResponse',
+  'promptPackId',
+  'keywordHints',
   'suggestion',
   'result',
   ...SEO_SUGGESTION_KEYS,
@@ -135,6 +144,7 @@ export function summarizeProductSpecs(specs: unknown, maxEntries = SPEC_ENTRY_MA
 }
 
 export function buildProductSeoInstructions(input: ProductSeoPackInput): string {
+  const pack = getProductSeoPromptPack(input.promptPackId)
   const emptyFields = listEmptySeoFields(input.current)
   const emptyHint =
     input.emptyOnly && emptyFields.length > 0
@@ -192,10 +202,16 @@ export function buildProductSeoInstructions(input: ProductSeoPackInput): string 
     `- faqs: ${FAQ_MIN} تا ${FAQ_MAX} مورد؛ سؤال ≤${FAQ_QUESTION_MAX}؛ جواب ≤${FAQ_ANSWER_MAX}`,
     'قواعد محتوا: فارسی معیار، بدون اغراق پزشکی/درمانی، بدون لینک خارجی، بدون تگ HTML.',
     'کلید خارج از suggestion ممنوع است (مثلاً description یا price ننویس).',
+    pack.extraRules ? `بستهٔ پرامپت (${pack.id}): ${pack.extraRules}` : `بستهٔ پرامپت: ${pack.id}`,
+    input.keywordHints && input.keywordHints.length > 0
+      ? `کلمات مرتبط پیشنهادی ابزار سئو (فقط راهنما): ${input.keywordHints.join('، ')}`
+      : '',
     emptyHint,
     'دادهٔ محصول:',
     ...productLines,
-  ].join('\n')
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 export function buildProductSeoPack(
@@ -230,6 +246,7 @@ export function buildProductSeoPack(
     targets: PRODUCT_SEO_TARGETS,
     emptyOnly: input.emptyOnly,
     emptyFields,
+    promptPackId: getProductSeoPromptPack(input.promptPackId).id,
     instructionsText: buildProductSeoInstructions(input),
     expectedResponse: {
       fileType: PRODUCT_SEO_FILE_TYPE,

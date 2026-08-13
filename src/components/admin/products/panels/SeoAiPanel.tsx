@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react'
 import type { Attribute, ProductDraft, ProductFaq } from '../product-editor.types'
+import { EditorField, editorInputClass } from '../components/EditorField'
 import { EditorSection, editorSurfaceClass } from '../components/EditorSection'
 import { EditorToggle } from '../components/EditorToggle'
 import {
@@ -15,12 +16,23 @@ import {
   PRODUCT_SEO_IMPORT_MAX_CHARS,
   productSeoPackFilename,
 } from '@/lib/seo/product-seo-pack'
+import {
+  DEFAULT_PRODUCT_SEO_PACK_ID,
+  listProductSeoPromptPacks,
+  type ProductSeoPromptPackId,
+} from '@/lib/seo/product-seo-prompt-packs'
+import type { KeywordInsight } from '@/lib/seo/seo-tool-contract'
 
 type SuggestionSource = 'generate' | 'file'
 
 type SeoActionResponse = {
   suggestion?: ProductSeoSuggestion
   promptVersion?: string
+  error?: string
+}
+
+type KeywordResponse = {
+  insight?: KeywordInsight
   error?: string
 }
 
@@ -98,12 +110,14 @@ export function SeoAiPanel({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [emptyOnly, setEmptyOnly] = useState(true)
-  const [busy, setBusy] = useState<'generate' | 'import' | null>(null)
+  const [packId, setPackId] = useState<ProductSeoPromptPackId>(DEFAULT_PRODUCT_SEO_PACK_ID)
+  const [busy, setBusy] = useState<'generate' | 'import' | 'keyword' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [suggestion, setSuggestion] = useState<ProductSeoSuggestion | null>(null)
   const [promptVersion, setPromptVersion] = useState<string | null>(null)
   const [source, setSource] = useState<SuggestionSource | null>(null)
   const [applied, setApplied] = useState<Partial<Record<SeoSuggestionKey, boolean>>>({})
+  const [insight, setInsight] = useState<KeywordInsight | null>(null)
 
   const rows = useMemo(() => {
     if (!suggestion) return []
@@ -179,6 +193,8 @@ export function SeoAiPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           emptyOnly,
+          packId,
+          keywordHints: insight?.related ?? [],
           draft: {
             name: draft.name,
             nameEn: draft.nameEn,
@@ -224,8 +240,37 @@ export function SeoAiPanel({
       specs: specsFromAttributes(attributes),
       current: currentSnapshot(),
       emptyOnly,
+      promptPackId: packId,
+      keywordHints: insight?.related ?? [],
     })
     downloadJson(productSeoPackFilename(draft.slug), pack)
+  }
+
+  const lookupKeyword = async () => {
+    const keyword = draft.focusKeyword.trim() || draft.name.trim()
+    if (!keyword) {
+      setError('برای بررسی، کلمهٔ کلیدی یا نام محصول را وارد کنید.')
+      return
+    }
+    setBusy('keyword')
+    setError(null)
+    try {
+      const response = await fetch('/api/admin/products/seo/keyword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword: keyword.slice(0, 80) }),
+      })
+      const data = (await response.json()) as KeywordResponse
+      if (!response.ok || !data.insight) {
+        setError(data.error ?? 'بررسی کلمهٔ کلیدی ناموفق بود.')
+        return
+      }
+      setInsight(data.insight)
+    } catch {
+      setError('ارتباط با سرور برای بررسی کلمهٔ کلیدی برقرار نشد.')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const importFile = async (file: File) => {
@@ -291,6 +336,20 @@ export function SeoAiPanel({
             label="فقط فیلدهای خالی"
             hint="اگر روشن باشد فیلدهای پرشده بازنویسی نمی‌شوند"
           />
+          <EditorField label="بستهٔ پرامپت" hint="لحن و تمرکز تولید را عوض می‌کند؛ قرارداد JSON ثابت می‌ماند">
+            <select
+              className={editorInputClass}
+              value={packId}
+              aria-label="بستهٔ پرامپت"
+              onChange={(event) => setPackId(event.target.value as ProductSeoPromptPackId)}
+            >
+              {listProductSeoPromptPacks().map((pack) => (
+                <option key={pack.id} value={pack.id}>
+                  {pack.title}
+                </option>
+              ))}
+            </select>
+          </EditorField>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
@@ -316,6 +375,14 @@ export function SeoAiPanel({
             >
               {busy === 'import' ? 'در حال ایمپورت…' : 'ایمپورت فایل'}
             </button>
+            <button
+              type="button"
+              onClick={() => void lookupKeyword()}
+              disabled={busy !== null}
+              className="rounded-md border border-[hsl(var(--border))] px-4 py-2 text-xs font-bold disabled:opacity-60"
+            >
+              {busy === 'keyword' ? 'در حال بررسی…' : 'بررسی کلمهٔ کلیدی'}
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -334,6 +401,18 @@ export function SeoAiPanel({
               </span>
             ) : null}
           </div>
+          {insight ? (
+            <pre className="whitespace-pre-wrap break-words rounded-md bg-[hsl(var(--surface-0))] p-3 text-xs leading-6">
+              {[
+                `منبع: ${insight.mode === 'live' ? insight.source : 'نمونهٔ آزمایشی (stub)'}`,
+                `کلمه: ${insight.keyword}`,
+                `حجم تقریبی: ${insight.searchVolume ?? '—'}`,
+                `سختی: ${insight.difficulty ?? '—'}`,
+                `مرتبط: ${insight.related.length > 0 ? insight.related.join('، ') : '—'}`,
+                'این داده خودکار در فیلدها نوشته نمی‌شود؛ فقط راهنمای تولید است.',
+              ].join('\n')}
+            </pre>
+          ) : null}
           {error ? (
             <p
               role="alert"

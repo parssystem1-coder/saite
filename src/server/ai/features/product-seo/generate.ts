@@ -12,7 +12,7 @@ import { parseProductSeoOutput } from './output'
 import {
   PRODUCT_SEO_FEATURE,
   PRODUCT_SEO_MAX_TOKENS,
-  PRODUCT_SEO_PROMPT_VERSION,
+  resolveProductSeoPromptPackId,
 } from './prompt'
 
 const LONG_DESCRIPTION_LIMIT = 2500
@@ -32,6 +32,8 @@ export interface GenerateProductSeoInput {
   shortDescription: string
   longDescription: string
   specs: unknown
+  packId?: string
+  keywordHints?: string[]
 }
 
 export interface GenerateProductSeoResult {
@@ -52,6 +54,13 @@ function serializeSpecs(specs: unknown): string {
 export async function generateProductSeoSuggestion(
   input: GenerateProductSeoInput
 ): Promise<GenerateProductSeoResult> {
+  const packId = resolveProductSeoPromptPackId(input.packId)
+  const keywordHints = (input.keywordHints ?? [])
+    .map((hint) => hint.trim())
+    .filter(Boolean)
+    .slice(0, 8)
+    .join('، ')
+
   const emptyFields = listEmptySeoFields(input.current)
   if (input.emptyOnly && emptyFields.length === 0) {
     throw new ValidationError(
@@ -62,7 +71,7 @@ export async function generateProductSeoSuggestion(
 
   const raw = await callChat({
     feature: PRODUCT_SEO_FEATURE,
-    promptVersion: PRODUCT_SEO_PROMPT_VERSION,
+    promptVersion: packId,
     actorId: input.actorId,
     maxTokens: PRODUCT_SEO_MAX_TOKENS,
     variables: {
@@ -88,6 +97,7 @@ export async function generateProductSeoSuggestion(
       ),
       emptyOnly: input.emptyOnly,
       emptyFields: emptyFields.join(','),
+      keywordHints,
     },
   })
 
@@ -103,7 +113,7 @@ export async function generateProductSeoSuggestion(
 
   return {
     suggestion,
-    promptVersion: PRODUCT_SEO_PROMPT_VERSION,
+    promptVersion: packId,
     emptyOnly: input.emptyOnly,
   }
 }
