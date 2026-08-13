@@ -1,15 +1,11 @@
 # syntax=docker/dockerfile:1
 FROM node:22-alpine AS base
 
-# ── وابستگی‌ها ──────────────────────────
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev
-
 # ── ساخت ────────────────────────────────
+# (stage جداگانهٔ deps حذف شد — هیچ COPY --from=deps وجود نداشت و فقط زمان build را هدر می‌داد؛
+#  خروجی standalone خودش وابستگی‌های لازم را دارد)
 FROM base AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci

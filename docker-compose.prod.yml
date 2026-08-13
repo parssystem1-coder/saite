@@ -16,6 +16,8 @@ services:
       - NEXT_PUBLIC_SITE_URL=https://${DOMAIN}
       - RUN_JOBS=0
       - TRUSTED_PROXY_HOPS=1
+      # شمارندهٔ rate-limit مشترک بین instanceها — پیش‌فرض file-store تک-instance است
+      - RATE_LIMIT_STORE=redis
     env_file:
       - .env.prod
     depends_on:
