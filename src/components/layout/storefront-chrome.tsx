@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { CompareBar } from '@/components/compare/compare-bar'
+import { ChatWidget } from '@/components/chat/chat-widget'
 import { ContactFab } from '@/components/layout/contact-fab'
 import { Footer } from '@/components/layout/footer'
 import { Header } from '@/components/layout/header'
@@ -53,6 +54,7 @@ export function StorefrontChrome({ children }: { children: React.ReactNode }) {
       <Footer />
       <CompareBar />
       <ContactFab />
+      <ChatWidget />
       <MobileBottomNav />
     </>
   )
