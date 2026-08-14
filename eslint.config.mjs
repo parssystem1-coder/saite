@@ -49,6 +49,26 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    /*
+      سخت‌سازی مرز تایپ: در لایهٔ سرور `as any` ممنوع است.
+      هر جا واقعاً لازم باشد (مثل raw SQL cast)، با کامنت
+      eslint-disable-next-line no-restricted-syntax مستدل استثنا می‌شود.
+    */
+    files: ["src/server/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "TSAsExpression[typeAnnotation.typeName.name='any']",
+          message:
+            "استفاده از `as any` در لایهٔ سرور ممنوع است. " +
+            "به‌جای آن از تایپ‌های تولیدی Prisma (InputJsonValue، $Enums، Prisma.*Input) استفاده کنید. " +
+            "استثنا فقط با کامنت مستدل eslint-disable-next-line no-restricted-syntax.",
+        },
+      ],
+    },
+  },
+  {
     // خود لایهٔ داده طبعاً اجازه دارد
     files: ["src/lib/**/*.ts"],
     rules: { "no-restricted-imports": "off" },
