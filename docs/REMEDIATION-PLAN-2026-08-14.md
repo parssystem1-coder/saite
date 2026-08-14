@@ -348,10 +348,10 @@ git push origin arena/019ffd6d-saite
 | ۱۳ | مصرف idempotent outbox | ۴ | ✅ |
 | ۱۴ | جداسازی claimedAt از retryCount | ۴ | ✅ |
 | ۱۵ | BullMQ repeatable (اختیاری) | ۴ | ✅ |
-| ۱۶ | Registry پرداخت | ۵ | ⬜ |
-| ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ⬜ |
-| ۱۸ | paginatedList مشترک | ۵ | ⬜ |
-| ۱۹ | getSiteUrl متمرکز | ۵ | ⬜ |
+| ۱۶ | Registry پرداخت | ۵ | ✅ |
+| ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ✅ |
+| ۱۸ | paginatedList مشترک | ۵ | ✅ |
+| ۱۹ | getSiteUrl متمرکز | ۵ | ✅ |
 | ۲۰ | تست‌های DB واقعی (۶ سناریو) | ۶ | ⬜ |
 | ۲۱ | e2e پرداخت mock | ۶ | ⬜ |
 | ۲۲ | CI job تست دیتابیس | ۶ | ⬜ |
