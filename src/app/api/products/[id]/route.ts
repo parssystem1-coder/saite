@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { productsService } from '@/server/modules/products/service'
 import { handleServiceError } from '../_utils'
 import { requirePermission } from '@/lib/auth/server/require-role'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { productUpdateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +17,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'product-update')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response
 
@@ -28,8 +32,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'product-update')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('catalog:write')
     if (!guard.ok) return guard.response
 

@@ -5,15 +5,17 @@ import { ProductEvents } from '@/server/shared/event-types'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
 import { NotFoundError } from '@/server/shared/errors'
 import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
-import { DEFAULT_PER_PAGE, MAX_PER_PAGE } from '@/server/shared/constants'
-
-/** TTL برای لیست محصولات — 60 ثانیه */
-const PRODUCTS_LIST_TTL = 60
+import {
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  SITEMAP_MAX_PER_PAGE,
+  PRODUCTS_LIST_TTL,
+} from '@/server/shared/constants'
 
 /**
  * ساخت کلید cache از query parameters
  */
-function buildCacheKey(query: ProductListQuery): string {
+function buildCacheKey(query: ProductListQuery, fields?: 'slug'): string {
   const parts: string[] = []
 
   if (query.q) parts.push(`q:${query.q}`)
@@ -31,20 +33,22 @@ function buildCacheKey(query: ProductListQuery): string {
   const page = query.page ?? 1
   const perPage = query.perPage ?? DEFAULT_PER_PAGE
   parts.push(`p:${page}`, `pp:${perPage}`)
+  if (fields === 'slug') parts.push('fields:slug')
 
   return parts.join('|')
 }
 
 export const productsService = {
-  async getList(query: ProductListQuery = {}): Promise<ProductListResult> {
+  async getList(query: ProductListQuery = {}, fields?: 'slug'): Promise<ProductListResult> {
     const page = Math.max(1, query.page ?? 1)
-    const perPage = Math.min(MAX_PER_PAGE, Math.max(1, query.perPage ?? DEFAULT_PER_PAGE))
-    const cacheKey = buildCacheKey({ ...query, page, perPage })
+    const maxPerPage = fields === 'slug' ? SITEMAP_MAX_PER_PAGE : MAX_PER_PAGE
+    const perPage = Math.min(maxPerPage, Math.max(1, query.perPage ?? DEFAULT_PER_PAGE))
+    const cacheKey = buildCacheKey({ ...query, page, perPage }, fields)
 
     return cacheAside(
       cacheKey,
       async () => {
-        const { items, total } = await productsRepository.list(query, page, perPage)
+        const { items, total } = await productsRepository.list(query, page, perPage, fields)
 
         return {
           items: items as unknown as ProductListResult['items'],
@@ -70,8 +74,8 @@ export const productsService = {
     return product
   },
 
-  async create(input: unknown, actorId: string) {
-    const product = await productsRepository.create(input as CreateProductData)
+  async create(input: CreateProductData, actorId: string) {
+    const product = await productsRepository.create(input)
     await eventBus.publish(ProductEvents.created, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
@@ -80,8 +84,8 @@ export const productsService = {
     return product
   },
 
-  async update(id: string, input: unknown, actorId: string) {
-    const product = await productsRepository.update(id, input as UpdateProductData)
+  async update(id: string, input: UpdateProductData, actorId: string) {
+    const product = await productsRepository.update(id, input)
     await eventBus.publish(ProductEvents.updated, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات

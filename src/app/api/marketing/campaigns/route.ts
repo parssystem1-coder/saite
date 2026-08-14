@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { marketingService } from '@/server/modules/marketing/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError, parseLimit } from '@/server/shared/http-utils'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { campaignCreateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
@@ -28,6 +29,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'campaign-create')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('marketing:write')
     if (!guard.ok) return guard.response
 

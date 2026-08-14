@@ -1,8 +1,11 @@
 import type { MetadataRoute } from 'next'
+import { httpJson, isMockMode } from '@/lib/api-client'
 import { getProducts } from '@/lib/api'
 import { ARTICLES } from '@/lib/articles'
 import { BRANDS, CATEGORIES } from '@/lib/constants'
 import { SERVICE_DETAILS } from '@/lib/services-data'
+import type { ProductListResult } from '@/lib/api-types'
+import { SITEMAP_MAX_PER_PAGE } from '@/server/shared/constants'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
@@ -22,7 +25,17 @@ const STATIC_PAGES: { path: string; priority: number; freq: 'daily' | 'weekly' |
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const products = await getProducts()
+  // فهرست سبک — فقط slug/updatedAt (description/specs کشیده نمی‌شود)
+  let products: { slug: string; updatedAt?: Date }[]
+  if (isMockMode()) {
+    products = (await getProducts()).map((p) => ({ slug: p.slug }))
+  } else {
+    // در حالت HTTP فقط slug/updatedAt کشیده می‌شود — نه description/specs
+    const result = await httpJson<ProductListResult>(
+      `/api/products?fields=slug&page=1&perPage=${SITEMAP_MAX_PER_PAGE}`
+    )
+    products = result.items as { slug: string; updatedAt?: Date }[]
+  }
   const now = new Date()
 
   return [
@@ -65,7 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     ...products.map((p) => ({
       url: `${BASE}/products/${p.slug}`,
-      lastModified: now,
+      lastModified: p.updatedAt ?? now,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     })),

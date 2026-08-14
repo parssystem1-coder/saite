@@ -65,6 +65,14 @@ export async function GET(req: NextRequest) {
       perPage,
     }
 
+    // حالت سبک sitemap — فقط slug/updatedAt کشیده می‌شود (نه description/specs)
+    // `fields=slug` یک پارامتر اختیاری است؛ contract را نمی‌شکند.
+    const fields = searchParams.get('fields')
+    if (fields === 'slug') {
+      const result = await productsService.getList(query, 'slug')
+      return NextResponse.json(result)
+    }
+
     const result = await productsService.getList(query)
     return NextResponse.json(result)
   } catch (err) {

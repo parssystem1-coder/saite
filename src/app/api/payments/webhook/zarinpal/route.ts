@@ -5,6 +5,7 @@ import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
 import { OrderEvents } from '@/server/shared/event-types'
 import { logger } from '@/server/shared/logger'
+import { getSiteUrl } from '@/server/shared/site-url'
 
 /**
  * Webhook زرین‌پال — Security Model:
@@ -134,7 +135,7 @@ export async function GET(req: NextRequest) {
  * هدایت می‌کنیم و وضعیت پرداخت را در query می‌گذاریم تا UI پیام مناسب نشان دهد.
  */
 function orderStatusUrl(orderId: string, status?: string) {
-  const base = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/dashboard`
+  const base = `${getSiteUrl()}/dashboard`
   const params = new URLSearchParams({ orderId })
   if (status) params.set('payment', status)
   return `${base}?${params.toString()}`

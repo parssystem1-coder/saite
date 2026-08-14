@@ -1,7 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, requirePermission } from '@/lib/auth/server/require-role';
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy';
 
 const filePath = () => path.join(process.cwd(), '.data', 'custom-emojis.json');
 async function getEmojis() {
@@ -20,6 +21,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  // Rate-limit برای جلوگیری از flood نوشتن ایموجی
+  const rateLimit = await checkRouteRateLimit(request as NextRequest, 'emoji-write');
+  if (rateLimit) return rateLimit;
+
   // نوشتن — نیاز به مجوز نوشتن روی محتوا (operator یا بالاتر)
   const guard = await requirePermission('content:write');
   if (!guard.ok) return guard.response;

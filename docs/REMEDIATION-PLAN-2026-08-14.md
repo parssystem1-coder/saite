@@ -333,28 +333,28 @@ git push origin arena/019ffd6d-saite
 
 | # | آیتم | فاز | وضعیت |
 |---|---|---|---|
-| ۱ | حذف `as any` با تایپ‌های Prisma | ۱ | ⬜ |
-| ۲ | `create(input: unknown)` → تایپ صریح | ۱ | ⬜ |
-| ۳ | نگاشت P2002→۴۰۹ / P2025→۴۰۴ | ۱ | ⬜ |
-| ۴ | قاعدهٔ eslint ضد `as any` | ۱ | ⬜ |
-| ۵ | pg_trgm + GIN روی products | ۲ | ⬜ |
-| ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ⬜ |
-| ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ⬜ |
-| ۸ | pino redact برای PII | ۳ | ⬜ |
-| ۹ | rate-limit ۹ مسیر جامانده | ۳ | ⬜ |
-| ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ⬜ |
-| ۱۱ | retention لاگ‌های PII و outbox | ۳ | ⬜ |
-| ۱۲ | انقضای PaymentIntent | ۴ | ⬜ |
-| ۱۳ | مصرف idempotent outbox | ۴ | ⬜ |
-| ۱۴ | جداسازی claimedAt از retryCount | ۴ | ⬜ |
-| ۱۵ | BullMQ repeatable (اختیاری) | ۴ | ⬜ |
-| ۱۶ | Registry پرداخت | ۵ | ⬜ |
-| ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ⬜ |
-| ۱۸ | paginatedList مشترک | ۵ | ⬜ |
-| ۱۹ | getSiteUrl متمرکز | ۵ | ⬜ |
-| ۲۰ | تست‌های DB واقعی (۶ سناریو) | ۶ | ⬜ |
-| ۲۱ | e2e پرداخت mock | ۶ | ⬜ |
-| ۲۲ | CI job تست دیتابیس | ۶ | ⬜ |
+| ۱ | حذف `as any` با تایپ‌های Prisma | ۱ | ✅ |
+| ۲ | `create(input: unknown)` → تایپ صریح | ۱ | ✅ |
+| ۳ | نگاشت P2002→۴۰۹ / P2025→۴۰۴ | ۱ | ✅ |
+| ۴ | قاعدهٔ eslint ضد `as any` | ۱ | ✅ |
+| ۵ | pg_trgm + GIN روی products | ۲ | ✅ |
+| ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ✅ |
+| ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ✅ |
+| ۸ | pino redact برای PII | ۳ | ✅ |
+| ۹ | rate-limit ۹ مسیر جامانده | ۳ | ✅ |
+| ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ✅ |
+| ۱۱ | retention لاگ‌های PII و outbox | ۳ | ✅ |
+| ۱۲ | انقضای PaymentIntent | ۴ | ✅ |
+| ۱۳ | مصرف idempotent outbox | ۴ | ✅ |
+| ۱۴ | جداسازی claimedAt از retryCount | ۴ | ✅ |
+| ۱۵ | BullMQ repeatable (اختیاری) | ۴ | ✅ |
+| ۱۶ | Registry پرداخت | ۵ | ✅ |
+| ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ✅ |
+| ۱۸ | paginatedList مشترک | ۵ | ✅ |
+| ۱۹ | getSiteUrl متمرکز | ۵ | ✅ |
+| ۲۰ | تست‌های DB واقعی (۶ سناریو) | ۶ | ✅ |
+| ۲۱ | e2e پرداخت mock | ۶ | ✅ |
+| ۲۲ | CI job تست دیتابیس | ۶ | ✅ |
 
 > **یادداشت‌های خارج از scope این برنامه (تصمیم محصولی لازم):**
 > - ساخت صفحهٔ عمومی `/orders/[id]` (الان redirect پرداخت به `/dashboard` می‌رود)

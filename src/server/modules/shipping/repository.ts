@@ -1,6 +1,7 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 
 export type DbShipmentStatus =
   | 'pending'
@@ -42,8 +43,8 @@ export const shippingRepository = {
       data: {
         ...data,
         shippingCost: data.shippingCost || 0,
-        originAddress: data.originAddress ? (data.originAddress as any) : undefined,
-        destinationAddress: data.destinationAddress ? (data.destinationAddress as any) : undefined,
+        originAddress: data.originAddress ? (data.originAddress as Prisma.InputJsonValue) : undefined,
+        destinationAddress: data.destinationAddress ? (data.destinationAddress as Prisma.InputJsonValue) : undefined,
       },
     })
   },
@@ -60,7 +61,7 @@ export const shippingRepository = {
     return prisma.shipment.update({
       where: { id },
       data: {
-        status: status as any,
+        status: status as $Enums.ShipmentStatus,
         ...(extra?.shippedAt && { shippedAt: extra.shippedAt }),
         ...(extra?.deliveredAt && { deliveredAt: extra.deliveredAt }),
         ...(extra?.trackingNumber && { trackingNumber: extra.trackingNumber }),
@@ -74,22 +75,14 @@ export const shippingRepository = {
     page?: number
     limit?: number
   }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.carrier) where.carrier = opts.carrier
     if (opts.status) where.status = opts.status
 
-    const [items, total] = await Promise.all([
-      prisma.shipment.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.shipment.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.shipment.findMany>>[number]>(
+      prisma.shipment,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async createShippingRate(data: CreateShippingRateData) {

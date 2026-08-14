@@ -7,6 +7,7 @@ import { financeService } from '@/server/modules/finance/service'
 import { ordersService } from '@/server/modules/orders/service'
 import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
 import { commsService } from '@/server/communications/service'
+import { OUTBOX_MAX_RETRY } from '@/server/shared/constants'
 import {
   OrderEvents,
   FinanceEvents,
@@ -81,9 +82,29 @@ async function handlePaidOrder(orderId: string): Promise<void> {
 export const outboxWorker = new Worker(
   'outbox',
   async (job) => {
+    // ۴.۴ — job ساخته‌شده توسط repeatable scheduler: فقط poll کند
+    if (job.name === 'outbox-poll') {
+      const { dispatchOutboxEvents } = await import('../dispatchers/outbox-dispatcher')
+      await dispatchOutboxEvents()
+      return
+    }
+
     const { eventId } = job.data as { eventId: string }
+
+    // ── Claim شرطی و اتمیک — مصرف idempotent ──────────────────────────
+    // با concurrency بالا و retry، دو job هم‌زمان می‌توانند یک event را
+    // پردازش کنند و side-effect (ایمیل/فاکتور) دوبار اجرا شود.
+    // این updateMany فقط به ردیفی که هنوز processedAt ندارد می‌خورد؛
+    // اگر job دیگری زودتر مصرفش کرده بود count=0 می‌شود و این job صرفاً
+    // برمی‌گردد (بدون side-effect تکراری).
+    const claimed = await prisma.outboxEvent.updateMany({
+      where: { id: eventId, processedAt: null },
+      data: { processedAt: new Date() },
+    })
+    if (claimed.count === 0) return // مصرف‌شده توسط job دیگر
+
     const event = await prisma.outboxEvent.findUnique({ where: { id: eventId } })
-    if (!event || event.processedAt) return
+    if (!event) return
 
     const payload = event.payload as Record<string, unknown>
 
@@ -169,27 +190,40 @@ export const outboxWorker = new Worker(
       }
     } catch (err) {
       logger.error({ err, eventType: event.type, eventId }, '[OutboxWorker] handler failed')
-      // خطا را throw می‌کنیم تا BullMQ retry کند و retryCount در dispatcher بالا برود
+      // retry ممکن بماند: processedAt که در claim ست شد را null می‌کنیم تا
+      // dispatcher بتواند دوباره claim و enqueue کند. (این فقط برای ردیف‌هایی
+      // است که همین job ادعا کرده بود — با id+processedAt مطابقت می‌دهیم)
+      try {
+        await prisma.outboxEvent.updateMany({
+          where: { id: eventId, processedAt: { not: null } },
+          data: { processedAt: null },
+        })
+      } catch (resetErr) {
+        logger.error({ err: resetErr, eventId }, '[OutboxWorker] failed to reset processedAt for retry')
+      }
       throw err
     }
-
-    await prisma.outboxEvent.update({
-      where: { id: eventId },
-      data: { processedAt: new Date() },
-    })
   },
   { connection: redis, concurrency: 5 }
 )
 
 outboxWorker.on('failed', async (job, err) => {
   logger.error({ err, jobId: job?.id }, '[OutboxWorker] job failed')
-  // افزایش retryCount برای DLQ — dispatcher پس از ۵ بار دیگر enqueue نمی‌کند
+  // افزایش retryCount — این تنها جایی است که retryCount زیاد می‌شود؛
+  // یعنی فقط شکست‌های واقعی شمرده می‌شوند، نه claimهای موفق.
   if (job?.data?.eventId) {
     try {
-      await prisma.outboxEvent.update({
+      const updated = await prisma.outboxEvent.update({
         where: { id: job.data.eventId as string },
         data: { retryCount: { increment: 1 } },
       })
+      // وقتی به سقف رسید، دیگر dispatcher claim نمی‌کند → DLQ
+      if (updated.retryCount >= OUTBOX_MAX_RETRY) {
+        logger.warn(
+          { eventId: updated.id, retryCount: updated.retryCount },
+          '[OutboxWorker] event reached DLQ (max retries)'
+        )
+      }
     } catch (e) {
       logger.error({ err: e }, '[OutboxWorker] failed to increment retryCount')
     }

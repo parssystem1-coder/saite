@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 
 export const commsRepository = {
   async logEmail(data: {
@@ -28,38 +29,22 @@ export const commsRepository = {
   },
 
   async listEmailLogs(opts: { to?: string; page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.to) where.to = opts.to
 
-    const [items, total] = await Promise.all([
-      prisma.emailLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.emailLog.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.emailLog.findMany>>[number]>(
+      prisma.emailLog,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async listSmsLogs(opts: { to?: string; page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.to) where.to = opts.to
 
-    const [items, total] = await Promise.all([
-      prisma.smsLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.smsLog.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.smsLog.findMany>>[number]>(
+      prisma.smsLog,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 }

@@ -1,6 +1,7 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 import type { InvoiceStatus } from '@/types/finance'
 
 export interface CreateInvoiceData {
@@ -38,7 +39,7 @@ export const financeRepository = {
       data: {
         ...data,
         currency: data.currency || 'IRR',
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
       },
     })
   },
@@ -70,50 +71,51 @@ export const financeRepository = {
     page?: number
     limit?: number
   }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.customerId) where.customerId = opts.customerId
     if (opts.status) where.status = opts.status
 
-    const [items, total] = await Promise.all([
-      prisma.invoice.findMany({
+    return paginatedList<Awaited<ReturnType<typeof prisma.invoice.findMany>>[number]>(
+      prisma.invoice,
+      {
         where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+        page: opts.page,
+        limit: opts.limit,
         include: { transactions: { take: 5, orderBy: { createdAt: 'desc' } } },
-      }),
-      prisma.invoice.count({ where }),
-    ])
-    return { items, total, page, limit }
+      }
+    )
   },
 
-  async updateInvoiceStatus(id: string, status: InvoiceStatus | string, extra?: { paidAt?: Date; notes?: string }) {
-    return prisma.invoice.update({
+  async updateInvoiceStatus(
+    id: string,
+    status: InvoiceStatus | string,
+    extra?: { paidAt?: Date; notes?: string },
+    tx: Prisma.TransactionClient = prisma
+  ) {
+    return tx.invoice.update({
       where: { id },
       data: {
-        status: status as any,
+        status: status as $Enums.InvoiceStatus,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
     })
   },
 
-  async createTransaction(data: CreateTransactionData) {
-    const payload: Record<string, unknown> = {
-      type: data.type as any,
+  async createTransaction(data: CreateTransactionData, tx: Prisma.TransactionClient = prisma) {
+    const payload: Prisma.TransactionCreateInput = {
+      type: data.type as $Enums.TransactionType,
       amount: data.amount,
       currency: data.currency || 'IRR',
-      status: (data.status || 'pending') as any,
+      status: (data.status || 'pending') as $Enums.TransactionStatus,
+      ...(data.invoiceId && { invoice: { connect: { id: data.invoiceId } } }),
+      ...(data.orderId && { orderId: data.orderId }),
+      ...(data.provider && { provider: data.provider }),
+      ...(data.referenceId && { referenceId: data.referenceId }),
+      ...(data.metadata && { metadata: data.metadata as Prisma.InputJsonValue }),
     }
-    if (data.invoiceId) payload.invoiceId = data.invoiceId
-    if (data.orderId) payload.orderId = data.orderId
-    if (data.provider) payload.provider = data.provider
-    if (data.referenceId) payload.referenceId = data.referenceId
-    if (data.metadata) payload.metadata = data.metadata as any
 
-    return prisma.transaction.create({ data: payload as any })
+    return tx.transaction.create({ data: payload })
   },
 
   async findTransactionById(id: string) {
@@ -125,7 +127,7 @@ export const financeRepository = {
   async updateTransactionStatus(id: string, status: DbTransactionStatus | string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status: status as any, ...(settledAt && { settledAt }) },
+      data: { status: status as $Enums.TransactionStatus, ...(settledAt && { settledAt }) },
     })
   },
 
@@ -136,22 +138,14 @@ export const financeRepository = {
     page?: number
     limit?: number
   }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.invoiceId) where.invoiceId = opts.invoiceId
     if (opts.orderId) where.orderId = opts.orderId
     if (opts.type) where.type = opts.type
 
-    const [items, total] = await Promise.all([
-      prisma.transaction.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.transaction.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.transaction.findMany>>[number]>(
+      prisma.transaction,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 }

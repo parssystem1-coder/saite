@@ -1,6 +1,7 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 
 export type DbCouponType = 'percentage' | 'fixed_amount' | 'free_shipping'
 
@@ -38,7 +39,7 @@ export const marketingRepository = {
     return prisma.coupon.create({
       data: {
         ...data,
-        type: data.type as any,
+        type: data.type as $Enums.CouponType,
         minOrderAmount: data.minOrderAmount || 0,
         perCustomerLimit: data.perCustomerLimit || 1,
         applicableProducts: data.applicableProducts || [],
@@ -61,21 +62,13 @@ export const marketingRepository = {
     page?: number
     limit?: number
   }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.active !== undefined) where.active = opts.active
 
-    const [items, total] = await Promise.all([
-      prisma.coupon.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.coupon.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.coupon.findMany>>[number]>(
+      prisma.coupon,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async incrementCouponUsage(id: string) {
@@ -126,7 +119,7 @@ export const marketingRepository = {
       data: {
         ...data,
         priority: data.priority || 0,
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
       },
     })
   },
@@ -148,16 +141,9 @@ export const marketingRepository = {
   },
 
   async listCampaigns(opts: { page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
-    const [items, total] = await Promise.all([
-      prisma.campaign.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.campaign.count(),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.campaign.findMany>>[number]>(
+      prisma.campaign,
+      { page: opts.page, limit: opts.limit }
+    )
   },
 }

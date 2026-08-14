@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { contentService } from '@/server/modules/content/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError } from '@/server/shared/http-utils'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { pageUpdateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -22,6 +23,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'content-update')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('content:write')
     if (!guard.ok) return guard.response
 
@@ -36,8 +40,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ sl
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'content-update')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('content:write')
     if (!guard.ok) return guard.response
 

@@ -9,8 +9,9 @@ generator client {
 // TODO: zod-prisma-types فاز ۲ — فعلاً manual Zod
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider             = "postgresql"
+  url                  = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 // ── محصولات ──────────────────────────────────────────
@@ -211,6 +212,7 @@ model PaymentIntent {
   order Order @relation(fields: [orderId], references: [id])
 
   @@index([orderId])
+  @@index([status, expiresAt])
   @@map("payment_intents")
 }
 
@@ -254,9 +256,10 @@ model OutboxEvent {
   aggregateId String
   processedAt DateTime?
   retryCount  Int      @default(0)
+  claimedAt   DateTime?
   createdAt   DateTime @default(now())
 
-  @@index([processedAt, createdAt])
+  @@index([processedAt, claimedAt, createdAt])
   @@map("outbox_events")
 }
 
@@ -449,6 +452,7 @@ model Coupon {
 
   redemptions CouponRedemption[]
 
+  @@index([active, expiresAt])
   @@map("coupons")
 }
 
@@ -487,6 +491,7 @@ model Campaign {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([active, startDate, endDate])
   @@map("campaigns")
 }
 
@@ -505,6 +510,7 @@ model EmailLog {
   createdAt DateTime @default(now())
 
   @@index([to, createdAt])
+  @@index([status, createdAt])
   @@map("email_logs")
 }
 
@@ -520,6 +526,7 @@ model SmsLog {
   createdAt DateTime @default(now())
 
   @@index([to, createdAt])
+  @@index([status, createdAt])
   @@map("sms_logs")
 }
 
@@ -537,6 +544,7 @@ model Page {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([isPublished])
   @@map("pages")
 }
 
@@ -556,6 +564,7 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([isPublished, publishedAt])
   @@map("posts")
 }
 

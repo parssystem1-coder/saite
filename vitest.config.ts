@@ -9,6 +9,14 @@ export default defineConfig({
     globals: true,
     setupFiles: './tests/setup.ts',
     include: ['tests/**/*.{test,spec}.{ts,tsx}'],
+    // تست‌های db-integration فقط با `npm run test:db` (روی Postgres واقعی)
+    // اجرا می‌شوند — در `npm run test` (با mock) نباید لود شوند.
+    exclude: [
+      'tests/db-integration/**',
+      'node_modules/**',
+      'dist/**',
+      '.next/**',
+    ],
   },
   resolve: {
     alias: {

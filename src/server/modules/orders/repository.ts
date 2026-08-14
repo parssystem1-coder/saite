@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import type { OrderState } from './state-machine'
 
@@ -40,18 +40,33 @@ export const ordersRepository = {
     return { items, total }
   },
 
-  async create(data: CreateOrderData) {
-    return prisma.order.create({ data: data as any })
-  },
-
-  async updateStatus(id: string, status: OrderState | string) {
-    return prisma.order.update({
-      where: { id },
-      data: { status: status as any },
+  async create(data: CreateOrderData, tx: Prisma.TransactionClient = prisma) {
+    return tx.order.create({
+      data: {
+        customer: { connect: { id: data.customerId } },
+        status: (data.status || 'pending') as $Enums.OrderStatus,
+        totalAmount: data.totalAmount,
+        currency: data.currency || 'IRR',
+        shippingAddress: data.shippingAddress as Prisma.InputJsonValue | undefined,
+      },
     })
   },
 
-  async createOrderItem(data: CreateOrderItemData) {
-    return prisma.orderItem.create({ data: data as any })
+  async updateStatus(id: string, status: OrderState | string, tx: Prisma.TransactionClient = prisma) {
+    return tx.order.update({
+      where: { id },
+      data: { status: status as $Enums.OrderStatus },
+    })
+  },
+
+  async createOrderItem(data: CreateOrderItemData, tx: Prisma.TransactionClient = prisma) {
+    return tx.orderItem.create({
+      data: {
+        order: { connect: { id: data.orderId } },
+        product: { connect: { id: data.productId } },
+        quantity: data.quantity,
+        unitPrice: data.unitPrice,
+      },
+    })
   },
 }
