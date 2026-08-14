@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import type { InvoiceStatus } from '@/types/finance'
 
@@ -38,7 +38,7 @@ export const financeRepository = {
       data: {
         ...data,
         currency: data.currency || 'IRR',
-        metadata: data.metadata ? (data.metadata as any) : undefined,
+        metadata: data.metadata ? (data.metadata as Prisma.InputJsonValue) : undefined,
       },
     })
   },
@@ -93,7 +93,7 @@ export const financeRepository = {
     return prisma.invoice.update({
       where: { id },
       data: {
-        status: status as any,
+        status: status as $Enums.InvoiceStatus,
         ...(extra?.paidAt && { paidAt: extra.paidAt }),
         ...(extra?.notes && { notes: extra.notes }),
       },
@@ -101,19 +101,19 @@ export const financeRepository = {
   },
 
   async createTransaction(data: CreateTransactionData) {
-    const payload: Record<string, unknown> = {
-      type: data.type as any,
+    const payload: Prisma.TransactionCreateInput = {
+      type: data.type as $Enums.TransactionType,
       amount: data.amount,
       currency: data.currency || 'IRR',
-      status: (data.status || 'pending') as any,
+      status: (data.status || 'pending') as $Enums.TransactionStatus,
+      ...(data.invoiceId && { invoice: { connect: { id: data.invoiceId } } }),
+      ...(data.orderId && { orderId: data.orderId }),
+      ...(data.provider && { provider: data.provider }),
+      ...(data.referenceId && { referenceId: data.referenceId }),
+      ...(data.metadata && { metadata: data.metadata as Prisma.InputJsonValue }),
     }
-    if (data.invoiceId) payload.invoiceId = data.invoiceId
-    if (data.orderId) payload.orderId = data.orderId
-    if (data.provider) payload.provider = data.provider
-    if (data.referenceId) payload.referenceId = data.referenceId
-    if (data.metadata) payload.metadata = data.metadata as any
 
-    return prisma.transaction.create({ data: payload as any })
+    return prisma.transaction.create({ data: payload })
   },
 
   async findTransactionById(id: string) {
@@ -125,7 +125,7 @@ export const financeRepository = {
   async updateTransactionStatus(id: string, status: DbTransactionStatus | string, settledAt?: Date) {
     return prisma.transaction.update({
       where: { id },
-      data: { status: status as any, ...(settledAt && { settledAt }) },
+      data: { status: status as $Enums.TransactionStatus, ...(settledAt && { settledAt }) },
     })
   },
 

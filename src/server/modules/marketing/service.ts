@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import { marketingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
@@ -73,7 +73,7 @@ export const marketingService = {
     // قفل advisory روی coupon — جلوگیری از race condition perCustomerLimit > 1
     // pg_advisory_xact_lock تا پایان transaction نگه داشته و خودکار آزاد می‌شود.
     // transaction دوم منتظر اول می‌ماند (reject نمی‌شود) — نیازی به retry loop نیست.
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const lockKey = `coupon_apply:${result.coupon.id}`
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`
 
@@ -134,7 +134,7 @@ export const marketingService = {
             orderId,
             discount: result.discount,
             customerId: opts.customerId,
-          } as any,
+          } as Prisma.InputJsonValue,
           aggregateId: result.coupon.id,
         },
       })

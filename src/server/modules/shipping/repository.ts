@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 
 export type DbShipmentStatus =
@@ -42,8 +42,8 @@ export const shippingRepository = {
       data: {
         ...data,
         shippingCost: data.shippingCost || 0,
-        originAddress: data.originAddress ? (data.originAddress as any) : undefined,
-        destinationAddress: data.destinationAddress ? (data.destinationAddress as any) : undefined,
+        originAddress: data.originAddress ? (data.originAddress as Prisma.InputJsonValue) : undefined,
+        destinationAddress: data.destinationAddress ? (data.destinationAddress as Prisma.InputJsonValue) : undefined,
       },
     })
   },
@@ -60,7 +60,7 @@ export const shippingRepository = {
     return prisma.shipment.update({
       where: { id },
       data: {
-        status: status as any,
+        status: status as $Enums.ShipmentStatus,
         ...(extra?.shippedAt && { shippedAt: extra.shippedAt }),
         ...(extra?.deliveredAt && { deliveredAt: extra.deliveredAt }),
         ...(extra?.trackingNumber && { trackingNumber: extra.trackingNumber }),

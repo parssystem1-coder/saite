@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma TransactionClient و Map<any> برای stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import { MAX_LINES, MAX_QUANTITY_PER_LINE } from '@/server/shared/constants'
 import { ordersRepository } from './repository'
@@ -14,6 +14,11 @@ export interface CreateOrderInput {
   items: { productId: string; quantity: number }[]
   shippingAddress: Record<string, unknown>
 }
+
+/** ردیف محصول برای قیمت‌گذاری سروری — دقیقاً منطبق با `select` کوئری زیر */
+type PricedProduct = Prisma.ProductGetPayload<{
+  select: { id: true; price: true; priceType: true; stockStatus: true; name: true }
+}>
 
 
 
@@ -59,7 +64,7 @@ export const ordersService = {
     const productIds = [...merged.keys()]
 
     // ── قیمت‌گذاری سروری — تنها مرجع قیمت DB است ──────────────────────────
-    const products = (await prisma.product.findMany({
+    const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: {
         id: true,
@@ -68,15 +73,15 @@ export const ordersService = {
         stockStatus: true,
         name: true,
       },
-    })) as any[]
+    })
 
-    const productMap = new Map<string, any>(products.map((p: any) => [p.id, p]))
+    const productMap = new Map<string, PricedProduct>(products.map((p) => [p.id, p]))
 
     let totalAmount = 0
     const pricedItems: { productId: string; quantity: number; unitPrice: number }[] = []
 
-    for (const [productId, quantity] of merged as Map<string, number>) {
-      const product: any = productMap.get(productId)
+    for (const [productId, quantity] of merged) {
+      const product = productMap.get(productId)
       if (!product) {
         throw new ValidationError({ items: `محصول ${productId} یافت نشد` })
       }
@@ -95,14 +100,14 @@ export const ordersService = {
     }
 
     // ── ثبت تراکنشی: Order + OrderItems + OutboxEvent ──────────────────────────
-    const order = await prisma.$transaction(async (tx: any) => {
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const createdOrder = await tx.order.create({
         data: {
           customerId: input.customerId,
           status: 'pending',
           totalAmount,
           currency: 'IRR',
-          shippingAddress: input.shippingAddress as any,
+          shippingAddress: input.shippingAddress as Prisma.InputJsonValue,
         },
       })
 
@@ -123,7 +128,7 @@ export const ordersService = {
       await tx.outboxEvent.create({
         data: {
           type: OrderEvents.created,
-          payload: { orderId: createdOrder.id, customerId: input.customerId } as any,
+          payload: { orderId: createdOrder.id, customerId: input.customerId } as Prisma.InputJsonValue,
           aggregateId: createdOrder.id,
         },
       })
@@ -150,10 +155,10 @@ export const ordersService = {
     // شکست می‌خورد، وضعیت paid ثبت شده بود ولی موجودی کم نشده و رویدادی هم
     // publish نشده بود. updateMany شرطی (where status=from) هم دو درخواست
     // هم‌زمان را به یک برنده محدود می‌کند (optimistic state check).
-    return prisma.$transaction(async (tx: any) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const res = await tx.order.updateMany({
         where: { id: orderId, status: order.status },
-        data: { status: newStatus },
+        data: { status: newStatus as $Enums.OrderStatus },
       })
       if (res.count !== 1) {
         // درخواست موازی زودتر گذار زده — همان قرارداد قبلی: خطای گذار نامعتبر
@@ -167,7 +172,7 @@ export const ordersService = {
       await tx.outboxEvent.create({
         data: {
           type: OrderEvents.statusChanged,
-          payload: { orderId, from: order.status, to: newStatus, actorId } as any,
+          payload: { orderId, from: order.status, to: newStatus, actorId } as Prisma.InputJsonValue,
           aggregateId: orderId,
         },
       })

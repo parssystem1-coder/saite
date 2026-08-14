@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import type { OrderState } from './state-machine'
 
@@ -41,17 +41,32 @@ export const ordersRepository = {
   },
 
   async create(data: CreateOrderData) {
-    return prisma.order.create({ data: data as any })
+    return prisma.order.create({
+      data: {
+        customer: { connect: { id: data.customerId } },
+        status: (data.status || 'pending') as $Enums.OrderStatus,
+        totalAmount: data.totalAmount,
+        currency: data.currency || 'IRR',
+        shippingAddress: data.shippingAddress as Prisma.InputJsonValue | undefined,
+      },
+    })
   },
 
   async updateStatus(id: string, status: OrderState | string) {
     return prisma.order.update({
       where: { id },
-      data: { status: status as any },
+      data: { status: status as $Enums.OrderStatus },
     })
   },
 
   async createOrderItem(data: CreateOrderItemData) {
-    return prisma.orderItem.create({ data: data as any })
+    return prisma.orderItem.create({
+      data: {
+        order: { connect: { id: data.orderId } },
+        product: { connect: { id: data.productId } },
+        quantity: data.quantity,
+        unitPrice: data.unitPrice,
+      },
+    })
   },
 }
