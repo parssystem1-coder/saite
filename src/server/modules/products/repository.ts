@@ -1,5 +1,5 @@
 import 'server-only'
-/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma stub vs real */
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
 import type { ProductListQuery } from '@/lib/api-types'
 import type { PriceType, StockStatus, ProductCondition } from '@/types/product'
@@ -60,11 +60,11 @@ export const productsRepository = {
   },
 
   async create(data: CreateProductData) {
-    return prisma.product.create({ data: data as any })
+    return prisma.product.create({ data: toCreateInput(data) })
   },
 
   async update(id: string, data: UpdateProductData) {
-    return prisma.product.update({ where: { id }, data: data as any })
+    return prisma.product.update({ where: { id }, data: toUpdateInput(data) })
   },
 
   async delete(id: string) {
@@ -130,6 +130,15 @@ function buildWhere(query: ProductListQuery) {
   return where
 }
 
+/** Json nullable → Prisma.DbNull برای null (SQL NULL) یا InputJsonValue */
+function toJsonOrNull(
+  specs: Record<string, unknown> | null | undefined
+): Prisma.InputJsonValue | typeof Prisma.DbNull | undefined {
+  if (specs === null) return Prisma.DbNull
+  if (specs === undefined) return undefined
+  return specs as Prisma.InputJsonValue
+}
+
 function orderBy(sort?: string) {
   switch (sort) {
     case 'price_asc':
@@ -141,4 +150,66 @@ function orderBy(sort?: string) {
     default:
       return { createdAt: 'desc' as const }
   }
+}
+
+/** نگاشت دادهٔ ورودی به Prisma.ProductCreateInput — بدون هیچ `as any` */
+function toCreateInput(data: CreateProductData): Prisma.ProductCreateInput {
+  return {
+    slug: data.slug,
+    name: data.name,
+    brand: data.brand,
+    model: data.model,
+    sku: data.sku,
+    category: data.category,
+    subCategory: data.subCategory ?? null,
+    priceType: data.priceType,
+    price: data.price ?? null,
+    compareAtPrice: data.compareAtPrice ?? null,
+    stockStatus: data.stockStatus,
+    images: data.images,
+    shortDescription: data.shortDescription,
+    description: data.description ?? null,
+    keyFeatures: data.keyFeatures,
+    specs: toJsonOrNull(data.specs),
+    technology: data.technology ?? null,
+    colorSupport: data.colorSupport ?? null,
+    usageClass: data.usageClass ?? null,
+    warrantyMonths: data.warrantyMonths ?? null,
+    condition: data.condition,
+    compatibleWith: data.compatibleWith,
+    consumables: data.consumables,
+    isFeatured: data.isFeatured,
+    isBestSeller: data.isBestSeller,
+  }
+}
+
+/** نگاشت دادهٔ به‌روزرسانی به Prisma.ProductUpdateInput — بدون هیچ `as any` */
+function toUpdateInput(data: UpdateProductData): Prisma.ProductUpdateInput {
+  const input: Prisma.ProductUpdateInput = {}
+  if (data.slug !== undefined) input.slug = data.slug
+  if (data.name !== undefined) input.name = data.name
+  if (data.brand !== undefined) input.brand = data.brand
+  if (data.model !== undefined) input.model = data.model
+  if (data.sku !== undefined) input.sku = data.sku
+  if (data.category !== undefined) input.category = data.category
+  if (data.subCategory !== undefined) input.subCategory = data.subCategory
+  if (data.priceType !== undefined) input.priceType = data.priceType
+  if (data.price !== undefined) input.price = data.price
+  if (data.compareAtPrice !== undefined) input.compareAtPrice = data.compareAtPrice
+  if (data.stockStatus !== undefined) input.stockStatus = data.stockStatus
+  if (data.images !== undefined) input.images = data.images
+  if (data.shortDescription !== undefined) input.shortDescription = data.shortDescription
+  if (data.description !== undefined) input.description = data.description
+  if (data.keyFeatures !== undefined) input.keyFeatures = data.keyFeatures
+  if (data.specs !== undefined) input.specs = toJsonOrNull(data.specs)
+  if (data.technology !== undefined) input.technology = data.technology
+  if (data.colorSupport !== undefined) input.colorSupport = data.colorSupport
+  if (data.usageClass !== undefined) input.usageClass = data.usageClass
+  if (data.warrantyMonths !== undefined) input.warrantyMonths = data.warrantyMonths
+  if (data.condition !== undefined) input.condition = data.condition
+  if (data.compatibleWith !== undefined) input.compatibleWith = data.compatibleWith
+  if (data.consumables !== undefined) input.consumables = data.consumables
+  if (data.isFeatured !== undefined) input.isFeatured = data.isFeatured
+  if (data.isBestSeller !== undefined) input.isBestSeller = data.isBestSeller
+  return input
 }

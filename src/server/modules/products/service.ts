@@ -70,8 +70,8 @@ export const productsService = {
     return product
   },
 
-  async create(input: unknown, actorId: string) {
-    const product = await productsRepository.create(input as CreateProductData)
+  async create(input: CreateProductData, actorId: string) {
+    const product = await productsRepository.create(input)
     await eventBus.publish(ProductEvents.created, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
@@ -80,8 +80,8 @@ export const productsService = {
     return product
   },
 
-  async update(id: string, input: unknown, actorId: string) {
-    const product = await productsRepository.update(id, input as UpdateProductData)
+  async update(id: string, input: UpdateProductData, actorId: string) {
+    const product = await productsRepository.update(id, input)
     await eventBus.publish(ProductEvents.updated, { productId: product.id, actorId })
 
     // Invalidate cache لیست محصولات
