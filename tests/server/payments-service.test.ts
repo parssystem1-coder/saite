@@ -115,12 +115,34 @@ describe('paymentsService.initialize', () => {
       id: 'pi1',
       authority: 'A12345',
       redirectUrl: 'https://pay.example/start/A12345',
+      expiresAt: new Date(Date.now() + 60_000), // هنوز معتبر
     } as never)
 
     const result = await paymentsService.initialize('order1', 'cust1')
 
     expect(result.intentId).toBe('pi1')
     expect(prisma.paymentIntent.create).not.toHaveBeenCalled()
+  })
+
+  it('intent منقضی — به درگاه قدیمی هدایت نمی‌شود و intent جدید می‌سازد (فاز ۴)', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(pendingOrder as never)
+    // intent موجود منقضی شده — باید نادیده گرفته شود
+    vi.mocked(prisma.paymentIntent.findUnique).mockResolvedValueOnce({
+      id: 'pi-old',
+      authority: 'OLD',
+      redirectUrl: 'https://pay.example/start/OLD',
+      expiresAt: new Date(Date.now() - 1000), // منقضی
+    } as never)
+    vi.mocked(prisma.paymentIntent.create).mockResolvedValue({
+      id: 'pi-new',
+      redirectUrl: 'https://pay.example/start/A12345',
+    } as never)
+
+    const result = await paymentsService.initialize('order1', 'cust1')
+
+    // نباید intent قدیمی/منقضی برگردد — درگاه جدید ساخته می‌شود
+    expect(result.intentId).toBe('pi-new')
+    expect(prisma.paymentIntent.create).toHaveBeenCalledTimes(1)
   })
 
   it('race — اگر create با P2002 شکست، intent موجود برگردانده می‌شود', async () => {

@@ -48,8 +48,10 @@ export const paymentsService = {
     const callbackUrl = `${SITE_URL}/api/payments/webhook/${provider.code}`
 
     // idempotency: intent موجود برای همین (order, provider)
+    // فقط اگر هنوز منقضی نشده باشد برگردانده می‌شود — intent منقضی‌شده
+    // نباید کاربر را به درگاه بی‌اعتبار هدایت کند (درگاه جدید ساخته می‌شود).
     const existing = await prisma.paymentIntent.findUnique({ where: { idempotencyKey } })
-    if (existing?.authority && existing.redirectUrl) {
+    if (existing?.authority && existing.redirectUrl && existing.expiresAt > new Date()) {
       return { redirectUrl: existing.redirectUrl, intentId: existing.id }
     }
 
