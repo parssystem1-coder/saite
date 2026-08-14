@@ -1,5 +1,6 @@
 import 'server-only'
 import { randomUUID } from 'crypto'
+import { prisma } from '@/server/shared/db'
 import { financeRepository, type CreateTransactionData } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { FinanceEvents } from '@/server/shared/event-types'
@@ -65,22 +66,35 @@ export const financeService = {
       return existing
     }
 
-    const invoice = await financeRepository.updateInvoiceStatus(invoiceId, 'paid', {
-      paidAt: new Date(),
-    })
-
-    if (referenceId) {
-      await financeRepository.createTransaction({
+    // ── Unit of Work: update فاکتور + ثبت Transaction در یک تراکنش ──
+    // پیش‌تر این دو عمل جدا بودند؛ اگر ثبت Transaction شکست می‌خورد،
+    // فاکتور paid ثبت شده بود ولی تراکنش/پیگیری‌ای ثبت نشده بود.
+    const invoice = await prisma.$transaction(async (tx) => {
+      const updated = await financeRepository.updateInvoiceStatus(
         invoiceId,
-        orderId: invoice.orderId,
-        type: 'payment',
-        amount: invoice.totalAmount,
-        currency: invoice.currency,
-        provider: undefined,
-        referenceId,
-        status: 'completed',
-      })
-    }
+        'paid',
+        { paidAt: new Date() },
+        tx
+      )
+
+      if (referenceId) {
+        await financeRepository.createTransaction(
+          {
+            invoiceId,
+            orderId: existing.orderId,
+            type: 'payment',
+            amount: existing.totalAmount,
+            currency: existing.currency,
+            provider: undefined,
+            referenceId,
+            status: 'completed',
+          },
+          tx
+        )
+      }
+
+      return updated
+    })
 
     await eventBus.publish(FinanceEvents.paid, {
       invoiceId,
