@@ -3,6 +3,7 @@ import { ordersService } from '@/server/modules/orders/service'
 import { getCustomerSession } from '@/server/auth/customer-session'
 import { canAccessOrder } from '@/lib/auth/customer-scope'
 import { handleServiceError } from '@/server/shared/http-utils'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 import { z } from 'zod'
 
@@ -29,6 +30,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Rate-limit برای لغو سفارش — جلوگیری از spam تغییر وضعیت
+    const rateLimit = await checkRouteRateLimit(req, 'order-cancel')
+    if (rateLimit) return rateLimit
+
     const session = await getCustomerSession()
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

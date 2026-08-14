@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { shippingService } from '@/server/modules/shipping/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError } from '@/server/shared/http-utils'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { shippingRateCreateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
 export async function GET(req: NextRequest) {
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'shipping-rate-create')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('settings:write')
     if (!guard.ok) return guard.response
 

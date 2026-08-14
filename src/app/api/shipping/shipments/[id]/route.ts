@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { shippingService } from '@/server/modules/shipping/service'
 import { requirePermission } from '@/lib/auth/server/require-role'
 import { handleServiceError } from '@/server/shared/http-utils'
+import { checkRouteRateLimit } from '@/server/shared/rate-limit-policy'
 import { NotFoundError } from '@/server/shared/errors'
 import { shipmentUpdateSchema, parseWithSchema, parseJsonBody } from '@/server/shared/validation'
 
@@ -21,6 +22,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const rateLimit = await checkRouteRateLimit(req, 'shipment-update')
+    if (rateLimit) return rateLimit
+
     const guard = await requirePermission('orders:write')
     if (!guard.ok) return guard.response
 
