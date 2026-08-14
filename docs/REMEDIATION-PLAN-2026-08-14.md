@@ -352,9 +352,9 @@ git push origin arena/019ffd6d-saite
 | ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ✅ |
 | ۱۸ | paginatedList مشترک | ۵ | ✅ |
 | ۱۹ | getSiteUrl متمرکز | ۵ | ✅ |
-| ۲۰ | تست‌های DB واقعی (۶ سناریو) | ۶ | ⬜ |
-| ۲۱ | e2e پرداخت mock | ۶ | ⬜ |
-| ۲۲ | CI job تست دیتابیس | ۶ | ⬜ |
+| ۲۰ | تست‌های DB واقعی (۶ سناریو) | ۶ | ✅ |
+| ۲۱ | e2e پرداخت mock | ۶ | ✅ |
+| ۲۲ | CI job تست دیتابیس | ۶ | ✅ |
 
 > **یادداشت‌های خارج از scope این برنامه (تصمیم محصولی لازم):**
 > - ساخت صفحهٔ عمومی `/orders/[id]` (الان redirect پرداخت به `/dashboard` می‌رود)
