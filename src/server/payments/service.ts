@@ -3,9 +3,8 @@ import { prisma } from '@/server/shared/db'
 import { resolvePaymentProviderForCreate } from './gateway'
 import { NotFoundError, ValidationError } from '@/server/shared/errors'
 import { PAYMENT_INTENT_TTL_MS, PAYMENT_MIN_AMOUNT } from '@/server/shared/constants'
+import { getSiteUrl } from '@/server/shared/site-url'
 import { canTransitionPayment } from '@/lib/payments/payment-rules'
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 function isUniqueViolation(err: unknown): boolean {
   return (
@@ -45,7 +44,7 @@ export const paymentsService = {
 
     const { adapter, provider } = resolvePaymentProviderForCreate()
     const idempotencyKey = `order:${order.id}:${provider.code}`
-    const callbackUrl = `${SITE_URL}/api/payments/webhook/${provider.code}`
+    const callbackUrl = `${getSiteUrl()}/api/payments/webhook/${provider.code}`
 
     // idempotency: intent موجود برای همین (order, provider)
     // فقط اگر هنوز منقضی نشده باشد برگردانده می‌شود — intent منقضی‌شده

@@ -21,6 +21,12 @@ export const MAX_PER_PAGE = 100
 /** حداکثر تعداد ردیف برای فهرست سبک sitemap — فقط فیلد slug/updatedAt */
 export const SITEMAP_MAX_PER_PAGE = 10_000
 
+// ── TTL کش ────────────────────────────────────────────────
+/** TTL فهرست محصولات (ثانیه) — ۶۰ */
+export const PRODUCTS_LIST_TTL = Number(process.env.PRODUCTS_LIST_TTL ?? '60')
+/** TTL نرخ‌های ارسال (ثانیه) — ۵ دقیقه */
+export const SHIPPING_RATES_TTL = Number(process.env.SHIPPING_RATES_TTL ?? '300')
+
 
 // ── سفارش ─────────────────────────────────────────────────
 export const MAX_QUANTITY_PER_LINE = 20

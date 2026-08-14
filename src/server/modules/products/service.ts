@@ -5,10 +5,12 @@ import { ProductEvents } from '@/server/shared/event-types'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
 import { NotFoundError } from '@/server/shared/errors'
 import type { ProductListQuery, ProductListResult } from '@/lib/api-types'
-import { DEFAULT_PER_PAGE, MAX_PER_PAGE, SITEMAP_MAX_PER_PAGE } from '@/server/shared/constants'
-
-/** TTL برای لیست محصولات — 60 ثانیه */
-const PRODUCTS_LIST_TTL = 60
+import {
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  SITEMAP_MAX_PER_PAGE,
+  PRODUCTS_LIST_TTL,
+} from '@/server/shared/constants'
 
 /**
  * ساخت کلید cache از query parameters

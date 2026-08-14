@@ -3,9 +3,7 @@ import { shippingRepository } from './repository'
 import { eventBus } from '@/server/shared/event-bus'
 import { ShippingEvents } from '@/server/shared/event-types'
 import { cacheAside, cacheInvalidateByPrefix } from '@/server/shared/cache'
-
-/** TTL برای shipping rates — 5 دقیقه */
-const SHIPPING_RATES_TTL = 300
+import { SHIPPING_RATES_TTL } from '@/server/shared/constants'
 
 /**
  * ساخت کلید cache از opts
