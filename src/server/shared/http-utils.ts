@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { ValidationError, DomainError } from './errors'
 import { logger } from './logger'
 import { consumeRateLimit, getClientKey } from '@/lib/auth/server/rate-limit'
@@ -35,6 +36,29 @@ export function handleServiceError(err: unknown): NextResponse<ApiError> {
       response.details = err.details
     }
     return NextResponse.json(response, { status: err.status })
+  }
+
+  // خطاهای Prisma — تبدیل به پاسخ معنادار به‌جای ۵۰۰ خام
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    // P2002 — unique constraint (مثل slug یا sku تکراری)
+    if (err.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'رکوردی با این مقدار از قبل وجود دارد', code: 'CONFLICT' },
+        { status: 409 }
+      )
+    }
+    // P2025 — رکورد یافت نشد
+    if (err.code === 'P2025') {
+      return NextResponse.json(
+        { error: 'رکورد موردنظر یافت نشد', code: 'NOT_FOUND' },
+        { status: 404 }
+      )
+    }
+    logger.error({ err, code: err.code }, 'Prisma error')
+    return NextResponse.json(
+      { error: 'خطای پایگاه داده', code: 'DATABASE_ERROR' },
+      { status: 500 }
+    )
   }
 
   // خطاهای ناشناخته
