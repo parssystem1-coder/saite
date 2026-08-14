@@ -18,16 +18,32 @@ export interface ResolvedPayment {
   provider: PaymentProvider
 }
 
+interface ProviderRegistration {
+  adapter: PaymentGatewayAdapter
+  envKey: string
+  name: string
+}
+
+/**
+ * Registry درگاه‌های پرداخت — افزودن درگاه سوم (سامان/به‌پرداخت) فقط یک
+ * سطر است؛ رفتار fail-closed به‌صورت خودکار از envKey حفظ می‌شود.
+ */
+const PROVIDERS: Partial<Record<PaymentProviderCode, ProviderRegistration>> = {
+  zarinpal: { adapter: zarinpalProvider, envKey: 'ZARINPAL_MERCHANT_ID', name: 'زرین‌پال' },
+  idpay: { adapter: idpayProvider, envKey: 'IDPAY_API_KEY', name: 'IDPay' },
+}
+
 const isSandbox = process.env.PAYMENT_SANDBOX === 'true'
 
 /** ساخت PaymentProvider از متغیرهای محیطی — برای پاس به adapter ها */
 export function buildProviderFromEnv(code: PaymentProviderCode): PaymentProvider {
   const now = new Date().toISOString()
   const environment = isSandbox ? 'sandbox' : 'production'
+  const reg = PROVIDERS[code]
   const isZarinpal = code === 'zarinpal'
   return {
     id: code,
-    name: isZarinpal ? 'زرین‌پال' : 'IDPay',
+    name: reg?.name ?? code,
     code,
     environment,
     active: true,
@@ -52,11 +68,13 @@ export function buildProviderFromEnv(code: PaymentProviderCode): PaymentProvider
  * اولویت: زرین‌پال → IDPay → mock (فقط غیر-production).
  */
 export function resolvePaymentProviderForCreate(): ResolvedPayment {
-  if (process.env.ZARINPAL_MERCHANT_ID) {
-    return { adapter: zarinpalProvider, provider: buildProviderFromEnv('zarinpal') }
-  }
-  if (process.env.IDPAY_API_KEY) {
-    return { adapter: idpayProvider, provider: buildProviderFromEnv('idpay') }
+  // ترتیب اولویت: زرین‌پال → IDPay → mock (فقط غیر-production)
+  const ordered: PaymentProviderCode[] = ['zarinpal', 'idpay']
+  for (const code of ordered) {
+    const reg = PROVIDERS[code]
+    if (reg && process.env[reg.envKey]) {
+      return { adapter: reg.adapter, provider: buildProviderFromEnv(code) }
+    }
   }
   if (process.env.NODE_ENV !== 'production') {
     return { adapter: mockPaymentProvider, provider: buildProviderFromEnv('zarinpal') }
@@ -72,18 +90,20 @@ export function resolvePaymentProviderForCreate(): ResolvedPayment {
  * درگاه خاص وابسته است. fail-closed: بدون credential، خطا می‌دهد.
  */
 export function resolvePaymentProviderByCode(code: string): ResolvedPayment {
-  if (code === 'idpay') {
-    if (!process.env.IDPAY_API_KEY) {
-      throw new ServiceUnavailableError('IDPay پیکربندی نشده است', 'PAYMENT_PROVIDER_NOT_CONFIGURED')
-    }
-    return { adapter: idpayProvider, provider: buildProviderFromEnv('idpay') }
+  const reg = PROVIDERS[code as PaymentProviderCode]
+  if (!reg) {
+    throw new ServiceUnavailableError(
+      `درگاه پرداخت «${code}» شناخته‌شده نیست`,
+      'PAYMENT_PROVIDER_NOT_CONFIGURED'
+    )
   }
-
-  // پیش‌فرض: زرین‌پال
-  if (!process.env.ZARINPAL_MERCHANT_ID) {
-    throw new ServiceUnavailableError('زرین‌پال پیکربندی نشده است', 'PAYMENT_PROVIDER_NOT_CONFIGURED')
+  if (!process.env[reg.envKey]) {
+    throw new ServiceUnavailableError(
+      `${reg.name} پیکربندی نشده است`,
+      'PAYMENT_PROVIDER_NOT_CONFIGURED'
+    )
   }
-  return { adapter: zarinpalProvider, provider: buildProviderFromEnv('zarinpal') }
+  return { adapter: reg.adapter, provider: buildProviderFromEnv(code as PaymentProviderCode) }
 }
 
 // backward-compat — قبلاً فقط adapter برمی‌گشت
