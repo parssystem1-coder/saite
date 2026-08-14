@@ -1,6 +1,7 @@
 import 'server-only'
 import { Prisma, $Enums } from '@prisma/client'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 
 export type DbCouponType = 'percentage' | 'fixed_amount' | 'free_shipping'
 
@@ -61,21 +62,13 @@ export const marketingRepository = {
     page?: number
     limit?: number
   }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.active !== undefined) where.active = opts.active
 
-    const [items, total] = await Promise.all([
-      prisma.coupon.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.coupon.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.coupon.findMany>>[number]>(
+      prisma.coupon,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async incrementCouponUsage(id: string) {
@@ -148,16 +141,9 @@ export const marketingRepository = {
   },
 
   async listCampaigns(opts: { page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
-    const [items, total] = await Promise.all([
-      prisma.campaign.findMany({
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.campaign.count(),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.campaign.findMany>>[number]>(
+      prisma.campaign,
+      { page: opts.page, limit: opts.limit }
+    )
   },
 }

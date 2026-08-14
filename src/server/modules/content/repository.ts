@@ -1,5 +1,6 @@
 import 'server-only'
 import { prisma } from '@/server/shared/db'
+import { paginatedList } from '@/server/shared/repo-utils'
 
 export const contentRepository = {
   async createPage(data: {
@@ -28,21 +29,13 @@ export const contentRepository = {
   },
 
   async listPages(opts: { isPublished?: boolean; page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.isPublished !== undefined) where.isPublished = opts.isPublished
 
-    const [items, total] = await Promise.all([
-      prisma.page.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.page.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.page.findMany>>[number]>(
+      prisma.page,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async updatePage(id: string, data: Partial<{
@@ -86,22 +79,14 @@ export const contentRepository = {
   },
 
   async listPosts(opts: { isPublished?: boolean; tag?: string; page?: number; limit?: number }) {
-    const page = opts.page || 1
-    const limit = opts.limit || 20
     const where: Record<string, unknown> = {}
     if (opts.isPublished !== undefined) where.isPublished = opts.isPublished
     if (opts.tag) where.tags = { has: opts.tag }
 
-    const [items, total] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.post.count({ where }),
-    ])
-    return { items, total, page, limit }
+    return paginatedList<Awaited<ReturnType<typeof prisma.post.findMany>>[number]>(
+      prisma.post,
+      { where, page: opts.page, limit: opts.limit }
+    )
   },
 
   async updatePost(id: string, data: Partial<{
