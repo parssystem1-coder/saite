@@ -256,9 +256,10 @@ model OutboxEvent {
   aggregateId String
   processedAt DateTime?
   retryCount  Int      @default(0)
+  claimedAt   DateTime?
   createdAt   DateTime @default(now())
 
-  @@index([processedAt, createdAt])
+  @@index([processedAt, claimedAt, createdAt])
   @@map("outbox_events")
 }
 
