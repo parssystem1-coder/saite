@@ -44,3 +44,61 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # ── فاز ۶ — تست‌های integration واقعی روی Postgres ──────────────
+  # سناریوهای race (رزرو موجودی، کوپن، گذار وضعیت، outbox) فقط با
+  # دیتابیس واقعی معنادارند — در اینجا با service container postgres:17.
+  test-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: saite_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/saite_test
+      REDIS_URL: redis://localhost:6379
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      ADMIN_SESSION_SECRET: test-secret-min-16-chars-long
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # migrate deploy + vitest integration — اسکریپت خودش migration را
+      # روی DATABASE_URL_TEST اعمال می‌کند.
+      - name: DB integration tests
+        run: npm run test:db
