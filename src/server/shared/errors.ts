@@ -27,8 +27,12 @@ export class NotFoundError extends DomainError {
 }
 
 export class ValidationError extends DomainError {
-  constructor(public readonly details: unknown, message = 'اعتبارسنجی ناموفق') {
-    super(message, 400, 'VALIDATION_ERROR')
+  constructor(
+    public readonly details: unknown,
+    message = 'اعتبارسنجی ناموفق',
+    code = 'VALIDATION_ERROR'
+  ) {
+    super(message, 400, code)
     this.name = 'ValidationError'
   }
 }
@@ -63,10 +67,9 @@ export class ForbiddenError extends DomainError {
 
 export class CouponValidationError extends ValidationError {
   constructor(message: string) {
-    super({ message }, message)
+    // code از طریق constructor پاس می‌شود — بدون دور زدن readonly با cast
+    super({ message }, message, 'COUPON_VALIDATION_ERROR')
     this.name = 'CouponValidationError'
-    // Override code
-    ;(this as { code: string }).code = 'COUPON_VALIDATION_ERROR'
   }
 }
 

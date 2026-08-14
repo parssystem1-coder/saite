@@ -140,12 +140,8 @@ export const marketingService = {
       })
     })
 
-    await eventBus.publish(MarketingEvents.couponApplied, {
-      couponId: result.coupon.id,
-      code: result.coupon.code,
-      orderId,
-      discount: result.discount,
-    })
+    // نکته: publish دوباره بیرون از تراکنش عمداً حذف شد — outboxEvent داخل
+    // همان تراکنش بالا ثبت می‌شود و دو ردیف outbox یعنی دو بار پردازش در worker.
     return result
   },
 

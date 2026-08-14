@@ -24,25 +24,57 @@ export const inventoryRepository = {
     }
   },
 
-  async confirmOrder(orderId: string) {
-    return prisma.$transaction(async (tx: any) => {
+  /** بدنهٔ مشترک تأیید رزرو — داخل تراکنش caller اجرا می‌شود */
+  async confirmOrderInTx(tx: Tx, orderId: string) {
       const reservations = (await tx.$queryRawUnsafe(
         `SELECT "productId", "quantity" FROM "inventory_reservations" WHERE "orderId" = $1 AND "status" = 'active' FOR UPDATE`, orderId)) as InventoryLine[]
       for (const r of reservations) await tx.$executeRawUnsafe(
         `UPDATE "inventory_items" SET "quantityOnHand" = "quantityOnHand" - $1, "quantityReserved" = "quantityReserved" - $1, "updatedAt" = NOW() WHERE "productId" = $2`, r.quantity, r.productId)
       await tx.$executeRawUnsafe(`UPDATE "inventory_reservations" SET "status" = 'confirmed' WHERE "orderId" = $1 AND "status" = 'active'`, orderId)
-    })
+
+      // ── پرداخت دیرهنگام: رزروها قبلاً expire شده‌اند ──────────────────
+      // بدون این شاخه، سفارشِ paid موجودی را کم نمی‌کرد (oversell خاموش).
+      // رزرو منقضی را به‌صورت شرطی دوباره از موجودی آزاد کم می‌کنیم؛
+      // اگر موجودی کافی نبود خطای دامنه‌ای می‌دهیم تا مسیر retry/بازبینی
+      // (outbox worker → DLQ log) فعال شود، نه فروش کالای ناموجود.
+      const expired = (await tx.$queryRawUnsafe(
+        `SELECT "productId", "quantity" FROM "inventory_reservations" WHERE "orderId" = $1 AND "status" = 'expired' FOR UPDATE`, orderId)) as InventoryLine[]
+      for (const r of expired) {
+        const updated = await tx.$queryRawUnsafe<{ productId: string }[]>(
+          `UPDATE "inventory_items" SET "quantityOnHand" = "quantityOnHand" - $1, "updatedAt" = NOW()
+           WHERE "productId" = $2 AND "quantityOnHand" - "quantityReserved" >= $1 RETURNING "productId"`,
+          r.quantity, r.productId
+        )
+        if (updated.length !== 1) {
+          throw new ValidationError({
+            orderId: `پرداخت پس از انقضای رزرو انجام شد و موجودی محصول ${r.productId} دیگر کافی نیست — نیاز به بازبینی`,
+          })
+        }
+      }
+      if (expired.length > 0) {
+        await tx.$executeRawUnsafe(
+          `UPDATE "inventory_reservations" SET "status" = 'confirmed', "releasedAt" = NULL WHERE "orderId" = $1 AND "status" = 'expired'`, orderId)
+      }
+  },
+
+  async confirmOrder(orderId: string) {
+    return prisma.$transaction(async (tx: any) => this.confirmOrderInTx(tx, orderId))
+  },
+
+  /** بدنهٔ مشترک آزادسازی رزرو — داخل تراکنش caller اجرا می‌شود */
+  async releaseOrderInTx(tx: Tx, orderId: string, status: 'released' | 'expired') {
+    const reservations = (await tx.$queryRawUnsafe(
+      `SELECT "productId", "quantity" FROM "inventory_reservations" WHERE "orderId" = $1 AND "status" = 'active' FOR UPDATE`, orderId)) as InventoryLine[]
+    for (const r of reservations) await tx.$executeRawUnsafe(
+      `UPDATE "inventory_items" SET "quantityReserved" = "quantityReserved" - $1, "updatedAt" = NOW() WHERE "productId" = $2`, r.quantity, r.productId)
+    await tx.$executeRawUnsafe(`UPDATE "inventory_reservations" SET "status" = $1::"ReservationStatus", "releasedAt" = NOW() WHERE "orderId" = $2 AND "status" = 'active'`, status, orderId)
+    return reservations.length
   },
 
   async releaseOrder(orderId: string, status: 'released' | 'expired' = 'released') {
-    return prisma.$transaction(async (tx: any) => {
-      const reservations = (await tx.$queryRawUnsafe(
-        `SELECT "productId", "quantity" FROM "inventory_reservations" WHERE "orderId" = $1 AND "status" = 'active' FOR UPDATE`, orderId)) as InventoryLine[]
-      for (const r of reservations) await tx.$executeRawUnsafe(
-        `UPDATE "inventory_items" SET "quantityReserved" = "quantityReserved" - $1, "updatedAt" = NOW() WHERE "productId" = $2`, r.quantity, r.productId)
-      await tx.$executeRawUnsafe(`UPDATE "inventory_reservations" SET "status" = $1::"ReservationStatus", "releasedAt" = NOW() WHERE "orderId" = $2 AND "status" = 'active'`, status, orderId)
-      return reservations.length
-    })
+    return prisma.$transaction(async (tx: any) =>
+      this.releaseOrderInTx(tx, orderId, status)
+    )
   },
 
   async adjustOnHand(input: { productId: string; delta: number; reason: 'receipt' | 'correction' | 'damaged' | 'returned' | 'stocktake'; note?: string; actorId: string }) {

@@ -16,6 +16,9 @@ import {
   toProductSeoPromptVars,
 } from './features/product-seo/prompt'
 
+/** نام مدل برای cost-tracking — یک منبع، نه literal تکراری در ۴ نقطه */
+const AI_CHAT_MODEL = 'claude-sonnet-4'
+
 export interface ChatOptions {
   feature: string
   promptVersion?: string
@@ -53,7 +56,7 @@ export async function callChat(opts: ChatOptions) {
       feature: opts.feature,
       promptVersion: opts.promptVersion || 'v1',
       provider: process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'mock',
-      model: 'claude-sonnet-4',
+      model: AI_CHAT_MODEL,
       actorId: opts.actorId,
       inputTokens: result.usage.inputTokens,
       outputTokens: result.usage.outputTokens,
@@ -68,7 +71,7 @@ export async function callChat(opts: ChatOptions) {
       feature: opts.feature,
       promptVersion: opts.promptVersion || 'v1',
       provider: 'anthropic',
-      model: 'claude-sonnet-4',
+      model: AI_CHAT_MODEL,
       actorId: opts.actorId,
       inputTokens: 0,
       outputTokens: 0,
@@ -138,7 +141,7 @@ export async function* streamChat(opts: StreamChatOptions): AsyncGenerator<Provi
       feature: opts.feature,
       promptVersion: opts.promptVersion || 'v1',
       provider: hasAnthropicKey ? 'anthropic' : 'mock',
-      model: 'claude-sonnet-4',
+      model: AI_CHAT_MODEL,
       actorId: opts.actorId,
       inputTokens,
       outputTokens,
@@ -151,7 +154,7 @@ export async function* streamChat(opts: StreamChatOptions): AsyncGenerator<Provi
       feature: opts.feature,
       promptVersion: opts.promptVersion || 'v1',
       provider: hasAnthropicKey ? 'anthropic' : 'mock',
-      model: 'claude-sonnet-4',
+      model: AI_CHAT_MODEL,
       actorId: opts.actorId,
       inputTokens,
       outputTokens,

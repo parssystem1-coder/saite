@@ -4,6 +4,8 @@ import { Worker } from 'bullmq'
 import { redis } from '@/server/shared/redis'
 import { prisma } from '@/server/shared/db'
 import { financeService } from '@/server/modules/finance/service'
+import { ordersService } from '@/server/modules/orders/service'
+import { InvalidStateTransitionError } from '@/server/modules/orders/state-machine'
 import { commsService } from '@/server/communications/service'
 import {
   OrderEvents,
@@ -105,9 +107,25 @@ export const outboxWorker = new Worker(
           break
         }
         case OrderEvents.paid: {
-          // سازگاری عقب‌رو — همان منطق order.status_changed با to=paid
+          // این رویداد از webhook پرداخت (داخل تراکنش verify) می‌آید.
+          // اگر گذار paid پس از commit در webhook شکست خورده باشد (کرش/قطعی
+          // لحظه‌ای DB)، اینجا با retry جبران می‌شود — وگرنه idempotent است.
           const orderId = payload.orderId as string
-          logger.info(`[OutboxWorker] order.paid (legacy) order=${orderId}`)
+          logger.info(`[OutboxWorker] order.paid order=${orderId}`)
+          try {
+            const order = await prisma.order.findUnique({
+              where: { id: orderId },
+              select: { status: true },
+            })
+            if (order?.status === 'pending') {
+              await ordersService.transitionState(orderId, 'paid', 'outbox-worker')
+            }
+          } catch (e) {
+            if (!(e instanceof InvalidStateTransitionError)) {
+              logger.error({ err: e, orderId }, '[OutboxWorker] compensating paid transition failed')
+              throw e // retry توسط BullMQ
+            }
+          }
           await handlePaidOrder(orderId)
           break
         }
