@@ -35,6 +35,14 @@ export const OUTBOX_MAX_RETRY = 5
 // رزروهای پرداخت‌نشده هر یک دقیقه بررسی و در صورت انقضا آزاد می‌شوند.
 export const INVENTORY_EXPIRY_POLL_MS = Number(process.env.INVENTORY_EXPIRY_POLL_MS ?? '60000')
 
+// ── Retention لاگ‌ها (فاز ۳) ─────────────────────────────
+// نگهداری لاگ‌های حاوی PII — پس از این بازه‌ها به‌صورت دوره‌ای حذف می‌شوند.
+export const LOG_RETENTION_DAYS = Number(process.env.LOG_RETENTION_DAYS ?? '90')
+export const OUTBOX_RETENTION_DAYS = Number(process.env.OUTBOX_RETENTION_DAYS ?? '30')
+export const AI_USAGE_RETENTION_DAYS = Number(process.env.AI_USAGE_RETENTION_DAYS ?? '180')
+/** هر چند وقت retention job اجرا شود (روزی یک‌بار) */
+export const LOG_RETENTION_POLL_MS = Number(process.env.LOG_RETENTION_POLL_MS ?? '86400000')
+
 // ── آپلود ─────────────────────────────────────────────────
 export const UPLOAD_MAX_SIZE_MB = Number(process.env.UPLOAD_MAX_SIZE_MB ?? '10')
 

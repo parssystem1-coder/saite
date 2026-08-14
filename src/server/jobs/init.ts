@@ -2,6 +2,7 @@ import 'server-only'
 import { logger } from '@/server/shared/logger'
 import { startOutboxDispatcher } from './dispatchers/outbox-dispatcher'
 import { startInventoryExpiryDispatcher } from './dispatchers/inventory-expiry-dispatcher'
+import { startLogRetentionDispatcher } from './dispatchers/log-retention-dispatcher'
 
 let started = false
 
@@ -17,5 +18,6 @@ export async function startBackgroundJobs() {
   await import('./registry')
   startOutboxDispatcher()
   startInventoryExpiryDispatcher()
-  logger.info('[BackgroundJobs] outbox and inventory expiry dispatchers started')
+  startLogRetentionDispatcher()
+  logger.info('[BackgroundJobs] outbox, inventory expiry, and log retention dispatchers started')
 }
