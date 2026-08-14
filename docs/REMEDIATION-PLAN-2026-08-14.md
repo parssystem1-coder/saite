@@ -337,9 +337,9 @@ git push origin arena/019ffd6d-saite
 | ۲ | `create(input: unknown)` → تایپ صریح | ۱ | ✅ |
 | ۳ | نگاشت P2002→۴۰۹ / P2025→۴۰۴ | ۱ | ✅ |
 | ۴ | قاعدهٔ eslint ضد `as any` | ۱ | ✅ |
-| ۵ | pg_trgm + GIN روی products | ۲ | ⬜ |
-| ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ⬜ |
-| ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ⬜ |
+| ۵ | pg_trgm + GIN روی products | ۲ | ✅ |
+| ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ✅ |
+| ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ✅ |
 | ۸ | pino redact برای PII | ۳ | ⬜ |
 | ۹ | rate-limit ۹ مسیر جامانده | ۳ | ⬜ |
 | ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ⬜ |
