@@ -333,10 +333,10 @@ git push origin arena/019ffd6d-saite
 
 | # | آیتم | فاز | وضعیت |
 |---|---|---|---|
-| ۱ | حذف `as any` با تایپ‌های Prisma | ۱ | ⬜ |
-| ۲ | `create(input: unknown)` → تایپ صریح | ۱ | ⬜ |
-| ۳ | نگاشت P2002→۴۰۹ / P2025→۴۰۴ | ۱ | ⬜ |
-| ۴ | قاعدهٔ eslint ضد `as any` | ۱ | ⬜ |
+| ۱ | حذف `as any` با تایپ‌های Prisma | ۱ | ✅ |
+| ۲ | `create(input: unknown)` → تایپ صریح | ۱ | ✅ |
+| ۳ | نگاشت P2002→۴۰۹ / P2025→۴۰۴ | ۱ | ✅ |
+| ۴ | قاعدهٔ eslint ضد `as any` | ۱ | ✅ |
 | ۵ | pg_trgm + GIN روی products | ۲ | ⬜ |
 | ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ⬜ |
 | ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ⬜ |
