@@ -344,10 +344,10 @@ git push origin arena/019ffd6d-saite
 | ۹ | rate-limit ۹ مسیر جامانده | ۳ | ✅ |
 | ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ✅ |
 | ۱۱ | retention لاگ‌های PII و outbox | ۳ | ✅ |
-| ۱۲ | انقضای PaymentIntent | ۴ | ⬜ |
-| ۱۳ | مصرف idempotent outbox | ۴ | ⬜ |
-| ۱۴ | جداسازی claimedAt از retryCount | ۴ | ⬜ |
-| ۱۵ | BullMQ repeatable (اختیاری) | ۴ | ⬜ |
+| ۱۲ | انقضای PaymentIntent | ۴ | ✅ |
+| ۱۳ | مصرف idempotent outbox | ۴ | ✅ |
+| ۱۴ | جداسازی claimedAt از retryCount | ۴ | ✅ |
+| ۱۵ | BullMQ repeatable (اختیاری) | ۴ | ✅ |
 | ۱۶ | Registry پرداخت | ۵ | ⬜ |
 | ۱۷ | Unit of Work (tx در repositoryها) | ۵ | ⬜ |
 | ۱۸ | paginatedList مشترک | ۵ | ⬜ |
