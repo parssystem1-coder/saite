@@ -76,3 +76,4 @@ temp/
 # Playwright
 test-results/
 playwright-report/
+vector-*.zip
