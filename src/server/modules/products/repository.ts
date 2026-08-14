@@ -43,8 +43,9 @@ export const productsRepository = {
     return prisma.product.findUnique({ where: { id } })
   },
 
-  async list(query: ProductListQuery, page: number, perPage: number) {
+  async list(query: ProductListQuery, page: number, perPage: number, fields?: 'slug') {
     const where = buildWhere(query)
+    const select = fields === 'slug' ? { slug: true, updatedAt: true } : undefined
 
     const [items, total] = await prisma.$transaction([
       prisma.product.findMany({
@@ -52,6 +53,7 @@ export const productsRepository = {
         skip: (page - 1) * perPage,
         take: perPage,
         orderBy: orderBy(query.sort),
+        ...(select ? { select } : {}),
       }),
       prisma.product.count({ where }),
     ])

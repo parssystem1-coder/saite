@@ -18,6 +18,9 @@ export const INVOICE_DUE_DAYS = Number(process.env.INVOICE_DUE_DAYS ?? '7')
 // ── صفحه‌بندی ─────────────────────────────────────────────
 export const DEFAULT_PER_PAGE = 9
 export const MAX_PER_PAGE = 100
+/** حداکثر تعداد ردیف برای فهرست سبک sitemap — فقط فیلد slug/updatedAt */
+export const SITEMAP_MAX_PER_PAGE = 10_000
+
 
 // ── سفارش ─────────────────────────────────────────────────
 export const MAX_QUANTITY_PER_LINE = 20
