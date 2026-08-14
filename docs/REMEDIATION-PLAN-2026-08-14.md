@@ -340,10 +340,10 @@ git push origin arena/019ffd6d-saite
 | ۵ | pg_trgm + GIN روی products | ۲ | ✅ |
 | ۶ | ۷ ایندکس ترکیبی جامانده | ۲ | ✅ |
 | ۷ | endpoint سبک sitemap (`fields=slug`) | ۲ | ✅ |
-| ۸ | pino redact برای PII | ۳ | ⬜ |
-| ۹ | rate-limit ۹ مسیر جامانده | ۳ | ⬜ |
-| ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ⬜ |
-| ۱۱ | retention لاگ‌های PII و outbox | ۳ | ⬜ |
+| ۸ | pino redact برای PII | ۳ | ✅ |
+| ۹ | rate-limit ۹ مسیر جامانده | ۳ | ✅ |
+| ۱۰ | جدول سیاست متمرکز rate-limit | ۳ | ✅ |
+| ۱۱ | retention لاگ‌های PII و outbox | ۳ | ✅ |
 | ۱۲ | انقضای PaymentIntent | ۴ | ⬜ |
 | ۱۳ | مصرف idempotent outbox | ۴ | ⬜ |
 | ۱۴ | جداسازی claimedAt از retryCount | ۴ | ⬜ |
